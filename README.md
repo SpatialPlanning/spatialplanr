@@ -34,5 +34,5 @@ development version from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("https://github.com/MathMarEcol/spatialplanr")
+devtools::install_github("https://github.com/SpatialPlanning/spatialplanr")
 ```
