@@ -18,8 +18,8 @@ Authors@R: c(
       ))
 Description: This package provides a range of tools for setting up, running and plotting a spatial plan using the prioritizr. It is only intended for use by the Mathematical Marine Ecology Lab at UQ, as it sets up projects using their approach and data sets.
 License: MIT + file LICENSE
-URL: https://github.com/MathMarEcol/spatialplanr
-BugReports: https://github.com/MathMarEcol/spatialplanr/issues
+URL: https://github.com/SpatialPlanning/spatialplanr
+BugReports: https://github.com/SpatialPlanning/spatialplanr/issues
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
