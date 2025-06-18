@@ -1,18 +1,18 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# spatialplanr <a href="https://mathmarecol.github.io/spatialplanr"><img src="man/figures/logo.png" align="right" height="139" alt="spatialplanr website" /></a>
+# spatialplanr <a href="https://SpatialPlanning.github.io/spatialplanr"><img src="man/figures/logo.png" align="right" height="139" alt="spatialplanr website" /></a>
 
 <!-- badges: start -->
 
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![Ubuntu](https://github.com/MathMarEcol/spatialplanr/actions/workflows/Ubuntu.yaml/badge.svg)](https://github.com/MathMarEcol/spatialplanr/actions/workflows/Ubuntu.yaml)
-[![MacOS](https://github.com/MathMarEcol/spatialplanr/actions/workflows/MacOS.yaml/badge.svg)](https://github.com/MathMarEcol/spatialplanr/actions/workflows/MacOS.yaml)
-[![Windows](https://github.com/MathMarEcol/spatialplanr/actions/workflows/Windows.yaml/badge.svg)](https://github.com/MathMarEcol/spatialplanr/actions/workflows/Windows.yaml)
+[![Ubuntu](https://github.com/SpatialPlanning/spatialplanr/actions/workflows/Ubuntu.yaml/badge.svg)](https://github.com/SpatialPlanning/spatialplanr/actions/workflows/Ubuntu.yaml)
+[![MacOS](https://github.com/SpatialPlanning/spatialplanr/actions/workflows/MacOS.yaml/badge.svg)](https://github.com/SpatialPlanning/spatialplanr/actions/workflows/MacOS.yaml)
+[![Windows](https://github.com/SpatialPlanning/spatialplanr/actions/workflows/Windows.yaml/badge.svg)](https://github.com/SpatialPlanning/spatialplanr/actions/workflows/Windows.yaml)
 [![Codecov test
-coverage](https://codecov.io/gh/MathMarEcol/spatialplanr/branch/main/graph/badge.svg)](https://app.codecov.io/gh/MathMarEcol/spatialplanr/tree/main)
-[![Issues](https://img.shields.io/github/issues/MathMarEcol/spatialplanr)](https://github.com/MathMarEcol/spatialplanr/issues)
+coverage](https://codecov.io/gh/SpatialPlanning/spatialplanr/branch/main/graph/badge.svg)](https://app.codecov.io/gh/SpatialPlanning/spatialplanr/tree/main)
+[![Issues](https://img.shields.io/github/issues/SpatialPlanning/spatialplanr)](https://github.com/SpatialPlanning/spatialplanr/issues)
 <!-- badges: end -->
 
 ## Overview
