@@ -83,9 +83,9 @@ splnr_targets_byCategory <- function(dat, catTarg, catName = "Category") {
 
 
 
-#' Assign targets bu IUCN Red List categories
+#' Assign targets by IUCN Red List categories
 #'
-#' `splnr_targets_byIUCN()` allows to assign targets for species used in conservation planning based on IUCN categories. Species can be extracted based on IUCN categories with the `spatoalplnr`function `splnr_get_IUCNRedList()`.
+#' `splnr_targets_byIUCN()` assigns targets for species used in conservation planning based on IUCN categories. Species IUCN categories can be extracted based using the `spatialplnr`function `splnr_get_IUCNRedList()`.
 #' Accessing the IUCN database requires a login token from `rl_use_iucn()` that needs to be added to the environment using `Sys.setenv(IUCN_REDLIST_KEY = "[Your Token]")`. You can start by running `rredlist::rl_use_iucn()`.
 #'
 #' @param dat A dataframe or sf object with IUCN categories
