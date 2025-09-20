@@ -52,7 +52,7 @@ splnr_get_IUCNRedList <- function(df, species_col = "Species") {
   cate <- c("DD", "LC", "NT", "VU", "EN", "CR", "EW", "EX", "LRlc", "LRnt", "LRcd")
 
   # Download all the data for those categories
-  RL <- purrr::map_df(cate, function(x) data.frame(rredlist::rl_sp_category(x))) %>%
+  RL <- purrr::map_df(cate, function(x) data.frame(rredlist::rl_categories(x))) %>%
     dplyr::select("category", "result.scientific_name") %>%
     dplyr::rename(!!species_col := .data$result.scientific_name,
                   IUCN_Category = .data$category
