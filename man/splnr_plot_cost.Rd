@@ -5,17 +5,17 @@
 \title{Plot cost}
 \usage{
 splnr_plot_cost(
-  Cost,
-  Cost_name = "Cost",
+  cost,
+  costName = "Cost",
   legendTitle = "Cost",
   paletteName = "YlGnBu",
   plotTitle = ""
 )
 }
 \arguments{
-\item{Cost}{An \code{sf} object of cost for \code{prioritizr}}
+\item{cost}{An \code{sf} object of cost for \code{prioritizr}}
 
-\item{Cost_name}{Name of the cost column}
+\item{costName}{Name of the cost column}
 
 \item{legendTitle}{A character value for the title of the legend. Can be empty ("").}
 
@@ -34,7 +34,7 @@ A ggplot object of the plot
 }
 \examples{
 \dontrun{
-dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(cost = runif(n = dim(.)[[1]])),
   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   cost_column = "Cost"
 ) \%>\%

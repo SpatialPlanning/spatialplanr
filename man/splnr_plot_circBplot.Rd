@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_featureRep.R
 \name{splnr_plot_circBplot}
 \alias{splnr_plot_circBplot}
-\title{Plot circular barplot}
+\title{Plot Circular Barplot for Feature Representation}
 \usage{
 splnr_plot_circBplot(
   df,
@@ -15,28 +15,45 @@ splnr_plot_circBplot(
 )
 }
 \arguments{
-\item{df}{data frame that should have the following column names: feature, value, group}
+\item{df}{A \link[base:data.frame]{data.frame} or \link[tibble:tibble]{tibble} that
+\strong{must} contain the following columns:
+\itemize{
+\item \code{feature}: \link[base:character]{character} or \link[base:factor]{factor} unique identifier for each individual bar (e.g., species names).
+\item \code{value}: \link[base:numeric]{numeric} the value to be plotted on the y-axis (bar height, typically percentage representation).
+\item \code{group}: \link[base:character]{character} or \link[base:factor]{factor} for grouping factors (e.g., "important", "representative").
+}}
 
-\item{legend_color}{vector list of colors; should have the group names and their corresponding colors}
+\item{legend_color}{A \link[base:vector]{named vector} of colors. Names must correspond
+to the unique values in the \code{group} column of \code{df}, and values are the
+corresponding colors. For example: \code{c("group_name1" = "red", "group_name2" = "blue")}.}
 
-\item{legend_list}{list of groups/legends of groups}
+\item{legend_list}{A \link[base:character]{character vector} of labels for the legend.
+This should match the names used in \code{legend_color} or the levels of \code{group}.}
 
-\item{indicateTargets}{logical on whether to show where the targets were set}
+\item{indicateTargets}{A \link[base:logical]{logical} value. If \code{TRUE}, horizontal
+lines indicating \code{impTarget} and \code{repTarget} will be drawn on the plot.}
 
-\item{impTarget}{target of the important features (in \%)}
+\item{impTarget}{A \link[base:numeric]{numeric} value representing the target
+percentage for 'important' features. Required if \code{indicateTargets} is \code{TRUE}.}
 
-\item{repTarget}{target of the representative features (in \%)}
+\item{repTarget}{A \link[base:numeric]{numeric} value representing the target
+percentage for 'representative' features. Required if \code{indicateTargets} is \code{TRUE}.}
 
-\item{colTarget}{string with a colour value for the indicator line}
+\item{colTarget}{A \link[base:character]{character} string specifying the color
+for the target indicator lines.}
 }
 \value{
-A ggplot object of the plot
+A \link[ggplot2:ggplot]{ggplot2::ggplot} object of the circular bar plot.
 }
 \description{
-Plot circular barplot
+\code{splnr_plot_circBplot()} creates a circular bar plot to visualize feature
+representation, categorized by groups. It's particularly useful for
+displaying how different categories of features meet certain targets in a radial layout.
 }
 \examples{
 # DISCLAIMER: THIS SOLUTION IS NOT ACTUALLY RUN WITH THESE TARGETS YET
+
+\dontrun{
 
 dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
@@ -55,6 +72,7 @@ s1 <- dat_soln \%>\%
 
 p1 <- dat_problem
 
+# Assuming eval_feature_representation_summary is from prioritizr
 df_rep_imp <- prioritizr::eval_feature_representation_summary(
   p1,
   s1[, "solution_1"]
@@ -74,7 +92,7 @@ target <- data.frame(feature = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5")) \%>\%
 
 df <- merge(df_rep_imp, target) \%>\%
   dplyr::select(-target) \%>\%
-  na.omit() \%>\%
+  stats::na.omit() \%>\% # Use stats::na.omit
   dplyr::rename(value = relative_held) \%>\%
   dplyr::rename(group = class)
 
@@ -89,4 +107,5 @@ legends <- c("Important", "Representative")
   legend_color = colors,
   impTarget = 50, repTarget = 30
 ))
+}
 }

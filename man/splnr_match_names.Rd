@@ -2,25 +2,43 @@
 % Please edit documentation in R/utils.R
 \name{splnr_match_names}
 \alias{splnr_match_names}
-\title{Substitute numbers for all_names in regionalisations}
+\title{Substitute Numbers for Names in Regionalizations}
 \usage{
 splnr_match_names(dat, nam)
 }
 \arguments{
-\item{dat}{\code{sf} data frame with one column of numeric/integer corresponding to \code{nam}}
+\item{dat}{An \code{sf} data frame with a single non-geometry column containing
+numeric or integer values that correspond to the names in \code{nam}.}
 
-\item{nam}{Named character vector of names corresponding to column of dat to recode}
+\item{nam}{A named character vector. The \emph{names} of this vector should be
+the numeric/integer values found in \code{dat}'s column, and the \emph{values} of
+this vector should be the desired character names for substitution.}
 }
 \value{
-An \code{sf} dataframe with numeric regionalisations substituted for category names
+An \code{sf} dataframe where the numeric/integer values in the relevant
+column have been substituted with the corresponding character names from \code{nam}.
 }
 \description{
-Many regionalisations have numeric values in the shape files that correspond
-to a vector of names. Here we provide a function to quickly replace the
-numbers with names.
+\code{splnr_match_names()} replaces numeric or integer values in a spatial
+(sf) dataframe's column with corresponding character names, typically used
+for regionalization data.
+}
+\details{
+This function is designed for scenarios where spatial data contains numeric
+identifiers for regions, and you have a mapping (a named character vector)
+to convert these IDs into more descriptive names. It assumes that the \code{sf}
+dataframe (\code{dat}) has only one non-geometry column that needs recoding.
+
+The function directly applies the mapping from the \code{nam} vector to the
+specified column. The names of the \code{nam} vector should correspond to the
+numeric/integer values in the \code{dat} column, and the values of \code{nam} will
+be the new character names.
 }
 \examples{
-dat <- dat_region
-nam <- c("Region1" = "SE Aust", "Region2" = "Tas", "Region3" = "NE Aust")
-df <- splnr_match_names(dat, nam)
+# Define the named character vector for mapping.
+region_names <- c("Region1" = "SE Aust", "Region2" = "Tas", "Region3" = "NE Aust")
+
+# Apply the function to substitute numeric codes with names.
+df_named_regions <- splnr_match_names(dat = dat_region, nam = region_names)
+print(df_named_regions)
 }

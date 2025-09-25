@@ -1,6 +1,6 @@
 # Some code to create a hex sticker for the spatialplanr package
 #
-# Last updated: Saturday 8th July 2023
+# Last updated: Friday 13th June 2025
 #
 # Jason D. Everett (UQ/CSIRO/UNSW)
 #
@@ -95,12 +95,12 @@ hexSticker::sticker(gg,
                     s_height = 2.2,
                     # h_fill = "#9FE2BF",
                     h_color = "black", # "grey40",
-                    url = "mathmarecol.github.io/spatialplanr",
+                    url = "spatialplanning.github.io/spatialplanr",
                     u_color = "grey90",
                     # u_family = "sans",
-                    u_size = 15.5,
-                    u_x = 0.99,
-                    u_y = 0.06,
+                    u_size = 15,
+                    u_x = 0.98,
+                    u_y = 0.055,
                     dpi = 1000,
                     asp = 1,
                     filename = file.path("data-raw", "spatialplanr.png"))

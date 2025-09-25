@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_get_MPAs.R
 \name{splnr_get_MPAs}
 \alias{splnr_get_MPAs}
-\title{Get marine parks from the WDPA.}
+\title{Get Marine Protected Areas (MPAs) from WDPA}
 \usage{
 splnr_get_MPAs(
   PlanUnits,
@@ -14,31 +14,82 @@ splnr_get_MPAs(
 )
 }
 \arguments{
-\item{PlanUnits}{Planning Units as an \code{sf} object}
+\item{PlanUnits}{An \code{sf} object representing the planning units to be used for intersection.
+This object should have a valid CRS defined.}
 
-\item{Countries}{A character vector of the countries for which to extract MPAs. To get all MPAs, use \code{"global"} here.}
+\item{Countries}{A character vector specifying the countries for which to extract MPAs.
+To retrieve all global MPAs, use the value \code{"global"}. Country names should match
+those recognized by the WDPA database.}
 
-\item{Status}{The status field in the WDPA provides information on whether a protected area has been established, designated, or proposed at the time the data was submitted.}
+\item{Status}{A character vector specifying the desired status of protected areas
+to include. Defaults to \code{c("Designated", "Established", "Inscribed")}.}
 
-\item{Desig}{The designation type is the category or type of protected area as legally/officially designated or proposed.}
+\item{Desig}{A character vector specifying the desired designation types of
+protected areas. Defaults to \code{c("National", "Regional", "International", "Not Applicable")}.}
 
-\item{Category}{Stores the IUCN Protected Area Management Categories (recorded in field IUCN_CAT) for each of the protected areas where these categories are reported}
+\item{Category}{A character vector specifying the desired IUCN Protected Area
+Management Categories. Defaults to \code{c("Ia", "Ib", "II", "III", "IV")}.}
 
-\item{...}{Other arguments passed to \code{wdpa_fetch()}}
+\item{...}{Other arguments that are passed directly to the \code{wdpa_fetch()} function
+from the \code{wdpar} package (e.g., \code{verbose = TRUE}).}
 }
 \value{
-A \code{sf} object with the MPAs intersected with the planning units
+An \code{sf} object. This object contains the planning units, with an
+additional \code{wdpa} column (set to 1) for areas that intersect with the
+selected MPAs.
 }
 \description{
-This code is a wrapper for the wonderful \code{wdpar} package written by Jeffrey O. Hanson. This data is then interfaced with the planning units.
-An \code{sf} object is returned with the PU area covered by the selected marine protected areas.
+This function serves as a wrapper for the \code{wdpar} package, facilitating the
+retrieval of Marine Protected Areas (MPAs) from the World Database on Protected
+Areas (WDPA) and intersecting them with provided planning units.
+The result is an \code{sf} object indicating the area of planning units covered by
+the selected marine protected areas.
+}
+\details{
+This function leverages the robust capabilities of the \code{wdpar} package by
+Jeffrey O. Hanson to access and process WDPA data. It allows filtering of MPAs
+based on country, status, designation type, and IUCN category, and then
+spatially intersects these MPAs with your defined planning units.
+
+For a comprehensive understanding of the WDPA data fields:
+\itemize{
+\item \strong{Status}: Refers to the establishment, designation, or proposal
+status of a protected area at the time of data submission. Valid options
+include "Designated", "Established", "Inscribed", "Proposed", and "Adopted".
+\item \strong{Desig} (Designation Type): Categorizes the legal or official
+designation of the protected area. Valid options include "National",
+"Regional", "International", and "Not Applicable".
+\item \strong{Category} (IUCN Protected Area Management Categories): Represents
+the IUCN management categories for protected areas. Valid options include
+"Ia", "Ib", "II", "III", "IV", "V", "VI", "Not Reported", "Not Applicable",
+and "Not Assigned".
+}
 }
 \examples{
-dat <- splnr_get_MPAs(PlanUnits = dat_PUs, Countries = "Australia")
+\dontrun{
+# Assuming 'dat_PUs' is an existing sf object of planning units in your package.
 
+# Example: Get MPAs for Australia and intersect with planning units.
+dat_mpas <- splnr_get_MPAs(PlanUnits = dat_PUs, Countries = "Australia")
+
+# Example: Get MPAs for multiple countries with specific status and categories.
+dat_mpas_specific <- splnr_get_MPAs(
+  PlanUnits = dat_PUs,
+  Countries = c("Australia", "New Zealand"),
+  Status = c("Designated", "Proposed"),
+  Category = c("II", "IV")
+)
+
+# Example: Visualize the result using ggplot2.
+# Assuming 'aust' is an sf object representing Australia's coastline,
+# perhaps loaded from rnaturalearth::ne_countries.
 aust <- rnaturalearth::ne_countries(country = "Australia", returnclass = "sf")
 
 gg <- ggplot2::ggplot() +
-  ggplot2::geom_sf(data = dat, ggplot2::aes(fill = wdpa)) +
-  ggplot2::geom_sf(data = aust, fill = "grey50")
+  ggplot2::geom_sf(data = dat_mpas, ggplot2::aes(fill = wdpa)) +
+  ggplot2::geom_sf(data = aust, fill = "grey50") +
+  ggplot2::labs(title = "Marine Protected Areas in Australia") +
+  ggplot2::theme_minimal()
+print(gg)
+}
 }

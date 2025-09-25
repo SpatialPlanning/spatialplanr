@@ -13,8 +13,8 @@ This package provides a range of tools for setting up, running and plotting a sp
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/MathMarEcol/spatialplanr}
-  \item Report bugs at \url{https://github.com/MathMarEcol/spatialplanr/issues}
+  \item \url{https://github.com/SpatialPlanning/spatialplanr}
+  \item Report bugs at \url{https://github.com/SpatialPlanning/spatialplanr/issues}
 }
 
 }

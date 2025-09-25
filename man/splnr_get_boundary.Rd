@@ -2,27 +2,64 @@
 % Please edit documentation in R/splnr_get_boundary.R
 \name{splnr_get_boundary}
 \alias{splnr_get_boundary}
-\title{Get the boundary of the planning region.}
+\title{Create a Planning Region Boundary}
 \usage{
 splnr_get_boundary(Limits, Type = NULL, res = 1, cCRS = "ESRI:54009")
 }
 \arguments{
-\item{Limits}{The limits of the boundary. This can either be a 4 element numeric named vector (c(xmin = 150, xmax = 160, ymin = -40, ymax = -30)), a vector of ocean/sea names, or a vector of EEZs.,}
+\item{Limits}{A required input that defines the spatial extent. This can be:
+\itemize{
+\item A named numeric vector of four elements: \code{c("xmin" = ..., "xmax" = ..., "ymin" = ..., "ymax" = ...)}.
+\item The string \code{"Global"} to create a worldwide boundary.
+\item A character vector of ocean/sea names (e.g., \code{"North Atlantic Ocean"}) to be used with \code{Type = "Ocean"}.
+}}
 
-\item{Type}{The type of Limits being provided. Options are "Ocean" or "EEZ". (not required if numeric or "Global" limits are provided)}
+\item{Type}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} The type of Limits being provided. This is only required if \code{Limits} is a character vector of ocean names, in which case it should be \code{"Ocean"}. It is no longer required and will be removed in a future version.}
 
-\item{res}{The resolution (in degrees) from which to create the boundary polygon if numeric limits are provided.}
+\item{res}{\verb{[numeric(1)]}\cr The resolution (in decimal degrees) used to
+construct the polygon vertices when \code{Limits} is numeric or \code{"Global"}.
+Defaults to \code{1}. Must be a positive number.}
 
-\item{cCRS}{The CRS the boundary is to be returned in}
+\item{cCRS}{\verb{[character(1)]}\cr The coordinate reference system (CRS) for the
+output \code{sf} object. Can be a PROJ4 string or an EPSG code. Defaults to
+\code{"ESRI:54009"} (Mollweide).}
 }
 \value{
-The boundary of the planning region
+An \code{sf} object containing a single polygon feature representing the
+planning boundary.
 }
 \description{
-\code{splnr_get_boundary()} allows to create an \code{sf} object of your planning region either based on specific coordinate information, or \code{rnaturalearth} inputs such as ocean data. Creating a boundary is often the first step in conservation planning and a requirement for downstream function sin \code{spatialplanr}.
+This function generates a spatial boundary for the planning region as an \code{sf}
+polygon object. The boundary can be defined in several ways:
+\enumerate{
+\item A simple rectangular bounding box using numeric coordinates.
+\item A global boundary spanning the entire world.
+\item A complex shape based on marine ecoregions from \code{rnaturalearth}.
+}
+}
+\details{
+A planning region boundary is the foundational first step for most spatial
+conservation planning exercises. All subsequent analyses and data preparation
+steps within the \code{spatialplanr} package rely on a defined boundary. The
+coordinate reference system (CRS) of the returned object is projected by
+default (Mollweide), which is suitable for equal-area calculations.
 }
 \examples{
-Bndry <- splnr_get_boundary(Limits = "North Atlantic Ocean", Type = "Ocean")
-Bndry <- splnr_get_boundary(Limits = "Global")
-Bndry <- splnr_get_boundary(Limits = c("xmin" = 150, "xmax" = 170, "ymin" = -40, "ymax" = -20))
+\dontrun{
+# Example 1: Create a boundary from an ocean name.
+# This fetches polygon data for the specified ocean.
+bndry_ocean <- splnr_get_boundary(Limits = "North Atlantic Ocean", Type = "Ocean")
+plot(bndry_ocean)
+
+# Example 2: Create a global boundary.
+bndry_global <- splnr_get_boundary(Limits = "Global")
+plot(bndry_global)
+
+# Example 3: Create a boundary from a numeric bounding box.
+bndry_coords <- splnr_get_boundary(
+  Limits = c("xmin" = 150, "xmax" = 170, "ymin" = -40, "ymax" = -20)
+)
+plot(bndry_coords)
 }
+}
+\concept{planning_region}

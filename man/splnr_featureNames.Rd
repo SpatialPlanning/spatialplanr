@@ -2,23 +2,55 @@
 % Please edit documentation in R/utils.R
 \name{splnr_featureNames}
 \alias{splnr_featureNames}
-\title{Returns the feature names}
+\title{Extract Feature Names from Spatial Data}
 \usage{
 splnr_featureNames(dat, exclude = NA)
 }
 \arguments{
-\item{dat}{sf dataframe of features}
+\item{dat}{An \code{sf} dataframe representing conservation features. Each
+non-geometry column is assumed to be a feature.}
 
-\item{exclude}{Character vector of any columns to exclude}
+\item{exclude}{A character vector of column names (or prefixes) to exclude
+from the output. By default, it excludes columns starting with "Cost_".
+If you provide a value, it will be \emph{appended} to the default exclusion.
+Set to \code{NULL} or \code{character(0)} if you want no exclusions beyond the default.}
 }
 \value{
-A character vector of names
+A character vector containing the names of the conservation features.
 }
 \description{
-\code{splnr_featureNames()} allows you to extract the names of features you want to pass to a \code{prioritizr} prioritization.
-It requires an \code{sf} object input and returns the column names of the object excluding any columns you specify in the \code{exclude} argument.
+\code{splnr_featureNames()} extracts the names of conservation features
+from an \code{sf} dataframe, excluding geometry and any specified columns.
+}
+\details{
+This function is a utility for preparing data for \code{prioritizr} or other
+conservation planning packages that require a vector of feature names.
+It typically removes the geometry column and any columns related to cost
+(prefixed with "Cost_") by default, allowing you to specify additional
+columns to exclude.
+
+The output is a simple character vector of column names, which can be
+directly used as feature identifiers in conservation problems.
 }
 \examples{
-df <- dat_species_prob \%>\%
-  splnr_featureNames()
+\dontrun{
+# Assuming 'dat_species_prob' is an existing sf object in your package.
+# It likely has columns like 'Spp1', 'Spp2', 'Cost_SomeMeasure', etc.
+
+# Example 1: Get all feature names, excluding default 'Cost_' columns.
+feature_names_default <- splnr_featureNames(dat = dat_species_prob)
+print(feature_names_default)
+
+# Example 2: Get feature names, excluding 'Cost_' columns and 'Spp5'.
+feature_names_custom_exclude <- splnr_featureNames(
+  dat = dat_species_prob,
+  exclude = "Spp5"
+)
+print(feature_names_custom_exclude)
+
+# Example 3: If you only want to exclude a specific column and not 'Cost_'
+# (you'd need to manually specify exclude = "geometry" and then your column)
+# This case is more complex and usually handled by direct dplyr::select.
+# This function's primary use is to remove cost columns and potentially others.
+}
 }
