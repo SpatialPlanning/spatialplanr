@@ -14,6 +14,7 @@ knitr::opts_chunk$set(
 ```
 
 # spatialplanr <a href="https://SpatialPlanning.github.io/spatialplanr"><img src="man/figures/logo.png" align="right" height="139" alt="spatialplanr website" 
+
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![Ubuntu](https://github.com/SpatialPlanning/spatialplanr/actions/workflows/Ubuntu.yaml/badge.svg)](https://github.com/SpatialPlanning/spatialplanr/actions/workflows/Ubuntu.yaml)

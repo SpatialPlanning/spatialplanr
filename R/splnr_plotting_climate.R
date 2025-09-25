@@ -263,15 +263,6 @@ splnr_plot_climKernelDensity_Basic <- function(soln) {
 #' @return A `ggplot` object representing the fancy kernel density plot.
 #' @keywords internal
 #' @noRd
-#'
-#' @importFrom assertthat assert_that
-#' @importFrom dplyr filter mutate rename select
-#' @importFrom forcats fct_relevel
-#' @importFrom ggplot2 aes after_stat element_blank element_line element_text expansion ggplot labs scale_fill_viridis_c scale_x_continuous scale_y_discrete theme theme_bw
-#' @importFrom rlang .data sym
-#' @importFrom tibble as_tibble
-#' @importFrom tidyr pivot_longer
-#'
 splnr_plot_climKernelDensity_Fancy <- function(solution_list,
                                                names,
                                                colorMap = "C",

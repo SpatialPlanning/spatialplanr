@@ -231,8 +231,10 @@ splnr_plot_climKernelDensity(
   type = "Basic",
   names = "solution_1" # Column indicating selected PUs (1=selected)
 )
+
 #> Picking joint bandwidth of 0.0885
 #> Picking joint bandwidth of 0.077
+
 ```
 
 <img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
