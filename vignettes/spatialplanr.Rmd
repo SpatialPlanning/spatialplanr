@@ -185,9 +185,9 @@ the binary habitat suitability map for Green sea turtles:
 ```{r}
 (ggFeature1 <- splnr_plot(
   df = datEx_species_bin,
-  col_names = "Chelonia_mydas",
-  plot_title = "Chelonia mydas",
-  legend_labels = c("Absence", "Presence")
+  colNames = "Chelonia_mydas",
+  plotTitle = "Chelonia mydas",
+  legendLabels = c("Absence", "Presence")
 ) +
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
@@ -205,7 +205,7 @@ are fairly ubiquitous across the whole Coral Sea.
 (ggFeature <- splnr_plot(
   datEx_species_bin,
   "Megaptera_novaeangliae",
-  plot_title = "Megaptera novaeangliae"
+  plotTitle = "Megaptera novaeangliae"
 ) +
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
@@ -224,10 +224,10 @@ planning unit of the study region.
 
 ```{r}
 (ggFeatNo <- splnr_plot(df = datEx_species_bin, 
-                        col_names =  colnames(datEx_species_bin %>% 
+                        colNames =  colnames(datEx_species_bin %>% 
                                                 sf::st_drop_geometry()),
-                        plot_title = "", 
-                        legend_title = "Number of features") +
+                        plotTitle = "", 
+                        legendTitle = "Number of features") +
    splnr_gg_add(
      PUs = PUs, Bndry = Bndry, overlay = landmass,
      cropOverlay = PUs, ggtheme = splnr_theme
@@ -260,8 +260,8 @@ units are assigned an equal cost of 1.
 
 ```{r}
 out_sf$Cost_None <- 1
-(ggCost <- splnr_plot(out_sf, col_names = "Cost_None", 
-                      legend_title = "Cost", legend_labels = "1") +
+(ggCost <- splnr_plot(out_sf, colNames = "Cost_None", 
+                      legendTitle = "Cost", legendLabels = "1") +
     splnr_gg_add(
       PUs = PUs, Bndry = Bndry, overlay = landmass,
       cropOverlay = PUs, ggtheme = splnr_theme
@@ -289,7 +289,7 @@ out_sf$Apparent.Fishing.Hours[as.numeric(rownames(PUs))] <-
   gfw_data$Apparent.Fishing.Hours # Put corresponding data in PUs
 
 
-(ggCost <- splnr_plot(out_sf, col_names = "Apparent.Fishing.Hours") +
+(ggCost <- splnr_plot(out_sf, colNames = "Apparent.Fishing.Hours") +
     splnr_gg_add(
       PUs = PUs, Bndry = Bndry, overlay = landmass,
       cropOverlay = PUs, ggtheme = splnr_theme
@@ -316,7 +316,7 @@ enviro_regions <- oceandatr::get_enviro_regions(planning_grid = PUs,
 
 
 ```{r, eval=FALSE, echo=FALSE}
-splnr_plot(df = bathymetry, col_names = "bathymetry", plot_title = "") + 
+splnr_plot(df = bathymetry, colNames = "bathymetry", plotTitle = "") + 
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
     cropOverlay = PUs, ggtheme = splnr_theme
@@ -370,9 +370,9 @@ importance scores
 
 ```{r}
 (ggSoln <- splnr_plot(datEx_soln, 
-                      col_names = "solution_1", 
-                      legend_title = "Solution", 
-                      legend_labels = c("0","1")) +
+                      colNames = "solution_1", 
+                      legendTitle = "Solution", 
+                      legendLabels = c("0","1")) +
    splnr_gg_add(
      PUs = PUs, Bndry = Bndry, overlay = landmass,
      cropOverlay = PUs, ggtheme = splnr_theme
@@ -389,8 +389,8 @@ overlay of the cost to show how the solution avoids highly costly areas:
 ```{r}
 (ggCostOverlay <- splnr_plot_costOverlay(
   soln = datEx_soln,
-  Cost = NA,
-  Cost_name = "Cost_None"
+  cost = NA,
+  costName = "Cost_None"
 ) +
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-climate.R
 \name{splnr_climate_featureApproach}
 \alias{splnr_climate_featureApproach}
-\title{Function to run the feature approach}
+\title{Run the Feature Climate-Smart Approach}
 \usage{
 splnr_climate_featureApproach(
   features,
@@ -14,40 +14,92 @@ splnr_climate_featureApproach(
 )
 }
 \arguments{
-\item{features}{feature \code{sf}object}
+\item{features}{An \code{sf} object representing conservation features (e.g., species
+distribution data).}
 
-\item{metric}{climate metric \code{sf} object with 'metric' as the column name of the metric values per planning unit.}
+\item{metric}{An \code{sf} object containing climate metric information. It must
+have a column named 'metric' with the climate metric values per planning unit.}
 
-\item{targets}{\code{data.frame}with list of features under "feature" column and their corresponding targets under "target" column}
+\item{targets}{A \code{data.frame} with two columns: \code{feature} (character, listing
+the original feature names) and \code{target} (numeric, the initial conservation
+target for each feature as a proportion, e.g., 0.3).}
 
-\item{direction}{If direction = 1, metric values are from low (least climate-smart) to high (most climate-smart). If direction = -1, metric values are from high (least climate-smart) to low (most climate-smart).}
+\item{direction}{An integer specifying the direction of climate-smartness:
+\itemize{
+\item \code{1}: Higher metric values mean more climate-smart areas.
+\item \code{-1}: Lower metric values mean more climate-smart areas.
+}}
 
-\item{percentile}{cut-off threshold for determining whether an area is a climate priority area or not (e.g., lower 35th percentile of warming or upper 65th percentile of acidification). Note that the percentile here is the lower limit of the threshold.}
+\item{percentile}{A numeric value (0-100) representing the cutoff threshold for
+determining whether an area is a climate priority area or not. This is applied
+globally to the \code{metric} data. Defaults to \code{35}.}
 
-\item{refugiaTarget}{target assigned to climate-smart areas}
+\item{refugiaTarget}{A numeric value (0-1) representing the target proportion
+assigned to the overall climate-smart layer. Defaults to \code{0.3} (30\%).}
 }
 \value{
-A \code{list} with two components: 1. is the data frame passed to \code{prioritizr} when creating a conservation problem containing the binary information per planning unit per feature. 2. are the targets for the features in the conservation problem when the CPA approach is used.
+A \code{list} with two components:
+\itemize{
+\item \code{Features}: An \code{sf} object containing the binary information per
+planning unit for each original feature, plus the new \code{climate_layer}
+feature. This is ready to be passed to \code{prioritizr}.
+\item \code{Targets}: A \code{data.frame} with the adjusted targets for all features,
+including the \code{climate_layer}. This is also ready for \code{prioritizr}.
+}
 }
 \description{
-Function to run the feature approach
+\code{splnr_climate_featureApproach()} implements the Feature Approach to
+climate-smart conservation planning. This involves defining a global
+"climate-smart" layer and adjusting conservation targets to ensure that
+a specified proportion of this layer is captured in the solution.
+}
+\details{
+This function orchestrates the steps for the Feature Approach:
+\enumerate{
+\item \strong{Preprocessing:} It calls \code{splnr_climate_feature_preprocess()} to
+identify a region-wide climate-smart layer based on a percentile cutoff
+of the climate metric. This layer is then added as a new binary feature
+to your conservation data.
+\item \strong{Target Assignment:} It then calls \code{splnr_climate_feature_assignTargets()}
+to calculate and assign new targets. Crucially, a specific \code{refugiaTarget}
+is set for the newly created \code{climate_layer} feature, ensuring that a
+certain proportion of the most climate-resilient areas are included in
+the final conservation plan.
+}
+
+The output is a list containing the modified features (now including the
+\code{climate_layer}) and their corresponding adjusted targets, ready to be used
+in a \code{prioritizr} conservation problem.
 }
 \examples{
-Features <- dat_species_bin
+\dontrun{
+# Assuming 'dat_species_bin' and 'dat_clim' are existing sf objects
+# in your package.
 
-targets <- Features \%>\%
+# Define initial targets for species features.
+initial_targets <- dat_species_bin \%>\%
   sf::st_drop_geometry() \%>\%
   colnames() \%>\%
   data.frame() \%>\%
   setNames(c("feature")) \%>\%
   dplyr::mutate(target = 0.3)
 
-Feature_Approach <- splnr_climate_featureApproach(
+# Run the Feature Approach where higher climate metric values mean
+# more climate-smart areas.
+Feature_Approach_result <- splnr_climate_featureApproach(
   features = dat_species_bin,
   metric = dat_clim,
-  targets = targets,
-  direction = 1
+  targets = initial_targets,
+  direction = 1, # Example: higher metric values are more climate-smart
+  percentile = 35,
+  refugiaTarget = 0.3
 )
-out_sf <- Feature_Approach$Features
-targets <- Feature_Approach$Targets
+
+# Access the processed features and targets:
+out_sf_feature <- Feature_Approach_result$Features
+targets_feature <- Feature_Approach_result$Targets
+
+print(head(out_sf_feature))
+print(head(targets_feature))
+}
 }

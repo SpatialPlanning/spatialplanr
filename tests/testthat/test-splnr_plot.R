@@ -38,9 +38,9 @@ distance <- splnr_get_distCoast(dat_PUs)
 testthat::test_that("Correct function output", {
   expect_s3_class(
     splnr_plot(df = dat_species_bin,
-               col_names = "Spp1",
-               legend_title = "Legend",
-               legend_labels = c("Absent", "Present"))
+               colNames = "Spp1",
+               legendTitle = "Legend",
+               legendLabels = c("Absent", "Present"))
     , "gg"
   )
 })
@@ -49,9 +49,9 @@ testthat::test_that("Correct function output", {
 testthat::test_that("Correct function output", {
   expect_s3_class(
     splnr_plot(df = dat_species_bin %>% dplyr::mutate(dplyr::across(tidyselect::starts_with("Spp"), as.logical)),
-               col_names = "Spp1",
-               legend_title = "Legend",
-               legend_labels = c("Absent", "Present"))
+               colNames = "Spp1",
+               legendTitle = "Legend",
+               legendLabels = c("Absent", "Present"))
     , "gg"
   )
 })
@@ -60,9 +60,9 @@ testthat::test_that("Correct function output", {
 testthat::test_that("Correct function output", {
   expect_s3_class(
     splnr_plot(df = distance,
-               col_names = "coastDistance_km",
-               plot_title = "Distance to Coast",
-               legend_title = "Distance (km)")
+               colNames = "coastDistance_km",
+               plotTitle = "Distance to Coast",
+               legendTitle = "Distance (km)")
     , "gg"
   )
 })
@@ -79,11 +79,11 @@ testthat::test_that("Correct function output", {
 testthat::test_that("Correct function output", {
   expect_s3_class(
     splnr_plot(df = dat_species_bin,
-               col_names = colnames(dat_species_bin %>%
+               colNames = colnames(dat_species_bin %>%
                                       sf::st_drop_geometry() %>%
                                       dplyr::select(
                                         tidyselect::starts_with("Spp"))),
-               legend_title = "Number of features")
+               legendTitle = "Number of features")
 
     , "gg"
   )

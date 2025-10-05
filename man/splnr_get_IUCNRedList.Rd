@@ -2,44 +2,71 @@
 % Please edit documentation in R/splnr_get_IUCNRedList.R
 \name{splnr_get_IUCNRedList}
 \alias{splnr_get_IUCNRedList}
-\title{Match Species to IUCN RedList}
+\title{Match Species to IUCN RedList Categories}
 \usage{
 splnr_get_IUCNRedList(df, species_col = "Species")
 }
 \arguments{
-\item{df}{The dataframe containing the species to be matched with the IUCN redlist}
+\item{df}{The input dataframe containing the species names to be matched.}
 
-\item{species_col}{A string name for the column containting the species name}
+\item{species_col}{A character string specifying the name of the column in \code{df}
+that contains the species scientific names (e.g., "Species" or "scientific_name").
+Defaults to "Species".}
 }
 \value{
-A dataframe with an additional column \code{IUCN_Category}
+A dataframe identical to the input \code{df}, but with an additional column
+named \code{IUCN_Category}. If a species is not found on the IUCN Red List, its
+\code{IUCN_Category} will be \code{NA}.
 }
 \description{
-First of all you will need your own API key, an alphanumeric string provided by IUCN that you need to send in every request;
-the following function takes you to their website, where you will need to fill up a form (it might take 1-2 days to receive your key)
-rl_use_iucn()
-Once you receive an email with your API key, set it up as an environmental variable (it MUST be named IUCN_REDLIST_KEY)
-you will need to re-do this step everytime you restart R
-Sys.setenv(IUCN_REDLIST_KEY = "") OR add IUCN_REDLIST_KEY = "" to your .Renviron file to permanently set it
-Sys.getenv("IUCN_REDLIST_KEY") #' check
-Not Evaluated
-DD: Data Deficient
-LC: Least Concern
-NT: Near Threatened
-VU: Vulnerable
-EN: Endangered
-CR: Critically Endangered
-EW: Extinct in the Wild
-EX: Extinct
-LRlc: Low risk – least concern
-LRnt: Low risk – near threatened
-LRcd: Low risk - conservation dependent
-Categories we care about
-cate <- c("EX","EW","CR","EN","VU")
+The \code{splnr_get_IUCNRedList} function retrieves IUCN Red List category information
+for a given set of species and appends it to your input dataframe.
+}
+\details{
+To use this function, you must first obtain an API key from IUCN. This is an
+alphanumeric string required for every request. You can visit the IUCN website
+to request a key using \code{rl_use_iucn()}. Please note that receiving your key
+might take 1-2 days after submitting the form.
+
+Once you receive your API key, it is crucial to set it as an environment variable
+named \code{IUCN_REDLIST_KEY}. You can do this temporarily for the current R session
+using \code{Sys.setenv(IUCN_REDLIST_KEY = "YOUR_API_KEY_HERE")}. To set it permanently,
+you should add \code{IUCN_REDLIST_KEY = "YOUR_API_KEY_HERE"} to your \code{.Renviron} file.
+You can check if the key is set correctly using \code{Sys.getenv("IUCN_REDLIST_KEY")}.
+
+The IUCN Red List uses various categories to assess extinction risk. This function
+queries the Red List for the following categories:
+\itemize{
+\item \strong{DD}: Data Deficient
+\item \strong{LC}: Least Concern
+\item \strong{NT}: Near Threatened
+\item \strong{VU}: Vulnerable
+\item \strong{EN}: Endangered
+\item \strong{CR}: Critically Endangered
+\item \strong{EW}: Extinct in the Wild
+\item \strong{EX}: Extinct
+\item \strong{LRlc}: Lower Risk / least concern (old category)
+\item \strong{LRnt}: Lower Risk / near threatened (old category)
+\item \strong{LRcd}: Lower Risk / conservation dependent (old category)
+}
+The function will attempt to match your species against any of these categories
+present in the IUCN Red List database.
 }
 \examples{
 \dontrun{
-df <- data.frame(Species = c("Diomedea exulans", "Hippocampus kuda", "Squatina squatina")) \%>\%
+# Ensure your IUCN_REDLIST_KEY is set as an environment variable before running.
+# For example: Sys.setenv(IUCN_REDLIST_KEY = "YOUR_API_KEY_HERE")
+
+# Example: Create a dataframe with species names and retrieve their IUCN Red List categories.
+df_species_redlist <- data.frame(Species = c("Diomedea exulans",
+                                              "Hippocampus kuda",
+                                              "Squatina squatina")) \%>\%
   splnr_get_IUCNRedList()
+print(df_species_redlist)
+
+# Example with a different column name for species
+df_alt_col <- data.frame(ScientificName = c("Panthera leo", "Orcinus orca")) \%>\%
+  splnr_get_IUCNRedList(species_col = "ScientificName")
+print(df_alt_col)
 }
 }

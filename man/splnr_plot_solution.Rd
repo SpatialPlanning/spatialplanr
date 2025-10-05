@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_plotting.R
 \name{splnr_plot_solution}
 \alias{splnr_plot_solution}
-\title{Plot prioritizr solution}
+\title{Plot \code{prioritizr} Solution}
 \usage{
 splnr_plot_solution(
   soln,
@@ -15,28 +15,57 @@ splnr_plot_solution(
 )
 }
 \arguments{
-\item{soln}{The \code{prioritizr} solution}
+\item{soln}{The \code{prioritizr} solution object, expected as an \code{sf} object.}
 
-\item{colorVals}{A \code{list} object of named vectors that will match the color value with the according name. "TRUE" stands for selected planning units.}
+\item{colorVals}{A character vector of color values. For single-zone
+problems, this should typically be two colors (for "Not selected" and
+"Selected"). For multi-zone problems, the length should match the number of
+zones plus one (for "Not selected").}
 
-\item{showLegend}{A logical command on whether to show the legend of the solution (Default: TRUE).}
+\item{showLegend}{A logical value indicating whether to display the legend
+of the solution. Defaults to \code{TRUE}.}
 
-\item{legendLabels}{Character values (number of zones + 1) of what the legend should be labelled.}
+\item{legendLabels}{A character vector of strings to label the legend values.
+Its length must match the number of levels in the solution (e.g., "Not selected",
+"Selected" for single zone; "Not selected", "Zone 1", "Zone 2" for two zones).}
 
-\item{plotTitle}{A character value for the title of the plot. Can be empty ("").}
+\item{plotTitle}{A character string for the title of the plot. Can be empty (\code{""}).
+Defaults to \code{"Solution"}.}
 
-\item{legendTitle}{A character value for the title of the legend. Can be empty ("").}
+\item{legendTitle}{A character string for the title of the legend. Can be empty (\code{""}).
+Defaults to \code{"Planning Units"}.}
 
-\item{zones}{A logical value, indicating whether the spatial plan contains zones or not (default = FALSE).}
+\item{zones}{A logical value. Set to \code{TRUE} if the \code{prioritizr} solution
+contains multiple zones (i.e., it's a multi-zone problem). Defaults to \code{FALSE}.}
 }
 \value{
-A ggplot object of the plot
+A \code{ggplot} object representing the plot of the conservation solution.
 }
 \description{
-\code{splnr_plot_solution()} allows to plot the solution of a \code{prioritizr} conservation problem with our without in a customisable way using \code{ggplot2}. This function requires a solution as an \code{sf} object with a column called \code{solution_1} and outputs a \code{ggobject}. It can be combined with the \code{spatialplanr} function \code{\link[=splnr_gg_add]{splnr_gg_add()}}.
+The \code{splnr_plot_solution()} function visualizes the solution of a
+\code{prioritizr} conservation problem using \code{ggplot2}. It can handle
+single-zone and multi-zone solutions, offering customization for colors
+and legend.
+}
+\details{
+This function requires a \code{prioritizr} solution object, which should be an
+\code{sf} object containing at least a \code{solution_1} column (for single-zone
+problems) or \code{solution_1_zone1}, \code{solution_1_zone2}, etc. (for multi-zone
+problems). It outputs a \code{ggplot} object, which can be further customized
+by combining it with the \code{spatialplanr} function \code{splnr_gg_add()}.
+
+For multi-zone problems (\code{zones = TRUE}), the function sums the selected
+zones for each planning unit and plots the resulting combined selection.
+The \code{colorVals} and \code{legendLabels} should be provided to match the number of
+selection levels (e.g., "Not selected", "Zone 1", "Zone 2", etc.).
 }
 \examples{
-dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+\dontrun{
+# Assuming 'dat_species_bin' is an existing sf object in your package.
+
+# Example 1: Plotting a single-zone prioritizr solution
+dat_problem <- prioritizr::problem(
+  dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   cost_column = "Cost"
 ) \%>\%
@@ -48,17 +77,22 @@ dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = ru
 dat_soln <- dat_problem \%>\%
   prioritizr::solve.ConservationProblem()
 
-splnr_plot_solution(dat_soln)
-# example 2
-t2 <- matrix(NA, ncol = 2, nrow = 5) # create targets
+plot_soln_single_zone <- splnr_plot_solution(dat_soln)
+print(plot_soln_single_zone)
+
+# Example 2: Plotting a multi-zone prioritizr solution
+# Create targets for two zones
+t2 <- matrix(NA, ncol = 2, nrow = 5)
 t2[, 1] <- 0.1
 t2[, 2] <- 0.05
 
+# Define zones for species
 z2 <- prioritizr::zones(
   "zone 1" = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   "zone 2" = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5")
 )
-# when giving sf input, we need as many cost columns as we have zones
+
+# Create a multi-zone problem (requires as many cost columns as zones)
 p2 <- prioritizr::problem(
   dat_species_bin \%>\% dplyr::mutate(
     Cost1 = runif(n = dim(.)[[1]]),
@@ -74,8 +108,12 @@ p2 <- prioritizr::problem(
 
 s2 <- p2 \%>\%
   prioritizr::solve.ConservationProblem()
-(splnr_plot_solution(s2,
-  zones = TRUE, colorVals = c("#c6dbef", "#3182bd", "black"),
+
+plot_soln_multi_zone <- splnr_plot_solution(s2,
+  zones = TRUE,
+  colorVals = c("#c6dbef", "#3182bd", "black"), # Colors for Not selected, Zone 1, Zone 2
   legendLabels = c("Not selected", "Zone 1", "Zone 2")
-))
+)
+print(plot_soln_multi_zone)
+}
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_featureRep.R
 \name{splnr_plot_featureRep}
 \alias{splnr_plot_featureRep}
-\title{Plot how well targets are met}
+\title{Plot Feature Representation (Target Achievement)}
 \usage{
 splnr_plot_featureRep(
   df,
@@ -13,35 +13,63 @@ splnr_plot_featureRep(
   nr = 1,
   showTarget = NA,
   plotTitle = "",
+  sort_by = "category",
   ...
 )
 }
 \arguments{
-\item{df}{A \code{df} containing the target information (resulting from the splnr_get_featureRep() function)}
+\item{df}{A \link[base:data.frame]{data.frame} or \link[tibble:tibble]{tibble}
+containing the feature representation information. This typically
+results from the \code{splnr_get_featureRep()} function and should include at
+least \code{feature} and \code{relative_held} columns, and optionally \code{target} and \code{incidental}.}
 
-\item{category}{A named data frame of feature and category for grouping the plot output}
+\item{category}{A named \link[base:data.frame]{data.frame} or \link[tibble:tibble]{tibble}
+that provides grouping information for features. It should contain a column
+that can be matched with the \code{feature} column in \code{df} (by default, a column
+named \code{feature}, or specified by \code{categoryFeatureCol}), and a column named
+\code{category} for grouping the plot output. If \code{NA} (default), no categorization is applied.}
 
-\item{categoryFeatureCol}{A character with the column containing the feature infromation to be plotted if the category data frame does not contain a column named 'feature' that can be matched with the 'df' infromation.}
+\item{categoryFeatureCol}{A \link[base:character]{character} string specifying the
+name of the column in the \code{category} data frame that contains the feature
+information to be matched with \code{df$feature}. This is used if the \code{category}
+data frame does not have a column explicitly named \code{'feature'}.}
 
-\item{renameFeatures}{A logical on whether variable names should be used or they should be replaced with common names}
+\item{renameFeatures}{A \link[base:logical]{logical} value. If \code{TRUE}, feature names
+in the plot will be replaced with common names provided in \code{namesToReplace}.}
 
-\item{namesToReplace}{A data frame containing the variable name ('nameVariable') and a common name ('nameCommon').}
+\item{namesToReplace}{A \link[base:data.frame]{data.frame} containing two columns:
+\code{'nameVariable'} (the original feature name) and \code{'nameCommon'} (the common name
+to replace it with). Required if \code{renameFeatures} is \code{TRUE}.}
 
-\item{nr}{Number of rows of the legend}
+\item{nr}{An \link[base:integer]{integer} specifying the number of rows for the legend.}
 
-\item{showTarget}{\code{logical} Should the targets be shown on the bar plot}
+\item{showTarget}{A \link[base:logical]{logical} value. If \code{TRUE}, a transparent bar
+representing the target level for each feature will be shown on the plot.}
 
-\item{plotTitle}{A character value for the title of the plot. Can be empty ("").}
+\item{plotTitle}{A \link[base:character]{character} string for the title of the plot.
+Can be an empty string \code{""} (default).}
 
-\item{...}{Other arguments passed on to \code{ggplot2::theme()}}
+\item{sort_by}{A \link[base:character]{character} string specifying the column
+by which to sort the features on the x-axis. Accepted values include:
+\code{"category"}, \code{"feature"}, \code{"target"}, \code{"representation"} (\code{relative_held}),
+or \code{"difference"} (between representation and target).}
+
+\item{...}{Other arguments passed on to \code{\link[ggplot2:theme]{ggplot2::theme()}} to customize the plot's theme.}
 }
 \value{
-A ggplot object of the plot
+A \link[ggplot2:ggplot]{ggplot2::ggplot} object representing the feature representation bar plot.
 }
 \description{
-Plot how well targets are met
+\code{splnr_plot_featureRep()} creates a bar plot to visualize the representation
+of features in a conservation solution, indicating how well targets are met.
+It can categorize features, rename them for clarity, and optionally display
+the target levels on the plot.
 }
 \examples{
+# For a full example, ensure 'dat_species_bin', 'dat_category' are available
+# (e.g., from the 'prioritizrdata' package or defined in your package's data)
+
+
 pDat <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   cost_column = "Cost"
@@ -54,13 +82,27 @@ pDat <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n =
 soln <- pDat \%>\%
   prioritizr::solve.ConservationProblem()
 
-
 # including incidental species coverage
-df <- splnr_get_featureRep(
+df <- splnr_get_featureRep( # Assuming splnr_get_featureRep is available
   soln = soln,
   pDat = pDat
 )
 
-(splnr_plot_featureRep(df, category = dat_category))
+# Basic plot with categories and targets shown
+(splnr_plot_featureRep(df, category = dat_category, showTarget = TRUE))
 
+# Plot without categories, sorted by feature name
+(splnr_plot_featureRep(df, showTarget = TRUE, sort_by = "feature"))
+
+# Example with feature renaming
+names_to_replace_df <- tibble::tibble(
+  nameVariable = c("Spp1", "Spp2"),
+  nameCommon = c("Species One", "Species Two")
+)
+(splnr_plot_featureRep(df,
+  category = dat_category,
+  renameFeatures = TRUE,
+  namesToReplace = names_to_replace_df,
+  showTarget = TRUE
+))
 }
