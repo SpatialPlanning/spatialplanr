@@ -61,8 +61,11 @@
 #' )
 #' print(plot_climate_alt_cmap)
 #' }
-splnr_plot_climData <- function(df, colInterest, colorMap = "C",
-                                plotTitle = " ", legendTitle = "Climate metric") {
+splnr_plot_climData <- function(df,
+                                colInterest,
+                                colorMap = "C",
+                                plotTitle = " ",
+                                legendTitle = "Climate metric") {
 
   # Assertions to validate input parameters.
   assertthat::assert_that(
@@ -248,7 +251,9 @@ splnr_plot_climKernelDensity_Basic <- function(soln) {
 #' @param solution_list A `list` of `prioritizr` solution objects. Each solution
 #'   (e.g., `s1`, `s2`) in the list must be an `sf` or `data.frame` object
 #'   containing a `metric` column (numeric) and a `solution_1` column (numeric, 0 or 1).
-#' @param names A character vector of names corresponding to each solution in
+#' @param solution_names A character vector of prioritizr solution names corresponding to each solution in
+#'   `solution_list`. The length of this vector must match the length of `solution_list`.
+#' @param climate_names A character vector of climate column names corresponding to each solution in
 #'   `solution_list`. The length of this vector must match the length of `solution_list`.
 #' @param colorMap A character string indicating the `viridis` color map to use
 #'   for filling the selected areas (e.g., "A", "B", "C", "D", "E"). See
@@ -264,7 +269,8 @@ splnr_plot_climKernelDensity_Basic <- function(soln) {
 #' @keywords internal
 #' @noRd
 splnr_plot_climKernelDensity_Fancy <- function(solution_list,
-                                               names,
+                                               solution_names = "solution_1",
+                                               climate_names = "metric",
                                                colorMap = "C",
                                                legendTitle = expression(" \u00B0C y"^"-1" * ""),
                                                xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")")) {
@@ -278,14 +284,15 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
     length(solution_list) > 0,
     msg = "'solution_list' must contain at least one solution."
   )
-  assertthat::assert_that(
-    is.character(names),
-    msg = "'names' must be a character vector of solution names."
-  )
-  assertthat::assert_that(
-    length(names) == length(solution_list),
-    msg = "The length of 'names' must match the length of 'solution_list'."
-  )
+  #TODO ADD assert for new _names variables
+  # assertthat::assert_that(
+  #   is.character(names),
+  #   msg = "'names' must be a character vector of solution names."
+  # )
+  # assertthat::assert_that(
+  #   length(names) == length(solution_list),
+  #   msg = "The length of 'names' must match the length of 'solution_list'."
+  # )
   assertthat::assert_that(
     is.character(colorMap),
     msg = "'colorMap' must be a character string for a 'viridis' palette option."
@@ -299,25 +306,26 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
     msg = "'xAxisLab' must be a character string or an expression."
   )
 
-  # Check that each solution in the list has 'metric' and 'solution_1' columns
-  for (i in seq_along(solution_list)) {
-    assertthat::assert_that(
-      "metric" %in% names(solution_list[[i]]),
-      msg = paste0("Solution ", i, " in 'solution_list' is missing the 'metric' column.")
-    )
-    assertthat::assert_that(
-      "solution_1" %in% names(solution_list[[i]]),
-      msg = paste0("Solution ", i, " in 'solution_list' is missing the 'solution_1' column.")
-    )
-    assertthat::assert_that(
-      is.numeric(solution_list[[i]]$metric),
-      msg = paste0("The 'metric' column in solution ", i, " must be numeric.")
-    )
-    assertthat::assert_that(
-      is.numeric(solution_list[[i]]$solution_1) || is.logical(solution_list[[i]]$solution_1),
-      msg = paste0("The 'solution_1' column in solution ", i, " must be numeric (0/1) or logical.")
-    )
-  }
+  #TODO Re enable for new _names variable
+  # # Check that each solution in the list has 'metric' and 'solution_1' columns
+  # for (i in seq_along(solution_list)) {
+  #   assertthat::assert_that(
+  #     "metric" %in% names(solution_list[[i]]),
+  #     msg = paste0("Solution ", i, " in 'solution_list' is missing the 'metric' column.")
+  #   )
+  #   assertthat::assert_that(
+  #     "solution_1" %in% names(solution_list[[i]]),
+  #     msg = paste0("Solution ", i, " in 'solution_list' is missing the 'solution_1' column.")
+  #   )
+  #   assertthat::assert_that(
+  #     is.numeric(solution_list[[i]]$metric),
+  #     msg = paste0("The 'metric' column in solution ", i, " must be numeric.")
+  #   )
+  #   assertthat::assert_that(
+  #     is.numeric(solution_list[[i]]$solution_1) || is.logical(solution_list[[i]]$solution_1),
+  #     msg = paste0("The 'solution_1' column in solution ", i, " must be numeric (0/1) or logical.")
+  #   )
+  # }
 
 
   #TODO Write check for ggridges
@@ -327,19 +335,20 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
   group_name <- "approach" # Define a column name for grouping different solutions.
 
   # Loop through each solution in the list to prepare data for plotting.
-  for (i in 1:length(names)) {
+  for (i in 1:length(solution_names)) {
     list_sol[[i]] <- solution_list[[i]] %>%
       tibble::as_tibble() %>% # Convert to tibble to ensure consistent data frame behavior.
-      dplyr::select("solution_1", "metric") %>% # Select only solution status and metric.
-      dplyr::rename(!!rlang::sym(names[i]) := "metric") %>% # Rename 'metric' column to the solution's name.
+      dplyr::select(tidyselect::all_of(c(solution_names[i], climate_names[i]))) %>% # Select only solution status and metric.
+      # dplyr::rename(!!rlang::sym(names[i]) := "metric") %>% # Rename 'metric' column to the solution's name.
       # Pivot data longer to enable plotting multiple solutions on one plot.
-      tidyr::pivot_longer(!!rlang::sym(names[i]), names_to = group_name, values_to = "metric")
+      tidyr::pivot_longer(cols = tidyselect::all_of(climate_names), names_to = group_name, values_to = "metric")
   }
 
   # Combine all processed data frames into a single data frame.
   df <- do.call(rbind, list_sol) %>%
     # Relevel the 'approach' factor to control the order of ridges in the plot.
     dplyr::mutate(approach = forcats::fct_relevel(.data$approach, rev))
+
 
   # Initialize ggplot object.
   ggRidge <- ggplot2::ggplot() +
@@ -503,7 +512,8 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
 #' print(plot_normal_kde_multi)
 #' }
 splnr_plot_climKernelDensity <- function(soln,
-                                         names = NA,
+                                         solution_names = "solution_1",
+                                         climate_names = "metric",
                                          type = "Normal",
                                          colorMap = "C",
                                          legendTitle = expression(" \u00B0C y"^"-1" * ""),
@@ -519,8 +529,12 @@ splnr_plot_climKernelDensity <- function(soln,
     msg = "'type' must be either 'Normal' or 'Basic'."
   )
   assertthat::assert_that(
-    is.character(names) || is.na(names),
-    msg = "'names' must be a character vector or NA."
+    is.character(solution_names),
+    msg = "'solution_names' must be a character vector."
+  )
+  assertthat::assert_that(
+    is.character(climate_names),
+    msg = "'climate_names' must be a character vector."
   )
   assertthat::assert_that(
     is.character(colorMap),
@@ -542,15 +556,15 @@ splnr_plot_climKernelDensity <- function(soln,
       stop("For 'type = \"Normal\"', 'soln' must be a list of prioritizr solutions.")
     } else if (inherits(soln, "list")) {
       # Ensure 'names' matches the number of solutions if 'type' is "Normal" and 'names' is provided.
-      if (!is.na(names[1]) && length(names) != length(soln)) {
-        stop("When 'type = \"Normal\"' and 'names' are provided, the length of 'names' must match the number of solutions in 'soln'.")
-      } else if (is.na(names[1])) {
-        # If names are not provided, create default names.
-        names <- paste0("Solution ", seq_along(soln))
+      if (!is.na(solution_names[1]) && length(solution_names) != length(soln)) {
+        stop("When 'type = \"Normal\"' the length of 'solution_names' must match the number of solutions in 'soln'.")
       }
       # Call the fancy kernel density plotting function.
       ggclimDens <- splnr_plot_climKernelDensity_Fancy(
-        solution_list = soln, names = names, colorMap = colorMap,
+        solution_list = soln,
+        solution_names = solution_names,
+        climate_names = climate_names,
+        colorMap = colorMap,
         legendTitle = legendTitle, xAxisLab = xAxisLab
       )
     }

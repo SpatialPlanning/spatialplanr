@@ -155,41 +155,47 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
                          contours = NULL, colorConts = "black",
                          cropOverlay = NULL,
                          lockIn = NULL, typeLockIn = "Full", nameLockIn = NULL,
-                         alphaLockIn = 0.5, colorLockIn = "black", legendLockIn = "",
+                         alphaLockIn = 1, colorLockIn = "black", legendLockIn = "",
                          labelLockIn = "MPAs",
+                         lockOut = NULL, typeLockOut = "Full", nameLockOut = NULL,
+                         alphaLockOut = 1, colorLockOut = "black", legendLockOut = "",
+                         labelLockOut = "",
                          ggtheme = "Default"
 ) {
 
-  # Assertions to validate input parameters are of the correct 'sf' class if not NULL.
-  if(!is.null(PUs)){assertthat::assert_that(inherits(PUs, "sf"), msg = "'PUs' must be an 'sf' object or NULL.")}
-  if(!is.null(Bndry)){assertthat::assert_that(inherits(Bndry, "sf"), msg = "'Bndry' must be an 'sf' object or NULL.")}
-  if(!is.null(overlay)){assertthat::assert_that(inherits(overlay, "sf"), msg = "'overlay' must be an 'sf' object or NULL.")}
-  if(!is.null(overlay2)){assertthat::assert_that(inherits(overlay2, "sf"), msg = "'overlay2' must be an 'sf' object or NULL.")}
-  if(!is.null(overlay3)){assertthat::assert_that(inherits(overlay3, "sf"), msg = "'overlay3' must be an 'sf' object or NULL.")}
-  if(!is.null(contours)){assertthat::assert_that(inherits(contours, "sf"), msg = "'contours' must be an 'sf' object or NULL.")}
-  if(!is.null(lockIn)){
-    assertthat::assert_that(inherits(lockIn, "sf"), msg = "'lockIn' must be an 'sf' object or NULL.")
-    assertthat::assert_that(is.character(nameLockIn) && nameLockIn %in% names(lockIn),
-                            msg = "If 'lockIn' is provided, 'nameLockIn' must be a character string specifying an existing column in 'lockIn'.")
-    assertthat::assert_that(typeLockIn %in% c("Full", "Contours"),
-                            msg = "'typeLockIn' must be either 'Full' or 'Contours'.")
-    assertthat::assert_that(is.numeric(alphaLockIn) && alphaLockIn >= 0 && alphaLockIn <= 1,
-                            msg = "'alphaLockIn' must be a numeric value between 0 and 1.")
-  }
-  if(!is.null(cropOverlay)){assertthat::assert_that(inherits(cropOverlay, "sf"), msg = "'cropOverlay' must be an 'sf' object or NULL.")}
-  assertthat::assert_that(is.character(colorPUs), msg = "'colorPUs' must be a character string for a color.")
-  assertthat::assert_that(is.character(colorBndry), msg = "'colorBndry' must be a character string for a color.")
-  assertthat::assert_that(is.character(colorOverlay), msg = "'colorOverlay' must be a character string for a color.")
-  assertthat::assert_that(is.character(colorOverlay2), msg = "'colorOverlay2' must be a character string for a color.")
-  assertthat::assert_that(is.character(colorOverlay3), msg = "'colorOverlay3' must be a character string for a color.")
-  assertthat::assert_that(is.character(colorConts), msg = "'colorConts' must be a character string for a color.")
-  assertthat::assert_that(is.character(colorLockIn), msg = "'colorLockIn' must be a character string for a color.")
-  assertthat::assert_that(is.character(legendLockIn), msg = "'legendLockIn' must be a character string.")
-  assertthat::assert_that(is.character(labelLockIn), msg = "'labelLockIn' must be a character string.")
-  assertthat::assert_that(
-    inherits(ggtheme, "character") || inherits(ggtheme, "theme") || inherits(ggtheme, "logical"),
-    msg = "'ggtheme' must be 'Default', a ggplot2 theme, or NA/FALSE."
-  )
+  # TODO Remove all uneeded arguments, especially the lockIn
+
+  # TODO Update the asserts for new arguments
+  # # Assertions to validate input parameters are of the correct 'sf' class if not NULL.
+  # if(!is.null(PUs)){assertthat::assert_that(inherits(PUs, "sf"), msg = "'PUs' must be an 'sf' object or NULL.")}
+  # if(!is.null(Bndry)){assertthat::assert_that(inherits(Bndry, "sf"), msg = "'Bndry' must be an 'sf' object or NULL.")}
+  # if(!is.null(overlay)){assertthat::assert_that(inherits(overlay, "sf"), msg = "'overlay' must be an 'sf' object or NULL.")}
+  # if(!is.null(overlay2)){assertthat::assert_that(inherits(overlay2, "sf"), msg = "'overlay2' must be an 'sf' object or NULL.")}
+  # if(!is.null(overlay3)){assertthat::assert_that(inherits(overlay3, "sf"), msg = "'overlay3' must be an 'sf' object or NULL.")}
+  # if(!is.null(contours)){assertthat::assert_that(inherits(contours, "sf"), msg = "'contours' must be an 'sf' object or NULL.")}
+  # if(!is.null(lockIn)){
+  #   assertthat::assert_that(inherits(lockIn, "sf"), msg = "'lockIn' must be an 'sf' object or NULL.")
+  #   assertthat::assert_that(is.character(nameLockIn) && all(nameLockIn %in% names(lockIn)),
+  #                           msg = "If 'lockIn' is provided, 'nameLockIn' must be a character string specifying an existing column in 'lockIn'.")
+  #   assertthat::assert_that(typeLockIn %in% c("Full", "Contours"),
+  #                           msg = "'typeLockIn' must be either 'Full' or 'Contours'.")
+  #   assertthat::assert_that(is.numeric(alphaLockIn) && alphaLockIn >= 0 && alphaLockIn <= 1,
+  #                           msg = "'alphaLockIn' must be a numeric value between 0 and 1.")
+  # }
+  # if(!is.null(cropOverlay)){assertthat::assert_that(inherits(cropOverlay, "sf"), msg = "'cropOverlay' must be an 'sf' object or NULL.")}
+  # assertthat::assert_that(is.character(colorPUs), msg = "'colorPUs' must be a character string for a color.")
+  # assertthat::assert_that(is.character(colorBndry), msg = "'colorBndry' must be a character string for a color.")
+  # assertthat::assert_that(is.character(colorOverlay), msg = "'colorOverlay' must be a character string for a color.")
+  # assertthat::assert_that(is.character(colorOverlay2), msg = "'colorOverlay2' must be a character string for a color.")
+  # assertthat::assert_that(is.character(colorOverlay3), msg = "'colorOverlay3' must be a character string for a color.")
+  # assertthat::assert_that(is.character(colorConts), msg = "'colorConts' must be a character string for a color.")
+  # assertthat::assert_that(is.character(colorLockIn), msg = "'colorLockIn' must be a character string for a color.")
+  # assertthat::assert_that(is.character(legendLockIn), msg = "'legendLockIn' must be a character string.")
+  # assertthat::assert_that(is.character(labelLockIn), msg = "'labelLockIn' must be a character string.")
+  # assertthat::assert_that(
+  #   inherits(ggtheme, "character") || inherits(ggtheme, "theme") || inherits(ggtheme, "logical"),
+  #   msg = "'ggtheme' must be 'Default', a ggplot2 theme, or NA/FALSE."
+  # )
 
   # Initialize an empty list to store ggplot2 layers.
   ggList <- list()
@@ -198,8 +204,10 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
   if (inherits(PUs, "sf")) {
     ggList <- c(
       ggList,
-      ggplot2::geom_sf(data = PUs, colour = colorPUs, fill = NA, size = 0.1, show.legend = FALSE),
-      ggplot2::coord_sf(xlim = sf::st_bbox(PUs)$xlim, ylim = sf::st_bbox(PUs)$ylim)
+      list(
+        ggplot2::geom_sf(data = PUs, colour = colorPUs, fill = NA, size = 0.1, show.legend = FALSE),
+        ggplot2::coord_sf(xlim = sf::st_bbox(PUs)$xlim, ylim = sf::st_bbox(PUs)$ylim)
+      )
     )
   }
 
@@ -207,8 +215,10 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
   if (inherits(Bndry, "sf")) {
     ggList <- c(
       ggList,
-      ggplot2::geom_sf(data = Bndry, colour = colorBndry, size = 0.4, fill = NA, show.legend = FALSE),
-      ggplot2::coord_sf(xlim = sf::st_bbox(Bndry)$xlim, ylim = sf::st_bbox(Bndry)$ylim)
+      list(
+        ggplot2::geom_sf(data = Bndry, colour = colorBndry, size = 0.4, fill = NA, show.legend = FALSE),
+        ggplot2::coord_sf(xlim = sf::st_bbox(Bndry)$xlim, ylim = sf::st_bbox(Bndry)$ylim)
+      )
     )
   }
 
@@ -265,11 +275,17 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
     }
   }
 
+
+  #TODO Consider adding locked in to the selected/not selected solution column so it plots as one.
   # Add locked-in areas layer if 'lockIn' is an sf object.
   if (inherits(lockIn, "sf")) {
+
     # Mutate the 'lockIn' data to create a 'lockedIn' logical column based on 'nameLockIn', then filter.
     lockIn <- lockIn %>%
-      dplyr::mutate(lockedIn = as.logical(.data[[nameLockIn]])) %>%
+      dplyr::select(tidyselect::all_of(c(nameLockIn, "geometry"))) %>%
+      tidyr::pivot_longer(cols = tidyselect::all_of(c(nameLockIn)), names_to = "LI_Area", values_to = "LockedIn") %>%
+      dplyr::mutate(lockedIn = as.logical(LockedIn),
+                    LI_Area = stringr::str_to_title(LI_Area)) %>%
       dplyr::filter(.data$lockedIn == TRUE) # Filter for TRUE values in the 'lockedIn' column.
 
     # Plot locked-in areas as 'Full' polygons.
@@ -279,11 +295,12 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
         list(
           ggnewscale::new_scale_fill(), # Start a new fill scale.
           ggnewscale::new_scale_colour(), # Start a new color scale.
-          ggplot2::geom_sf(data = lockIn, ggplot2::aes(fill = .data$lockedIn), alpha = alphaLockIn),
-          ggplot2::scale_fill_manual(
+          ggplot2::geom_sf(data = lockIn, ggplot2::aes(fill = .data$LI_Area), alpha = alphaLockIn),
+          ggplot2::scale_fill_brewer(
+            palette = "Greens",
             name = legendLockIn, # Set legend title.
-            values = c("TRUE" = colorLockIn), # Map TRUE to specified color.
-            labels = labelLockIn, # Set legend label.
+            # values = c("TRUE" = colorLockIn), # Map TRUE to specified color.
+            # labels = labelLockIn, # Set legend label.
             # Apply color and fill aesthetics to this scale.
             aesthetics = c("colour", "fill"),
             # Configure legend appearance.
@@ -328,6 +345,48 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
     }
   }
 
+
+  ## Lock Out ---------
+  if (inherits(lockOut, "sf")) {
+
+    # Mutate the 'lockOut' data to create a 'lockedOut' logical column based on 'nameLockOut', then filter.
+    lockOut <- lockOut %>%
+      dplyr::select(tidyselect::all_of(c(nameLockOut, "geometry"))) %>%
+      tidyr::pivot_longer(cols = tidyselect::all_of(c(nameLockOut)), names_to = "LI_Area", values_to = "LockedOut") %>%
+      dplyr::mutate(lockedOut = as.logical(LockedOut),
+                    LI_Area = stringr::str_to_title(LI_Area)) %>%
+      dplyr::filter(.data$lockedOut == TRUE) # Filter for TRUE values in the 'lockedOut' column.
+
+    # Plot locked-in areas as 'Full' polygons.
+    if (typeLockOut == "Full") {
+      ggList <- c(
+        ggList,
+        list(
+          ggnewscale::new_scale_fill(), # Start a new fill scale.
+          ggnewscale::new_scale_colour(), # Start a new color scale.
+          ggplot2::geom_sf(data = lockOut, ggplot2::aes(fill = .data$LI_Area), alpha = alphaLockOut),
+          ggplot2::scale_fill_brewer(
+            palette = "Reds",
+            name = legendLockOut, # Set legend title.
+            # Apply color and fill aesthetics to this scale.
+            aesthetics = c("colour", "fill"),
+            # Configure legend appearance.
+            guide = ggplot2::guide_legend(
+              override.aes = list(linetype = 0), # Remove linetype from legend.
+              nrow = 2,
+              order = 1,
+              direction = "horizontal",
+              title.position = "top",
+              title.hjust = 0.5
+            )
+          )
+        )
+      )
+    }
+  }
+
+
+
   # Apply coordinate limits based on 'cropOverlay' if provided.
   if (inherits(cropOverlay, "sf")) {
     ggList <- c(
@@ -336,13 +395,14 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
     )
   }
 
+
   # Apply the specified ggplot2 theme.
   if (inherits(ggtheme, "character") && ggtheme == "Default") {
     # Apply the default spatialplanr theme.
     ggList <- c(
       ggList,
       list(
-        ggplot2::theme_bw(), # Black and white theme.
+        ggplot2::theme_bw(),  # Black and white theme.
         ggplot2::theme(
           legend.position = "bottom", # Legend at the bottom.
           legend.direction = "horizontal", # Horizontal legend.
@@ -353,13 +413,22 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
         )
       )
     )
+
+
+  } else if (inherits(ggtheme, "theme")) {
+    # If a theme object is provided, append it.
+    ggList <- c(ggList, list(ggtheme))
+
   } else if (inherits(ggtheme, "list")) {
     # If a list of theme elements is provided, append them.
     ggList <- c(ggList, ggtheme)
+
   } else if (inherits(ggtheme, "logical") && !ggtheme) {
     # If ggtheme is FALSE or NA, do nothing (no default theme applied).
     ggList <- ggList
   }
+
+  # browser()
 
   return(ggList)
 }
