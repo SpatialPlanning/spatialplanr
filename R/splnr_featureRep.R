@@ -539,7 +539,7 @@ splnr_plot_featureRep <- function(df,
   }
 
 
-  if (max(df$relative_held, na.rm = TRUE) < 1) { # Check max before multiplying
+  if (max(df$relative_held, na.rm = TRUE) <= 1) { # Check max before multiplying
     df <- df %>%
       dplyr::mutate(
         relative_held = .data$relative_held * 100,
@@ -585,10 +585,11 @@ splnr_plot_featureRep <- function(df,
       ),
       na.rm = TRUE
     ) +
-    ggplot2::geom_bar(
+    ggplot2::geom_bar( # Add features in the df that had a zero or missing target
       data = df %>% dplyr::mutate(relative_held = dplyr::if_else(.data$incidental == FALSE, NA_real_, .data$relative_held)), # Use NA_real_
       stat = "identity", position = "identity",
-      ggplot2::aes(x = .data$feature, y = .data$relative_held), na.rm = TRUE, fill = "NA", colour = "black"
+      ggplot2::aes(x = .data$feature, y = .data$relative_held), na.rm = TRUE,
+      fill = "NA", colour = "black"
     ) +
     ggplot2::labs(title = plotTitle, x = "Feature", y = "Representation of features \nin total selected area (%)") +
     ggplot2::theme_bw() +
