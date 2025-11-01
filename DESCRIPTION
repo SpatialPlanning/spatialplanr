@@ -38,7 +38,6 @@ Suggests:
     rnaturalearthhires,
     rredlist,
     testthat (>= 3.0.0),
-    viridis,
     wdpar
 VignetteBuilder: knitr
 Depends:
@@ -65,7 +64,8 @@ Imports:
     tidyr,
     tidyselect,
     units,
-    vctrs
+    vctrs,
+    viridis
 Remotes: 
     github::emlab-ucsb/oceandatr,
     github::emlab-ucsb/spatialgridr,

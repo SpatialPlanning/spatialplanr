@@ -499,12 +499,6 @@ splnr_plot_featureRep <- function(df,
   }
 
 
-  # Check if 'viridis' package is installed. If not, stop with an informative error.
-  if (requireNamespace("viridis", quietly = TRUE) == FALSE){
-    stop("To run splnr_plot_featureRep you will need to install the 'viridis' package: install.packages('viridis').")
-  }
-
-
   if (renameFeatures == TRUE) {
     # No assertthat::assert_that(is.data.frame(namesToReplace)) needed here,
     # as it's covered by the initial assertthat block.
