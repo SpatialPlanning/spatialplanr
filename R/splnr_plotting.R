@@ -488,7 +488,7 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
       aesthetics = c("fill"), # Apply to fill aesthetic.
       guide = ggplot2::guide_legend( # Configure legend appearance.
         override.aes = list(linetype = 0), # Remove linetype from legend.
-        nrow = nrows, # Set number of rows in legend.
+        nrow = nrows, byrow = TRUE, # Set number of rows in legend and fill by row.
         order = 1, # Set legend order.
         direction = "horizontal", # Horizontal legend layout.
         title.position = "top", # Legend title at the top.

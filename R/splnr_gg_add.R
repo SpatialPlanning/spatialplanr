@@ -160,8 +160,7 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
                          lockOut = NULL, typeLockOut = "Full", nameLockOut = NULL,
                          alphaLockOut = 1, colorLockOut = "black", legendLockOut = "",
                          labelLockOut = "",
-                         ggtheme = "Default"
-) {
+                         ggtheme = "Default") {
 
   # TODO Remove all uneeded arguments, especially the lockIn
 
@@ -200,7 +199,7 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
   # Initialize an empty list to store ggplot2 layers.
   ggList <- list()
 
-  # Add planning units layer if PUs is an sf object.
+  # Planning units (no legend)
   if (inherits(PUs, "sf")) {
     ggList <- c(
       ggList,
@@ -211,7 +210,7 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
     )
   }
 
-  # Add boundary layer if Bndry is an sf object.
+  # Boundary (no legend)
   if (inherits(Bndry, "sf")) {
     ggList <- c(
       ggList,
@@ -222,172 +221,172 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
     )
   }
 
-  # Add first overlay layer if 'overlay' is an sf object.
+  # Overlays (no legend)
   if (inherits(overlay, "sf")) {
     ggList <- c(
       ggList,
       ggplot2::geom_sf(data = overlay, colour = colorOverlay, fill = colorOverlay, alpha = 0.9, size = 0.1, show.legend = FALSE)
-    )}
-
-  # Add second overlay layer if 'overlay2' is an sf object.
+    )
+  }
   if (inherits(overlay2, "sf")) {
     ggList <- c(
       ggList,
       ggplot2::geom_sf(data = overlay2, colour = colorOverlay2, fill = colorOverlay2, alpha = 0.9, size = 0.1, show.legend = FALSE)
-    )}
-
-  # Add third overlay layer if 'overlay3' is an sf object.
+    )
+  }
   if (inherits(overlay3, "sf")) {
     ggList <- c(
       ggList,
       ggplot2::geom_sf(data = overlay3, colour = colorOverlay3, fill = colorOverlay3, alpha = 0.9, size = 0.1, show.legend = FALSE)
-    )}
+    )
+  }
 
-  # Add contours layer if 'contours' is an sf object.
+  # Contours (linetype legend, force nrow = 2)
   if (inherits(contours, "sf")) {
-    # Get unique contour categories for legend.
     nameConts <- unique(contours$Category)
-    contoursRowNum <- length(nameConts)
-    vals <- 1:contoursRowNum
-    # Warn if more than 6 categories are provided for contours.
+    vals <- seq_along(nameConts)
     if (length(vals) > 6) {
-      cat("Only 6 categories allowed for plotting contours.")
-    } else {
-      # Add contour layers with new scale for color and linetype.
-      ggList <- c(
-        ggList,
-        list(
-          ggnewscale::new_scale_colour(), # Start a new color scale for contours.
-          ggplot2::geom_sf(data = contours, colour = colorConts, fill = NA, ggplot2::aes(linetype = .data$Category), size = 0.5, show.legend = "line"),
-          ggplot2::scale_linetype_manual(" ", # Set linetype based on contour categories.
-                                         breaks = nameConts,
-                                         values = vals,
-                                         guide = ggplot2::guide_legend(
-                                           override.aes = list(fill = NA),
-                                           nrow = 2,
-                                           direction = "horizontal",
-                                           order = 3,
-                                           keywidth = grid::unit(0.05, "npc")
-                                         )
+      warning("Only 6 contour categories are supported; extra categories will share types.")
+    }
+    ggList <- c(
+      ggList,
+      list(
+        # linetype scale only; no new fill scale needed
+        ggplot2::geom_sf(
+          data = contours,
+          ggplot2::aes(linetype = .data$Category),
+          colour = colorConts, fill = NA, size = 0.5, show.legend = TRUE
+        ),
+        ggplot2::scale_linetype_manual(
+          name = " ",
+          breaks = nameConts,
+          values = vals,
+          guide = ggplot2::guide_legend(
+            override.aes = list(fill = NA, colour = colorConts),
+            nrow = 2, byrow = TRUE,
+            direction = "horizontal",
+            order = 3,
+            title.position = "top",
+            title.hjust = 0.5,
+            keywidth = grid::unit(0.05, "npc")
           )
         )
       )
-    }
+    )
   }
 
-
-  #TODO Consider adding locked in to the selected/not selected solution column so it plots as one.
-  # Add locked-in areas layer if 'lockIn' is an sf object.
+  # Lock-in (Full) — fill legend, force nrow = 2, do NOT couple to colour
   if (inherits(lockIn, "sf")) {
-
-    # Mutate the 'lockIn' data to create a 'lockedIn' logical column based on 'nameLockIn', then filter.
-    lockIn <- lockIn %>%
+    li <- lockIn %>%
       dplyr::select(tidyselect::all_of(c(nameLockIn, "geometry"))) %>%
-      tidyr::pivot_longer(cols = tidyselect::all_of(c(nameLockIn)), names_to = "LI_Area", values_to = "LockedIn") %>%
-      dplyr::mutate(lockedIn = as.logical(LockedIn),
-                    LI_Area = stringr::str_to_title(LI_Area)) %>%
-      dplyr::filter(.data$lockedIn == TRUE) # Filter for TRUE values in the 'lockedIn' column.
+      tidyr::pivot_longer(
+        cols = tidyselect::all_of(c(nameLockIn)),
+        names_to = "LI_Area", values_to = "LockedIn"
+      ) %>%
+      dplyr::mutate(
+        lockedIn = as.logical(.data$LockedIn),
+        LI_Area = ifelse(stringr::str_to_title(.data$LI_Area) == "Mpas", "MPAs", stringr::str_to_title(.data$LI_Area))
+      ) %>%
+      dplyr::filter(.data$lockedIn)
 
-    # Plot locked-in areas as 'Full' polygons.
-    if (typeLockIn == "Full") {
-      ggList <- c(
-        ggList,
-        list(
-          ggnewscale::new_scale_fill(), # Start a new fill scale.
-          ggnewscale::new_scale_colour(), # Start a new color scale.
-          ggplot2::geom_sf(data = lockIn, ggplot2::aes(fill = .data$LI_Area), alpha = alphaLockIn),
-          ggplot2::scale_fill_brewer(
-            palette = "Greens",
-            name = legendLockIn, # Set legend title.
-            # values = c("TRUE" = colorLockIn), # Map TRUE to specified color.
-            # labels = labelLockIn, # Set legend label.
-            # Apply color and fill aesthetics to this scale.
-            aesthetics = c("colour", "fill"),
-            # Configure legend appearance.
-            guide = ggplot2::guide_legend(
-              override.aes = list(linetype = 0), # Remove linetype from legend.
-              nrow = 2,
-              order = 1,
-              direction = "horizontal",
-              title.position = "top",
-              title.hjust = 0.5
+    if (nrow(li) > 0) {
+      if (identical(typeLockIn, "Full")) {
+        ggList <- c(
+          ggList,
+          list(
+            # Start a new fill scale so we don't collide with solution fill
+            ggnewscale::new_scale_fill(),
+            ggplot2::geom_sf(data = li, ggplot2::aes(fill = .data$LI_Area), alpha = alphaLockIn, colour = NA),
+            ggplot2::scale_fill_brewer(
+              palette = "Greens",
+              name = legendLockIn,
+              guide = ggplot2::guide_legend(
+                override.aes = list(linetype = 0),
+                nrow = 2, byrow = TRUE,
+                direction = "horizontal",
+                order = 1,
+                title.position = "top",
+                title.hjust = 0.5
+              )
             )
           )
         )
-      )
-    } else if (typeLockIn == "Contours") { # Plot locked-in areas as 'Contours' (outlines).
-      # Union geometries to create a single outline for locked-in areas.
-      lockIn <- lockIn %>%
-        sf::st_union() %>%
-        sf::st_as_sf() %>%
-        dplyr::rename(geometry = "x") %>%
-        dplyr::mutate(lockedIn = 1) %>%
-        dplyr::mutate(lockedIn = as.factor(.data$lockedIn))
+      } else if (identical(typeLockIn, "Contours")) {
+        li_ct <- li %>%
+          sf::st_union() %>%
+          sf::st_as_sf() %>%
+          dplyr::rename(geometry = "x") %>%
+          dplyr::mutate(lockedIn = factor(1L))
 
-      # Add contour layers with new scale for color and linetype.
-      ggList <- c(
-        ggList,
-        list(
-          ggnewscale::new_scale_fill(), # Start a new fill scale.
-          ggnewscale::new_scale_colour(), # Start a new color scale.
-          ggplot2::geom_sf(data = lockIn, colour = colorLockIn, fill = NA, ggplot2::aes(linetype = .data$lockedIn), size = 0.5, show.legend = "line"),
-          ggplot2::scale_linetype_manual("",
-                                         values = 1, # Use a single linetype for contours.
-                                         labels = labelLockIn, # Set legend label.
-                                         guide = ggplot2::guide_legend(
-                                           override.aes = list(fill = NA), # Remove fill from legend.
-                                           direction = "horizontal",
-                                           keywidth = grid::unit(0.05, "npc")
-                                         )
+        ggList <- c(
+          ggList,
+          list(
+            # linetype only; no new fill/colour scales needed
+            ggplot2::geom_sf(
+              data = li_ct,
+              ggplot2::aes(linetype = .data$lockedIn),
+              colour = colorLockIn, fill = NA, size = 0.5, show.legend = TRUE
+            ),
+            ggplot2::scale_linetype_manual(
+              name = "",
+              values = 1,
+              labels = labelLockIn,
+              guide = ggplot2::guide_legend(
+                override.aes = list(fill = NA, colour = colorLockIn),
+                nrow = 2, byrow = TRUE,
+                direction = "horizontal",
+                order = 2,
+                title.position = "top",
+                title.hjust = 0.5,
+                keywidth = grid::unit(0.05, "npc")
+              )
+            )
           )
         )
-      )
+      }
     }
   }
 
-
-  ## Lock Out ---------
+  # Lock-out (Full) — fill legend, force nrow = 2, do NOT couple to colour
   if (inherits(lockOut, "sf")) {
-
-    # Mutate the 'lockOut' data to create a 'lockedOut' logical column based on 'nameLockOut', then filter.
-    lockOut <- lockOut %>%
+    lo <- lockOut %>%
       dplyr::select(tidyselect::all_of(c(nameLockOut, "geometry"))) %>%
-      tidyr::pivot_longer(cols = tidyselect::all_of(c(nameLockOut)), names_to = "LI_Area", values_to = "LockedOut") %>%
-      dplyr::mutate(lockedOut = as.logical(LockedOut),
-                    LI_Area = stringr::str_to_title(LI_Area)) %>%
-      dplyr::filter(.data$lockedOut == TRUE) # Filter for TRUE values in the 'lockedOut' column.
+      tidyr::pivot_longer(
+        cols = tidyselect::all_of(c(nameLockOut)),
+        names_to = "LI_Area", values_to = "LockedOut"
+      ) %>%
+      dplyr::mutate(
+        lockedOut = as.logical(.data$LockedOut),
+        LI_Area = ifelse(stringr::str_to_title(.data$LI_Area) == "Mpas", "MPAs", stringr::str_to_title(.data$LI_Area))
+      ) %>%
+      dplyr::filter(.data$lockedOut)
 
-    # Plot locked-in areas as 'Full' polygons.
-    if (typeLockOut == "Full") {
-      ggList <- c(
-        ggList,
-        list(
-          ggnewscale::new_scale_fill(), # Start a new fill scale.
-          ggnewscale::new_scale_colour(), # Start a new color scale.
-          ggplot2::geom_sf(data = lockOut, ggplot2::aes(fill = .data$LI_Area), alpha = alphaLockOut),
-          ggplot2::scale_fill_brewer(
-            palette = "Reds",
-            name = legendLockOut, # Set legend title.
-            # Apply color and fill aesthetics to this scale.
-            aesthetics = c("colour", "fill"),
-            # Configure legend appearance.
-            guide = ggplot2::guide_legend(
-              override.aes = list(linetype = 0), # Remove linetype from legend.
-              nrow = 2,
-              order = 1,
-              direction = "horizontal",
-              title.position = "top",
-              title.hjust = 0.5
+    if (nrow(lo) > 0) {
+      if (identical(typeLockOut, "Full")) {
+        ggList <- c(
+          ggList,
+          list(
+            ggnewscale::new_scale_fill(),
+            ggplot2::geom_sf(data = lo, ggplot2::aes(fill = .data$LI_Area), alpha = alphaLockOut, colour = NA),
+            ggplot2::scale_fill_brewer(
+              palette = "Reds",
+              name = legendLockOut,
+              guide = ggplot2::guide_legend(
+                override.aes = list(linetype = 0),
+                nrow = 2, byrow = TRUE,
+                direction = "horizontal",
+                order = 1,
+                title.position = "top",
+                title.hjust = 0.5
+              )
             )
           )
         )
-      )
+      }
     }
   }
 
-
-
-  # Apply coordinate limits based on 'cropOverlay' if provided.
+  # Crop extents if provided
   if (inherits(cropOverlay, "sf")) {
     ggList <- c(
       ggList,
@@ -395,40 +394,27 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
     )
   }
 
-
-  # Apply the specified ggplot2 theme.
-  if (inherits(ggtheme, "character") && ggtheme == "Default") {
-    # Apply the default spatialplanr theme.
+  # Theme block
+  if (is.character(ggtheme) && ggtheme == "Default") {
     ggList <- c(
       ggList,
       list(
-        ggplot2::theme_bw(),  # Black and white theme.
+        ggplot2::theme_bw(),
         ggplot2::theme(
-          legend.position = "bottom", # Legend at the bottom.
-          legend.direction = "horizontal", # Horizontal legend.
-          text = ggplot2::element_text(size = 20, colour = "black"), # Global text size and color.
-          axis.text = ggplot2::element_text(size = 16, colour = "black"), # Axis text size and color.
-          plot.title = ggplot2::element_text(size = 16), # Plot title size.
-          axis.title = ggplot2::element_blank() # Remove axis titles.
+          legend.position = "bottom",
+          legend.direction = "horizontal",
+          text = ggplot2::element_text(size = 20, colour = "black"),
+          axis.text = ggplot2::element_text(size = 16, colour = "black"),
+          plot.title = ggplot2::element_text(size = 16),
+          axis.title = ggplot2::element_blank()
         )
       )
     )
-
-
   } else if (inherits(ggtheme, "theme")) {
-    # If a theme object is provided, append it.
     ggList <- c(ggList, list(ggtheme))
-
   } else if (inherits(ggtheme, "list")) {
-    # If a list of theme elements is provided, append them.
     ggList <- c(ggList, ggtheme)
-
-  } else if (inherits(ggtheme, "logical") && !ggtheme) {
-    # If ggtheme is FALSE or NA, do nothing (no default theme applied).
-    ggList <- ggList
   }
 
-  # browser()
-
-  return(ggList)
+  ggList
 }
