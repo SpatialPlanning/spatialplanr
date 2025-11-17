@@ -17,10 +17,10 @@ splnr_climate_priorityAreaApproach(
 \item{features}{An \code{sf} object representing conservation features (e.g., species
 distribution data). Each column (excluding geometry) should typically be a
 binary representation of a feature's presence (1) or absence (0) in each
-planning unit.}
+Planning Unit.}
 
 \item{metric}{An \code{sf} object containing climate metric information. It must
-have a column named 'metric' with the climate metric values per planning unit.}
+have a column named 'metric' with the climate metric values per Planning Unit.}
 
 \item{targets}{A \code{data.frame} with two columns: \code{feature} (character, listing
 the original feature names) and \code{target} (numeric, the initial conservation
@@ -44,7 +44,7 @@ assigned specifically to climate-smart areas (refugia). Defaults to \code{1} (10
 A \code{list} with two components:
 \itemize{
 \item \code{Features}: An \code{sf} object containing the binary information per
-planning unit for each feature, now split into \verb{_CS} (climate-smart)
+Planning Unit for each feature, now split into \verb{_CS} (climate-smart)
 and \verb{_NCS} (non-climate-smart) components. This is ready to be
 passed to \code{prioritizr} when creating a conservation problem.
 \item \code{Targets}: A \code{data.frame} with the adjusted targets for the

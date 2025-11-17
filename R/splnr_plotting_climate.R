@@ -412,16 +412,17 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
 #' stakeholder engagement.
 #'
 #' Both underlying functions require a `prioritizr` solution containing a
-#' `metric` column with climate metric information and a `solution_1` column
+#' climate metric column with climate metric information and a prioritizr solution column
 #' indicating selected planning units.
 #'
 #' @param soln For `type = "Normal"`: A `list` of `prioritizr` solution objects
 #'   (e.g., `list(s1, s2)`). Each solution must contain a `metric` column and
 #'   a `solution_1` column.
 #'   For `type = "Basic"`: A single `prioritizr` solution `sf` object.
-#' @param names A character vector of names corresponding to each solution in
+#' @param solution_names A character vector of names corresponding to each solution in
 #'   `soln` when `type = "Normal"`. Not used for `type = "Basic"`.
 #'   Defaults to `NA`.
+#' @param climate_names A character string of the name of the climate
 #' @param type A character string specifying the plotting style. Must be either
 #'   `"Normal"` or `"Basic"`. Defaults to `"Normal"`.
 #' @param colorMap A character string indicating the `viridis` color map to use
@@ -491,7 +492,7 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
 #' # Example 2: Normal (Fancy) kernel density plot for a single solution
 #' plot_normal_kde_single <- splnr_plot_climKernelDensity(
 #'   soln = list(dat_solnClim),
-#'   names = c("Solution 1"),
+#'   solution_names = c("Solution 1"),
 #'   type = "Normal"
 #' )
 #' print(plot_normal_kde_single)
@@ -503,7 +504,8 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
 #'
 #' plot_normal_kde_multi <- splnr_plot_climKernelDensity(
 #'   soln = list(dat_solnClim, dat_solnClim_2),
-#'   names = c("Solution A", "Solution B"),
+#'   solution_names = c("Solution A", "Solution B"),
+#'   climate_names = "metric",
 #'   type = "Normal",
 #'   colorMap = "plasma",
 #'   legendTitle = "Climate Value",

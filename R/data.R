@@ -1,6 +1,6 @@
 #' Planning Units
 #'
-#' An sf dataframe of planning units for spatial prioritisation
+#' An sf dataframe of Planning Units for spatial prioritization
 #'
 #' @format `dat_PUs`
 #' A data frame with XXXX rows and XXX columns:
@@ -14,9 +14,9 @@
 
 # -------------------------------------------------------------------------
 
-#' Boundary of planning units
+#' Boundary of Planning Units
 #'
-#' An sf dataframe of planning units for spatial prioritisation
+#' An sf dataframe of Planning Units for spatial prioritization
 #'
 #' @format `dat_bndry`
 #' A data frame with XXXX rows and XXX columns:
@@ -32,7 +32,7 @@
 
 #' Regionalisation
 #'
-#' An sf dataframe of planning units for spatial prioritisation
+#' An sf dataframe of Planning Units for spatial prioritization
 #'
 #' @format `dat_region`
 #' A data frame with XXXX rows and XXX columns:
@@ -47,7 +47,7 @@
 
 #' Binary Species Data
 #'
-#' An sf dataframe of planning units for spatial prioritisation
+#' An sf dataframe of Planning Units for spatial prioritization
 #'
 #' @format `dat_species_bin`
 #' A data frame with XXXX rows and XXX columns:
@@ -63,7 +63,7 @@
 
 #' Binary Species Data 2
 #'
-#' An sf dataframe of planning units for spatial prioritisation
+#' An sf dataframe of Planning Units for spatial prioritization
 #'
 #' @format `dat_species_bin2`
 #' A data frame with XXXX rows and XXX columns:
@@ -79,7 +79,7 @@
 
 #' Probability Species Data
 #'
-#' An sf dataframe of planning units for spatial prioritisation
+#' An sf dataframe of Planning Units for spatial prioritization
 #'
 #' @format `dat_species_prob`
 #' A data frame with XXXX rows and XXX columns:
@@ -93,9 +93,9 @@
 
 # -------------------------------------------------------------------------
 
-#' MPA Data
+#' Marine Protected Areas (MPAs) Data
 #'
-#' An sf dataframe of planning units for spatial prioritisation
+#' An sf dataframe of Planning Units for spatial prioritization
 #'
 #' @format `dat_mpas`
 #' A data frame with XXXX rows and XXX columns:
@@ -117,7 +117,7 @@
 #' @format `dat_category`
 #' A data frame with XXXX rows and XXX columns:
 #' \describe{
-#'   \item{feature}{all features available for spatial prioritisation}
+#'   \item{feature}{all features available for spatial prioritization}
 #'   \item{category}{the categories of all features}
 #'   ...
 #' }
@@ -135,7 +135,7 @@
 #' @format `dat_category2`
 #' A data frame with XXXX rows and XXX columns:
 #' \describe{
-#'   \item{feature}{all features available for spatial prioritisation}
+#'   \item{feature}{all features available for spatial prioritization}
 #'   \item{category}{the categories of all features}
 #'   ...
 #' }
@@ -148,7 +148,7 @@
 
 #' Climate metric data
 #'
-#' An sf dataframe of planning units for spatial prioritisation
+#' An sf dataframe of Planning Units for spatial prioritization
 #'
 #' @format `dat_clim`
 #' A data frame with 780 rows and 3 columns:
@@ -179,14 +179,14 @@
 # -------------------------------------------------------------------------
 
 
-#' Current MPAs of the Coral Sea
+#' Current Marine Protected Areas (MPAs) of the Coral Sea
 #'
-#' sf file containing the current marine protected areas of the coral sea
+#' sf file containing the current Marine Protected Areas (MPAs) of the coral sea
 #'
 #' @format `MPAsCoralSea`
 #' A data frame with 397 rows and 17 columns:
 #' \describe{
-#'   \item{wdpa}{binary vector denoting presence or absence of a current marine protected area}
+#'   \item{wdpa}{binary vector denoting presence or absence of a current MPA}
 #'   ...
 #' }
 #' @source https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDPA

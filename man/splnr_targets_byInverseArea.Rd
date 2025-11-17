@@ -9,7 +9,7 @@ splnr_targets_byInverseArea(df, target_min, target_max)
 \arguments{
 \item{df}{An \code{sf} dataframe containing the features (e.g., species distribution
 data) for which to calculate inverse area targets. Each column (excluding
-geometry) should represent a feature, and each row a planning unit.}
+geometry) should represent a feature, and each row a Planning Unit.}
 
 \item{target_min}{A numeric value between 0 and 1 (inclusive) specifying the
 minimum target percentage. This will be the target for the most widespread feature.}
@@ -35,10 +35,10 @@ range-restricted features.
 
 The calculation proceeds as follows:
 \enumerate{
-\item The area of a single planning unit is determined.
+\item The area of a single Planning Unit is determined.
 \item The total area of the study region is estimated by multiplying the number
-of planning units by the individual planning unit area.
-\item For each feature (species), its total area across all planning units is
+of Planning Units by the individual Planning Unit area.
+\item For each feature (species), its total area across all Planning Units is
 calculated.
 \item The target for each feature is then scaled between \code{target_min} and
 \code{target_max} such that features with smaller areas receive targets closer
@@ -48,7 +48,7 @@ to \code{target_min}.
 
 The input \code{df} is expected to be an \code{sf} object where columns (excluding
 geometry) represent different features (e.g., species presence/absence) and
-rows represent planning units.
+rows represent Planning Units.
 }
 \examples{
 \dontrun{

@@ -3,12 +3,12 @@
 \docType{data}
 \name{MPAsCoralSea}
 \alias{MPAsCoralSea}
-\title{Current MPAs of the Coral Sea}
+\title{Current Marine Protected Areas (MPAs) of the Coral Sea}
 \format{
 \code{MPAsCoralSea}
 A data frame with 397 rows and 17 columns:
 \describe{
-\item{wdpa}{binary vector denoting presence or absence of a current marine protected area}
+\item{wdpa}{binary vector denoting presence or absence of a current MPA}
 ...
 }
 }
@@ -19,6 +19,6 @@ https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDPA
 MPAsCoralSea
 }
 \description{
-sf file containing the current marine protected areas of the coral sea
+sf file containing the current Marine Protected Areas (MPAs) of the coral sea
 }
 \keyword{datasets}

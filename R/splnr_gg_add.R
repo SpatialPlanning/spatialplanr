@@ -1,16 +1,18 @@
-#' @title Add-ons for Plotting `spatialplanr` Maps
+#' @title Add-ons for Plotting `spatialplanr` Solution Maps
 #'
 #' @description
-#' This function allows users to customize existing `ggplot2` maps, particularly
-#' those produced by other `spatialplanr` spatial plotting functions. It provides
-#' options to add various spatial layers and apply consistent theming in a
+#' This function allows users to customize existing `ggplot2` solution maps produced
+#' by `spatialplanr` spatial plotting functions (e.g., `splnr_plot_solution()`). It
+#' provides options to add various spatial layers and apply consistent theming in a
 #' simple and reproducible manner.
 #'
 #' @details
-#' The `splnr_gg_add` function enhances `ggplot2` objects by layering additional
-#' spatial data such as planning unit outlines, study area boundaries, general
-#' overlays, geographical contours, and 'locked-in' areas (e.g., existing protected
-#' areas in a conservation prioritization). It offers fine-grained control over
+#' The `splnr_gg_add()` function enhances `ggplot2` objects by layering additional
+#' spatial data such as Planning Unit outlines, study area boundaries, general
+#' overlays, geographical contours, locked-in areas (e.g., existing Marine Protected
+#' Areas (MPAs) that must be included in a conservation prioritization), and
+#' locked-out areas (e.g., areas that must be excluded from selection such as
+#' shipping lanes or oil and gas leases). It offers fine-grained control over
 #' colors, opacities, and legend appearance for each added layer.
 #'
 #' When using `contours`, the input `sf` object is expected to have a column
@@ -23,10 +25,10 @@
 #' or `NA` (logical `FALSE`) to apply no default theme, allowing the user to manage
 #' all theme elements manually.
 #'
-#' @param PUs An `sf` object representing planning units. If provided, their
+#' @param PUs An `sf` object representing Planning Units. If provided, their
 #'   outlines will be drawn. Defaults to `NULL`.
 #' @param colorPUs A character string specifying the color for the outlines of the
-#'   planning units. Defaults to `"grey80"`.
+#'   Planning Units. Defaults to `"grey80"`.
 #' @param Bndry An `sf` object representing the main planning region boundaries.
 #'   If provided, its outline will be drawn. Defaults to `NULL`.
 #' @param colorBndry A character string specifying the color for the outline of the
@@ -41,15 +43,15 @@
 #' @param colorOverlay3 A character string specifying the color for `overlay3`.
 #'   Defaults to `"grey40"`.
 #' @param cropOverlay An `sf` object. Its bounding box will be used to set the
-#'   `xlim` and `ylim` of the `ggplot2::coord_sf` layer, effectively cropping the view.
+#'   `xlim` and `ylim` of the `ggplot2::coord_sf()` layer, effectively cropping the view.
 #'   Defaults to `NULL`.
 #' @param contours An `sf` object containing contour lines (e.g., bathymetry or
 #'   seamount outlines). It is expected to have a `Category` column for differentiating
 #'   lines. Up to 6 categories are supported. Defaults to `NULL`.
 #' @param colorConts A character string specifying the color for the contour lines.
 #'   Defaults to `"black"`.
-#' @param lockIn An `sf` object representing 'locked-in' areas (e.g., existing
-#'   Marine Protected Areas) that are fixed in a conservation prioritization.
+#' @param lockIn An `sf` object representing locked-in areas (e.g., existing
+#'   Marine Protected Areas (MPAs)) that are fixed in a conservation prioritization.
 #'   Defaults to `NULL`.
 #' @param typeLockIn A character string specifying how `lockIn` areas should be
 #'   plotted. Can be `"Full"` (fills the areas with `colorLockIn`) or `"Contours"`
@@ -58,13 +60,30 @@
 #'   data frame that contains binary (0/1 or TRUE/FALSE) information indicating
 #'   locked-in status. Required if `lockIn` is not `NULL`.
 #' @param alphaLockIn A numeric value (0 to 1) for the opacity of the `lockIn`
-#'   areas when `typeLockIn` is `"Full"`. Defaults to `0.5`.
+#'   areas when `typeLockIn` is `"Full"`. Defaults to `1`.
 #' @param colorLockIn A character string specifying the color for the `lockIn` areas.
 #'   Defaults to `"black"`.
 #' @param legendLockIn A character string for the title of the `lockIn` legend.
 #'   Can be an empty string `""` to suppress the title. Defaults to `""`.
 #' @param labelLockIn A character string for the legend label of the `lockIn` areas
 #'   (e.g., "MPAs"). Defaults to `"MPAs"`.
+#' @param lockOut An `sf` object representing locked-out areas (e.g., shipping lanes,
+#'   oil and gas leases, or other excluded zones) that must not be selected in a
+#'   conservation prioritization. Defaults to `NULL`.
+#' @param typeLockOut A character string specifying how `lockOut` areas should be
+#'   plotted. Can be `"Full"` (fills the areas with `colorLockOut`) or `"Contours"`
+#'   (draws only the outlines of the areas). Defaults to `"Full"`.
+#' @param nameLockOut A character string specifying the column name in the `lockOut`
+#'   data frame that contains binary (0/1 or TRUE/FALSE) information indicating
+#'   locked-out status. Required if `lockOut` is not `NULL`.
+#' @param alphaLockOut A numeric value (0 to 1) for the opacity of the `lockOut`
+#'   areas when `typeLockOut` is `"Full"`. Defaults to `1`.
+#' @param colorLockOut A character string specifying the color for the `lockOut` areas.
+#'   Defaults to `"black"`.
+#' @param legendLockOut A character string for the title of the `lockOut` legend.
+#'   Can be an empty string `""` to suppress the title. Defaults to `""`.
+#' @param labelLockOut A character string for the legend label of the `lockOut` areas
+#'   (e.g., "Shipping Lanes"). Defaults to `""`.
 #' @param ggtheme The `ggplot2` theme to apply. Can be:
 #'   \itemize{
 #'     \item `NA` or `FALSE`: No theme is applied, using `ggplot2` defaults.
@@ -91,7 +110,7 @@
 #' @examples
 #' \dontrun{
 #' # Assuming 'dat_species_bin' and 'dat_PUs' are existing sf objects
-#' # in your package, suitable for prioritisation problems and plotting.
+#' # in your package, suitable for prioritization problems and plotting.
 #'
 #' # Create a dummy prioritizr problem and solve it for demonstration.
 #' dat_problem <- prioritizr::problem(
@@ -107,13 +126,13 @@
 #' dat_soln <- dat_problem %>%
 #'   prioritizr::solve.ConservationProblem()
 #'
-#' # Basic plot of the solution with default planning unit outlines and theme.
+#' # Basic plot of the solution with default Planning Unit outlines and theme.
 #' plot_basic <- splnr_plot_solution(dat_soln) +
 #'   splnr_gg_add(PUs = dat_PUs, ggtheme = "Default")
 #' print(plot_basic)
 #'
 #' # Example with boundary, a custom overlay, and locked-in areas shown as contours.
-#' # For this example, let's create dummy `bndry_sf` and `locked_in_sf` based on `dat_PUs`
+#' # For this example, let's create dummy `bndry_sf` and `locked_in_sf` based on `dat_PUs`.
 #' # In a real scenario, these would be loaded from your package or data.
 #' bndry_sf <- sf::st_union(dat_PUs) %>% sf::st_as_sf()
 #' locked_in_sf <- dat_PUs[1:100, ] %>% dplyr::mutate(is_mpa = 1)
@@ -125,7 +144,6 @@
 #'     colorBndry = "darkblue",
 #'     overlay = bndry_sf, # Using boundary as an example overlay
 #'     colorOverlay = "lightblue",
-#'     alphaOverlay = 0.3,
 #'     lockIn = locked_in_sf,
 #'     typeLockIn = "Contours",
 #'     nameLockIn = "is_mpa",
@@ -164,37 +182,58 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
 
   # TODO Remove all uneeded arguments, especially the lockIn
 
-  # TODO Update the asserts for new arguments
-  # # Assertions to validate input parameters are of the correct 'sf' class if not NULL.
-  # if(!is.null(PUs)){assertthat::assert_that(inherits(PUs, "sf"), msg = "'PUs' must be an 'sf' object or NULL.")}
-  # if(!is.null(Bndry)){assertthat::assert_that(inherits(Bndry, "sf"), msg = "'Bndry' must be an 'sf' object or NULL.")}
-  # if(!is.null(overlay)){assertthat::assert_that(inherits(overlay, "sf"), msg = "'overlay' must be an 'sf' object or NULL.")}
-  # if(!is.null(overlay2)){assertthat::assert_that(inherits(overlay2, "sf"), msg = "'overlay2' must be an 'sf' object or NULL.")}
-  # if(!is.null(overlay3)){assertthat::assert_that(inherits(overlay3, "sf"), msg = "'overlay3' must be an 'sf' object or NULL.")}
-  # if(!is.null(contours)){assertthat::assert_that(inherits(contours, "sf"), msg = "'contours' must be an 'sf' object or NULL.")}
-  # if(!is.null(lockIn)){
-  #   assertthat::assert_that(inherits(lockIn, "sf"), msg = "'lockIn' must be an 'sf' object or NULL.")
-  #   assertthat::assert_that(is.character(nameLockIn) && all(nameLockIn %in% names(lockIn)),
-  #                           msg = "If 'lockIn' is provided, 'nameLockIn' must be a character string specifying an existing column in 'lockIn'.")
-  #   assertthat::assert_that(typeLockIn %in% c("Full", "Contours"),
-  #                           msg = "'typeLockIn' must be either 'Full' or 'Contours'.")
-  #   assertthat::assert_that(is.numeric(alphaLockIn) && alphaLockIn >= 0 && alphaLockIn <= 1,
-  #                           msg = "'alphaLockIn' must be a numeric value between 0 and 1.")
-  # }
-  # if(!is.null(cropOverlay)){assertthat::assert_that(inherits(cropOverlay, "sf"), msg = "'cropOverlay' must be an 'sf' object or NULL.")}
-  # assertthat::assert_that(is.character(colorPUs), msg = "'colorPUs' must be a character string for a color.")
-  # assertthat::assert_that(is.character(colorBndry), msg = "'colorBndry' must be a character string for a color.")
-  # assertthat::assert_that(is.character(colorOverlay), msg = "'colorOverlay' must be a character string for a color.")
-  # assertthat::assert_that(is.character(colorOverlay2), msg = "'colorOverlay2' must be a character string for a color.")
-  # assertthat::assert_that(is.character(colorOverlay3), msg = "'colorOverlay3' must be a character string for a color.")
-  # assertthat::assert_that(is.character(colorConts), msg = "'colorConts' must be a character string for a color.")
-  # assertthat::assert_that(is.character(colorLockIn), msg = "'colorLockIn' must be a character string for a color.")
-  # assertthat::assert_that(is.character(legendLockIn), msg = "'legendLockIn' must be a character string.")
-  # assertthat::assert_that(is.character(labelLockIn), msg = "'labelLockIn' must be a character string.")
-  # assertthat::assert_that(
-  #   inherits(ggtheme, "character") || inherits(ggtheme, "theme") || inherits(ggtheme, "logical"),
-  #   msg = "'ggtheme' must be 'Default', a ggplot2 theme, or NA/FALSE."
-  # )
+  # Assertions to validate input parameters are of the correct 'sf' class if not NULL.
+  if(!is.null(PUs)){assertthat::assert_that(inherits(PUs, "sf"), msg = "'PUs' must be an 'sf' object or NULL.")}
+  if(!is.null(Bndry)){assertthat::assert_that(inherits(Bndry, "sf"), msg = "'Bndry' must be an 'sf' object or NULL.")}
+  if(!is.null(overlay)){assertthat::assert_that(inherits(overlay, "sf"), msg = "'overlay' must be an 'sf' object or NULL.")}
+  if(!is.null(overlay2)){assertthat::assert_that(inherits(overlay2, "sf"), msg = "'overlay2' must be an 'sf' object or NULL.")}
+  if(!is.null(overlay3)){assertthat::assert_that(inherits(overlay3, "sf"), msg = "'overlay3' must be an 'sf' object or NULL.")}
+  if(!is.null(contours)){assertthat::assert_that(inherits(contours, "sf"), msg = "'contours' must be an 'sf' object or NULL.")}
+  if(!is.null(cropOverlay)){assertthat::assert_that(inherits(cropOverlay, "sf"), msg = "'cropOverlay' must be an 'sf' object or NULL.")}
+  
+  # Validate lockIn parameters
+  if(!is.null(lockIn)){
+    assertthat::assert_that(inherits(lockIn, "sf"), msg = "'lockIn' must be an 'sf' object or NULL.")
+    assertthat::assert_that(is.character(nameLockIn) && !is.null(nameLockIn) && all(nameLockIn %in% names(lockIn)),
+                            msg = "If 'lockIn' is provided, 'nameLockIn' must be a character string specifying an existing column in 'lockIn'.")
+    assertthat::assert_that(typeLockIn %in% c("Full", "Contours"),
+                            msg = "'typeLockIn' must be either 'Full' or 'Contours'.")
+    assertthat::assert_that(is.numeric(alphaLockIn) && alphaLockIn >= 0 && alphaLockIn <= 1,
+                            msg = "'alphaLockIn' must be a numeric value between 0 and 1.")
+  }
+  
+  # Validate lockOut parameters
+  if(!is.null(lockOut)){
+    assertthat::assert_that(inherits(lockOut, "sf"), msg = "'lockOut' must be an 'sf' object or NULL.")
+    assertthat::assert_that(is.character(nameLockOut) && !is.null(nameLockOut) && all(nameLockOut %in% names(lockOut)),
+                            msg = "If 'lockOut' is provided, 'nameLockOut' must be a character string specifying an existing column in 'lockOut'.")
+    assertthat::assert_that(typeLockOut %in% c("Full", "Contours"),
+                            msg = "'typeLockOut' must be either 'Full' or 'Contours'.")
+    assertthat::assert_that(is.numeric(alphaLockOut) && alphaLockOut >= 0 && alphaLockOut <= 1,
+                            msg = "'alphaLockOut' must be a numeric value between 0 and 1.")
+  }
+  
+  # Validate color parameters
+  assertthat::assert_that(is.character(colorPUs), msg = "'colorPUs' must be a character string for a color.")
+  assertthat::assert_that(is.character(colorBndry), msg = "'colorBndry' must be a character string for a color.")
+  assertthat::assert_that(is.character(colorOverlay), msg = "'colorOverlay' must be a character string for a color.")
+  assertthat::assert_that(is.character(colorOverlay2), msg = "'colorOverlay2' must be a character string for a color.")
+  assertthat::assert_that(is.character(colorOverlay3), msg = "'colorOverlay3' must be a character string for a color.")
+  assertthat::assert_that(is.character(colorConts), msg = "'colorConts' must be a character string for a color.")
+  assertthat::assert_that(is.character(colorLockIn), msg = "'colorLockIn' must be a character string for a color.")
+  assertthat::assert_that(is.character(colorLockOut), msg = "'colorLockOut' must be a character string for a color.")
+  
+  # Validate legend and label parameters
+  assertthat::assert_that(is.character(legendLockIn), msg = "'legendLockIn' must be a character string.")
+  assertthat::assert_that(is.character(labelLockIn), msg = "'labelLockIn' must be a character string.")
+  assertthat::assert_that(is.character(legendLockOut), msg = "'legendLockOut' must be a character string.")
+  assertthat::assert_that(is.character(labelLockOut), msg = "'labelLockOut' must be a character string.")
+  
+  # Validate ggtheme parameter
+  assertthat::assert_that(
+    inherits(ggtheme, "character") || inherits(ggtheme, "theme") || inherits(ggtheme, "list") || inherits(ggtheme, "logical"),
+    msg = "'ggtheme' must be 'Default', a ggplot2 theme, a list of theme elements, or NA/FALSE."
+  )
 
   # Initialize an empty list to store ggplot2 layers.
   ggList <- list()

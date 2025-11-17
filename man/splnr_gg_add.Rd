@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_gg_add.R
 \name{splnr_gg_add}
 \alias{splnr_gg_add}
-\title{Add-ons for Plotting \code{spatialplanr} Maps}
+\title{Add-ons for Plotting \code{spatialplanr} Solution Maps}
 \usage{
 splnr_gg_add(
   PUs = NULL,
@@ -21,19 +21,26 @@ splnr_gg_add(
   lockIn = NULL,
   typeLockIn = "Full",
   nameLockIn = NULL,
-  alphaLockIn = 0.5,
+  alphaLockIn = 1,
   colorLockIn = "black",
   legendLockIn = "",
   labelLockIn = "MPAs",
+  lockOut = NULL,
+  typeLockOut = "Full",
+  nameLockOut = NULL,
+  alphaLockOut = 1,
+  colorLockOut = "black",
+  legendLockOut = "",
+  labelLockOut = "",
   ggtheme = "Default"
 )
 }
 \arguments{
-\item{PUs}{An \code{sf} object representing planning units. If provided, their
+\item{PUs}{An \code{sf} object representing Planning Units. If provided, their
 outlines will be drawn. Defaults to \code{NULL}.}
 
 \item{colorPUs}{A character string specifying the color for the outlines of the
-planning units. Defaults to \code{"grey80"}.}
+Planning Units. Defaults to \code{"grey80"}.}
 
 \item{Bndry}{An \code{sf} object representing the main planning region boundaries.
 If provided, its outline will be drawn. Defaults to \code{NULL}.}
@@ -64,11 +71,11 @@ lines. Up to 6 categories are supported. Defaults to \code{NULL}.}
 Defaults to \code{"black"}.}
 
 \item{cropOverlay}{An \code{sf} object. Its bounding box will be used to set the
-\code{xlim} and \code{ylim} of the \code{ggplot2::coord_sf} layer, effectively cropping the view.
+\code{xlim} and \code{ylim} of the \code{ggplot2::coord_sf()} layer, effectively cropping the view.
 Defaults to \code{NULL}.}
 
-\item{lockIn}{An \code{sf} object representing 'locked-in' areas (e.g., existing
-Marine Protected Areas) that are fixed in a conservation prioritization.
+\item{lockIn}{An \code{sf} object representing locked-in areas (e.g., existing
+Marine Protected Areas (MPAs)) that are fixed in a conservation prioritization.
 Defaults to \code{NULL}.}
 
 \item{typeLockIn}{A character string specifying how \code{lockIn} areas should be
@@ -80,7 +87,7 @@ data frame that contains binary (0/1 or TRUE/FALSE) information indicating
 locked-in status. Required if \code{lockIn} is not \code{NULL}.}
 
 \item{alphaLockIn}{A numeric value (0 to 1) for the opacity of the \code{lockIn}
-areas when \code{typeLockIn} is \code{"Full"}. Defaults to \code{0.5}.}
+areas when \code{typeLockIn} is \code{"Full"}. Defaults to \code{1}.}
 
 \item{colorLockIn}{A character string specifying the color for the \code{lockIn} areas.
 Defaults to \code{"black"}.}
@@ -90,6 +97,30 @@ Can be an empty string \code{""} to suppress the title. Defaults to \code{""}.}
 
 \item{labelLockIn}{A character string for the legend label of the \code{lockIn} areas
 (e.g., "MPAs"). Defaults to \code{"MPAs"}.}
+
+\item{lockOut}{An \code{sf} object representing locked-out areas (e.g., shipping lanes,
+oil and gas leases, or other excluded zones) that must not be selected in a
+conservation prioritization. Defaults to \code{NULL}.}
+
+\item{typeLockOut}{A character string specifying how \code{lockOut} areas should be
+plotted. Can be \code{"Full"} (fills the areas with \code{colorLockOut}) or \code{"Contours"}
+(draws only the outlines of the areas). Defaults to \code{"Full"}.}
+
+\item{nameLockOut}{A character string specifying the column name in the \code{lockOut}
+data frame that contains binary (0/1 or TRUE/FALSE) information indicating
+locked-out status. Required if \code{lockOut} is not \code{NULL}.}
+
+\item{alphaLockOut}{A numeric value (0 to 1) for the opacity of the \code{lockOut}
+areas when \code{typeLockOut} is \code{"Full"}. Defaults to \code{1}.}
+
+\item{colorLockOut}{A character string specifying the color for the \code{lockOut} areas.
+Defaults to \code{"black"}.}
+
+\item{legendLockOut}{A character string for the title of the \code{lockOut} legend.
+Can be an empty string \code{""} to suppress the title. Defaults to \code{""}.}
+
+\item{labelLockOut}{A character string for the legend label of the \code{lockOut} areas
+(e.g., "Shipping Lanes"). Defaults to \code{""}.}
 
 \item{ggtheme}{The \code{ggplot2} theme to apply. Can be:
 \itemize{
@@ -105,16 +136,18 @@ A \code{list} of \code{ggplot2} layers and theme elements that can be added to
 an existing \code{ggplot} object using \code{+}.
 }
 \description{
-This function allows users to customize existing \code{ggplot2} maps, particularly
-those produced by other \code{spatialplanr} spatial plotting functions. It provides
-options to add various spatial layers and apply consistent theming in a
+This function allows users to customize existing \code{ggplot2} solution maps produced
+by \code{spatialplanr} spatial plotting functions (e.g., \code{splnr_plot_solution()}). It
+provides options to add various spatial layers and apply consistent theming in a
 simple and reproducible manner.
 }
 \details{
-The \code{splnr_gg_add} function enhances \code{ggplot2} objects by layering additional
-spatial data such as planning unit outlines, study area boundaries, general
-overlays, geographical contours, and 'locked-in' areas (e.g., existing protected
-areas in a conservation prioritization). It offers fine-grained control over
+The \code{splnr_gg_add()} function enhances \code{ggplot2} objects by layering additional
+spatial data such as Planning Unit outlines, study area boundaries, general
+overlays, geographical contours, locked-in areas (e.g., existing Marine Protected
+Areas (MPAs) that must be included in a conservation prioritization), and
+locked-out areas (e.g., areas that must be excluded from selection such as
+shipping lanes or oil and gas leases). It offers fine-grained control over
 colors, opacities, and legend appearance for each added layer.
 
 When using \code{contours}, the input \code{sf} object is expected to have a column
@@ -130,7 +163,7 @@ all theme elements manually.
 \examples{
 \dontrun{
 # Assuming 'dat_species_bin' and 'dat_PUs' are existing sf objects
-# in your package, suitable for prioritisation problems and plotting.
+# in your package, suitable for prioritization problems and plotting.
 
 # Create a dummy prioritizr problem and solve it for demonstration.
 dat_problem <- prioritizr::problem(
@@ -146,13 +179,13 @@ dat_problem <- prioritizr::problem(
 dat_soln <- dat_problem \%>\%
   prioritizr::solve.ConservationProblem()
 
-# Basic plot of the solution with default planning unit outlines and theme.
+# Basic plot of the solution with default Planning Unit outlines and theme.
 plot_basic <- splnr_plot_solution(dat_soln) +
   splnr_gg_add(PUs = dat_PUs, ggtheme = "Default")
 print(plot_basic)
 
 # Example with boundary, a custom overlay, and locked-in areas shown as contours.
-# For this example, let's create dummy `bndry_sf` and `locked_in_sf` based on `dat_PUs`
+# For this example, let's create dummy `bndry_sf` and `locked_in_sf` based on `dat_PUs`.
 # In a real scenario, these would be loaded from your package or data.
 bndry_sf <- sf::st_union(dat_PUs) \%>\% sf::st_as_sf()
 locked_in_sf <- dat_PUs[1:100, ] \%>\% dplyr::mutate(is_mpa = 1)
@@ -164,7 +197,6 @@ plot_custom <- splnr_plot_solution(dat_soln) +
     colorBndry = "darkblue",
     overlay = bndry_sf, # Using boundary as an example overlay
     colorOverlay = "lightblue",
-    alphaOverlay = 0.3,
     lockIn = locked_in_sf,
     typeLockIn = "Contours",
     nameLockIn = "is_mpa",

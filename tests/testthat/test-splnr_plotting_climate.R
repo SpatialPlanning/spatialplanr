@@ -47,7 +47,7 @@ testthat::test_that("Correct function output", {
 
 testthat::test_that("Correct function output", {
   expect_s3_class(
-    splnr_plot_climKernelDensity(soln = list(dat_solnClim), names = c("Input 1"), type = "Normal")
+    splnr_plot_climKernelDensity(soln = list(dat_solnClim), type = "Normal")
     , "gg")
 })
 

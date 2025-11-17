@@ -4,14 +4,14 @@
 #' This function provides a versatile way to plot spatial data (`sf` objects)
 #' within the `spatialplanr` package. It can visualize various data types,
 #' including binary presence/absence, logical values, continuous data, or simply
-#' the planning unit outlines.
+#' the Planning Unit outlines.
 #'
 #' @details
-#' The `splnr_plot` function automatically detects the type of data specified by
+#' The `splnr_plot()` function automatically detects the type of data specified by
 #' `colNames` (binary, logical, or continuous) and adjusts the plotting
 #' aesthetics accordingly. If multiple `colNames` are provided, it calculates
-#' the sum of features for each planning unit and plots this sum. If `colNames`
-#' is `NULL`, it will simply plot the outlines of the planning units.
+#' the sum of features for each Planning Unit and plots this sum. If `colNames`
+#' is `NULL`, it will simply plot the outlines of the Planning Units.
 #'
 #' This function is designed to be a flexible replacement for several plotting
 #' functions, such as `splnr_plot_cost()`, `splnr_plot_binFeature()`,
@@ -24,7 +24,7 @@
 #' @param df The input dataframe containing the data to be plotted. This must be
 #'   an `sf` object and include a geometry column.
 #' @param colNames A character vector of column names from `df` to be used for
-#'   coloring the plot. If `NULL` (default), only the planning unit outlines are plotted.
+#'   coloring the plot. If `NULL` (default), only the Planning Unit outlines are plotted.
 #'   If a single column is specified, it checks for binary, logical, or continuous data.
 #'   If multiple columns are specified, it sums the values across these columns to create
 #'   a "FeatureSum" for plotting.
@@ -258,9 +258,9 @@ splnr_plot <- function(df,
       ggplot2::guides(fill = ggplot2::guide_colourbar(order = 1),
                       colour = "none")
 
-  } else if (is.null(colNames)){ # If no column to plot by (only planning unit outlines).
+  } else if (is.null(colNames)){ # If no column to plot by (only Planning Unit outlines).
 
-    # Add geom_sf to display planning unit outlines without fill.
+    # Add geom_sf to display Planning Unit outlines without fill.
     gg <- gg +
       ggplot2::geom_sf(data = df, colour = "grey80", fill = NA, size = 0.1)
   }
@@ -284,7 +284,7 @@ splnr_plot <- function(df,
 #' by combining it with the `spatialplanr` function `splnr_gg_add()`.
 #'
 #' For multi-zone problems (`zones = TRUE`), the function sums the selected
-#' zones for each planning unit and plots the resulting combined selection.
+#' zones for each Planning Unit and plots the resulting combined selection.
 #' The `colorVals` and `legendLabels` should be provided to match the number of
 #' selection levels (e.g., "Not selected", "Zone 1", "Zone 2", etc.).
 #'
@@ -448,7 +448,7 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
         )
     }
 
-    # Sum up the zone selections for each planning unit to get a single 'solution' column.
+    # Sum up the zone selections for each Planning Unit to get a single 'solution' column.
     soln <- solnNewNames %>%
       dplyr::rowwise() %>%
       dplyr::mutate(
@@ -504,24 +504,24 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
 #' @title Plot Cost Overlay on Solution
 #'
 #' @description
-#' The `splnr_plot_costOverlay()` function visualizes the cost of each planning
-#' unit overlaid on the solution of a `prioritizr` conservation problem. This
+#' The `splnr_plot_costOverlay()` function visualizes the cost of each Planning
+#' Unit overlaid on the solution of a `prioritizr` conservation problem. This
 #' allows for a customizable `ggplot2` visualization, highlighting the costs
-#' within selected planning units.
+#' within selected Planning Units.
 #'
 #' @details
 #' This function requires a `prioritizr` solution as an `sf` object, which
 #' must contain a `solution_1` column indicating selected (1) or unselected (0)
-#' planning units. It also requires a cost column, either present within the
+#' Planning Units. It also requires a cost column, either present within the
 #' `soln` object or provided separately via the `Cost` parameter.
 #'
-#' The function filters the solution to show only the selected planning units
+#' The function filters the solution to show only the selected Planning Units
 #' and then overlays these with a gradient representing the cost. This output
 #' is a `ggplot` object that can be further customized using `splnr_gg_add()`.
 #'
 #' @param soln The `prioritizr` solution object, expected as an `sf` object,
 #'   containing at least a `solution_1` column.
-#' @param cost An `sf` object containing the cost data for planning units.
+#' @param cost An `sf` object containing the cost data for Planning Units.
 #'   If the `prioritizr` solution `soln` already contains the cost column
 #'   specified by `costName`, this parameter can be `NA` (default). Otherwise,
 #'   provide an `sf` object with the cost data.
@@ -622,7 +622,7 @@ splnr_plot_costOverlay <- function(soln, cost = NA, costName = "Cost",
     stop(paste0("The provided 'Cost' object does not contain the specified cost column '", costName, "'."))
   }
 
-  # Filter the solution to only include selected planning units.
+  # Filter the solution to only include selected Planning Units.
   soln <- soln %>%
     dplyr::select("solution_1") %>%
     dplyr::filter(.data$solution_1 == 1)
@@ -658,7 +658,7 @@ splnr_plot_costOverlay <- function(soln, cost = NA, costName = "Cost",
 #' @description
 #' The `splnr_plot_comparison()` function spatially visualizes the differences
 #' between two `prioritizr` conservation solutions. This helps in understanding
-#' which planning units are common, added, or removed between two scenarios.
+#' which Planning Units are common, added, or removed between two scenarios.
 #'
 #' @details
 #' Conservation planning often involves comparing outputs from different
@@ -667,7 +667,7 @@ splnr_plot_costOverlay <- function(soln, cost = NA, costName = "Cost",
 #' `prioritizr` solution and containing a `solution_1` column (binary,
 #' indicating selected vs. not selected).
 #'
-#' The function categorizes planning units into "Same" (selected in both),
+#' The function categorizes Planning Units into "Same" (selected in both),
 #' "Added (+)" (selected in `soln2` but not `soln1`), and "Removed (-)"
 #' (selected in `soln1` but not `soln2`). It then plots these categories with
 #' distinct colors for clear visualization. The output is a `ggplot` object
@@ -770,7 +770,7 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
       ),
       Compare = factor(.data$Compare, levels = c("Added (+)", "Same", "Removed (-)")) # Set factor levels for consistent plotting order.
     ) %>%
-    # Filter out any planning units that are NA in the 'Compare' column (e.g., neither were selected in either scenario).
+    # Filter out any Planning Units that are NA in the 'Compare' column (e.g., neither were selected in either scenario).
     dplyr::filter(!is.na(.data$Compare))
 
   # Initialize the ggplot object.
@@ -794,16 +794,16 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
 #'
 #' @description
 #' The `splnr_plot_selectionFreq()` function visualizes the selection frequency
-#' of planning units across an array of `prioritizr` solutions. This is useful
+#' of Planning Units across an array of `prioritizr` solutions. This is useful
 #' for understanding which areas are consistently selected as important for
 #' conservation.
 #'
 #' @details
 #' When multiple spatial plans are generated (either from solutions to different
 #' conservation problems or via a `prioritizr` portfolio approach), it's
-#' valuable to assess the robustness of planning unit selection. This function
+#' valuable to assess the robustness of Planning Unit selection. This function
 #' takes an `sf` object as input, which must contain a `selFreq` column
-#' representing the selection frequency of each planning unit. This `selFreq`
+#' representing the selection frequency of each Planning Unit. This `selFreq`
 #' column can be generated using the `spatialplanr` function `splnr_get_selFreq()`.
 #'
 #' The function uses `ggplot2` to create a spatial plot of these frequencies,
@@ -811,7 +811,7 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
 #' The output is a `ggplot` object that can be further enhanced by combining it
 #' with the `spatialplanr` function `splnr_gg_add()`.
 #'
-#' @param selFreq An `sf` object containing the selection frequency data for planning units.
+#' @param selFreq An `sf` object containing the selection frequency data for Planning Units.
 #'   This object must include a `selFreq` column (e.g., generated by `splnr_get_selFreq()`).
 #' @param plotTitle A character string for the title of the plot. Defaults to `""`.
 #' @param paletteName A character string or numeric value specifying the name of the
@@ -821,7 +821,7 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
 #' @param legendTitle A character string for the title of the legend.
 #'   Defaults to `"Selection \nFrequency"`.
 #'
-#' @return A `ggplot` object representing the plot of planning unit selection frequency.
+#' @return A `ggplot` object representing the plot of Planning Unit selection frequency.
 #' @export
 #'
 #' @importFrom assertthat assert_that
@@ -928,11 +928,11 @@ splnr_plot_selectionFreq <- function(selFreq,
 #'
 #' @description
 #' The `splnr_plot_importanceScore()` function visualizes the importance scores
-#' (irreplaceability) of planning units from a `prioritizr` conservation problem
+#' (irreplaceability) of Planning Units from a `prioritizr` conservation problem
 #' using `ggplot2`. It supports different methods for calculating importance scores.
 #'
 #' @details
-#' Importance scores quantify the irreplaceability of a planning unit in a
+#' Importance scores quantify the irreplaceability of a Planning Unit in a
 #' conservation solution. This function leverages the `prioritizr` package to
 #' calculate and plot three different types of importance scores:
 #' \itemize{
