@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.9</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,7 +49,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/MathMarEcol/spatialplanr/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/SpatialPlanning/spatialplanr/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -65,7 +65,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Global Fishing Watch</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MathMarEcol/spatialplanr/blob/HEAD/vignettes/GlobalFishingWatch.Rmd" class="external-link"><code>vignettes/GlobalFishingWatch.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/SpatialPlanning/spatialplanr/blob/HEAD/vignettes/GlobalFishingWatch.Rmd" class="external-link"><code>vignettes/GlobalFishingWatch.Rmd</code></a></small>
       <div class="d-none name"><code>GlobalFishingWatch.Rmd</code></div>
     </div>
 
@@ -110,7 +110,7 @@ density.<br>
 <code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"GlobalFishingWatch/gfwr"</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/GlobalFishingWatch/gfwr" class="external-link">gfwr</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MathMarEcol/spatialplanr" class="external-link">spatialplanr</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SpatialPlanning/spatialplanr" class="external-link">spatialplanr</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="api">API<a class="anchor" aria-label="anchor" href="#api"></a>
@@ -124,19 +124,16 @@ the chunk below), by writing (GFW_TOKEN = “YOUR_TOKEN”) in the file.
 effect.)</em></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">usethis</span><span class="fu">::</span><span class="fu"><a href="https://usethis.r-lib.org/reference/edit.html" class="external-link">edit_r_environ</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>We save the key in an object that will be used in gfwr functions.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">key</span> <span class="op">&lt;-</span> <span class="fu">gfwr</span><span class="fu">::</span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_auth.html" class="external-link">gfw_auth</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="fishing-effort-visualization">Fishing effort visualization<a class="anchor" aria-label="anchor" href="#fishing-effort-visualization"></a>
 </h3>
 <p>A region_id is necessary to use the <code>get_raster</code>
 function.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">region_id</span> <span class="op">&lt;-</span> <span class="fu">gfwr</span><span class="fu">::</span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/get_region_id.html" class="external-link">get_region_id</a></span><span class="op">(</span>region_name <span class="op">=</span> <span class="st">"Australia"</span>, </span>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">region_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/get_region_id.html" class="external-link">get_region_id</a></span><span class="op">(</span>region <span class="op">=</span> <span class="st">"Australia"</span>, </span>
 <span>                                 region_source <span class="op">=</span> <span class="st">"EEZ"</span>,</span>
-<span>                                 key <span class="op">=</span> <span class="fu">gfwr</span><span class="fu">::</span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_auth.html" class="external-link">gfw_auth</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">id</span></span></code></pre></div>
+<span>                                 key <span class="op">=</span> <span class="fu">gfwr</span><span class="fu">::</span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_auth.html" class="external-link">gfw_auth</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">id</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span></code></pre></div>
 <p>The <code>get_raster</code> function gets a raster of fishing effort
 from the API and converts the response to a data frame which contains
 occurrences for each vessel and for each grid cell (data is binned into
@@ -149,8 +146,8 @@ fishing hours of each vessel per grid cell (<code>geometry</code>).</p>
 - <code>LOW</code> (0.1 deg) and <code>HIGH</code> (0.01 deg) spatial
 resolutions. <br> - <code>VESSEL_ID</code>, <code>FLAG</code>,
 <code>GEARTYPE</code>, <code>FLAGANDGEARTYPE</code>.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">gfwr</span><span class="fu">::</span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/get_raster.html" class="external-link">get_raster</a></span><span class="op">(</span></span>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/get_raster.html" class="external-link">get_raster</a></span><span class="op">(</span></span>
 <span>  spatial_resolution <span class="op">=</span> <span class="st">"LOW"</span>,</span>
 <span>  temporal_resolution <span class="op">=</span> <span class="st">"MONTHLY"</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"FLAGANDGEARTYPE"</span>,</span>
@@ -169,7 +166,7 @@ resolutions. <br> - <code>VESSEL_ID</code>, <code>FLAG</code>,
 <p>Date range is limited to 1-year. Nevertheless, with some
 modifications, we can get round these problems through
 <code>splnr_get_gfw</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">data_sf_combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_get_gfw.html">splnr_get_gfw</a></span><span class="op">(</span>region <span class="op">=</span> <span class="st">"Australia"</span>, </span>
 <span>                                  start_date <span class="op">=</span> <span class="st">"2019-01-01"</span>,</span>
 <span>                                  end_date <span class="op">=</span>  <span class="st">"2023-12-31"</span>,</span>
@@ -185,7 +182,7 @@ modifications, we can get round these problems through
 <code>rnaturalearth</code> package and modify it to get an sf object,
 and we constrain it to the boundaries of the given data. <br> - EEZ
 Polygons from <code>oceandatr</code> package</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check and modify if necessary the spatial reference of data_sf_combined</span></span>
 <span><span class="va">data_sf_combined</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crs.html" class="external-link">st_set_crs</a></span><span class="op">(</span><span class="va">data_sf_combined</span>, </span>
 <span>                                   <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crs.html" class="external-link">st_crs</a></span><span class="op">(</span><span class="fu">rnaturalearth</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/rnaturalearth/reference/ne_coastline.html" class="external-link">ne_coastline</a></span><span class="op">(</span>scale <span class="op">=</span> <span class="st">"large"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -207,12 +204,12 @@ Polygons from <code>oceandatr</code> package</p>
 <div class="section level4">
 <h4 id="raw-fishing-effort">Raw Fishing Effort<a class="anchor" aria-label="anchor" href="#raw-fishing-effort"></a>
 </h4>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-8-1.png" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="by-years">By years<a class="anchor" aria-label="anchor" href="#by-years"></a>
 </h4>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-9-1.png" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="year-on-year-comparison">Year-on-year comparison<a class="anchor" aria-label="anchor" href="#year-on-year-comparison"></a>
@@ -223,7 +220,7 @@ have adopted AIS (mainly in economically developed countries) since the
 deployment of these technologies, the rise in activities must be seen in
 the context of this increase and not necessarily of more intense fishing
 activity.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># We need to change the temporal range according to our need group by it to display the total fishing hours. &lt;br&gt;</span></span>
 <span><span class="va">data_sf_combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_get_gfw.html">splnr_get_gfw</a></span><span class="op">(</span>region <span class="op">=</span> <span class="st">"Australia"</span>, </span>
 <span>                                  start_date <span class="op">=</span> <span class="st">"2019-01-01"</span>, </span>
@@ -232,26 +229,26 @@ activity.</p>
 <span>                                  key <span class="op">=</span> <span class="fu">gfwr</span><span class="fu">::</span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_auth.html" class="external-link">gfw_auth</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">Year</span>, <span class="va">Month</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarize</a></span><span class="op">(</span>Total_Fishing_Hours <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">ApparentFishingHrs</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-11-1.png" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="fishing-gear-type">Fishing gear type<a class="anchor" aria-label="anchor" href="#fishing-gear-type"></a>
 </h4>
 <p>Here we display the Vessel activity in ‘Micronesia’ in 2020 according
 to the fishing gear type.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">data_sf_combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_get_gfw.html">splnr_get_gfw</a></span><span class="op">(</span>region <span class="op">=</span> <span class="st">"Micronesia"</span>, </span>
 <span>                                  start_date <span class="op">=</span> <span class="st">"2019-12-31"</span>, </span>
 <span>                                  end_date <span class="op">=</span> <span class="st">"2021-01-01"</span>, </span>
 <span>                                  temp_res <span class="op">=</span> <span class="st">"MONTHLY"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-14-1.png" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="flags">Flags<a class="anchor" aria-label="anchor" href="#flags"></a>
 </h4>
 <p>Here we display the Vessel activity in Papua New Guinea according to
 Vessels flags.</p>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="supplementary-materials-">Supplementary materials.<a class="anchor" aria-label="anchor" href="#supplementary-materials-"></a>
@@ -281,7 +278,7 @@ More details on AIS operation and limitations <a href="https://globalfishingwatc
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

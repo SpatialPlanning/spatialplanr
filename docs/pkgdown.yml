@@ -1,12 +1,12 @@
-pandoc: '3.4'
-pkgdown: 2.1.3
+pandoc: 3.8.2.1
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   ClimateSmart: ClimateSmart.html
   GlobalFishingWatch: GlobalFishingWatch.html
   MultipleUse: MultipleUse.html
   spatialplanr: spatialplanr.html
-last_built: 2025-06-18T02:23Z
+last_built: 2025-11-17T19:08Z
 urls:
   reference: https://mathmarecol.github.io/spatialplanr/reference
   article: https://mathmarecol.github.io/spatialplanr/articles
