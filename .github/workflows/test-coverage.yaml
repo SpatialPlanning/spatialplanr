@@ -42,6 +42,7 @@ jobs:
             any::rcmdcheck
             any::remotes
             any::lpsymphony
+            any::slam
           needs: coverage
 
       - name: Test coverage
