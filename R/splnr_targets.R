@@ -13,10 +13,10 @@
 #' range-restricted features.
 #'
 #' The calculation proceeds as follows:
-#' 1. The area of a single planning unit is determined.
+#' 1. The area of a single Planning Unit is determined.
 #' 2. The total area of the study region is estimated by multiplying the number
-#'    of planning units by the individual planning unit area.
-#' 3. For each feature (species), its total area across all planning units is
+#'    of Planning Units by the individual Planning Unit area.
+#' 3. For each feature (species), its total area across all Planning Units is
 #'    calculated.
 #' 4. The target for each feature is then scaled between `target_min` and
 #'    `target_max` such that features with smaller areas receive targets closer
@@ -25,11 +25,11 @@
 #'
 #' The input `df` is expected to be an `sf` object where columns (excluding
 #' geometry) represent different features (e.g., species presence/absence) and
-#' rows represent planning units.
+#' rows represent Planning Units.
 #'
 #' @param df An `sf` dataframe containing the features (e.g., species distribution
 #'   data) for which to calculate inverse area targets. Each column (excluding
-#'   geometry) should represent a feature, and each row a planning unit.
+#'   geometry) should represent a feature, and each row a Planning Unit.
 #' @param target_min A numeric value between 0 and 1 (inclusive) specifying the
 #'   minimum target percentage. This will be the target for the most widespread feature.
 #' @param target_max A numeric value between 0 and 1 (inclusive) specifying the
@@ -85,7 +85,7 @@ splnr_targets_byInverseArea <- function(df, target_min, target_max) {
     msg = "'df' must contain a 'geometry' column."
   )
 
-  # Calculate the area of a single planning unit in km².
+  # Calculate the area of a single Planning Unit in km².
   PU_area_km2 <- as.numeric(sf::st_area(df[1, ]) / 1e+06)
 
   # Calculate the total approximate area of the study region.
@@ -354,7 +354,7 @@ splnr_targets_byIUCN <- function(dat, IUCN_target, IUCN_col = "IUCN_Category") {
       # Use coalesce to update 'target' only where new IUCN_target_value is not NA.
       dplyr::mutate(target = dplyr::coalesce(.data$IUCN_target_value, .data$target)) %>%
       # Remove the temporary IUCN_target_value column.
-      dplyr::select(-.data$IUCN_target_value)
+      dplyr::select(-"IUCN_target_value")
 
   } else if (is.numeric(IUCN_target) && length(IUCN_target) == 1) {
     # If IUCN_target is a single numeric, apply to specific threatened IUCN categories.

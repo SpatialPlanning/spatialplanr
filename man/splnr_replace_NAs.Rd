@@ -25,8 +25,8 @@ of an \code{sf} dataframe with the value from the nearest spatial neighbor.
 }
 \details{
 This function is useful for imputing missing data in spatial contexts.
-It identifies all planning units with \code{NA} values in the \code{vari} column.
-For each of these, it finds the geographically closest planning unit that
+It identifies all Planning Units with \code{NA} values in the \code{vari} column.
+For each of these, it finds the geographically closest Planning Unit that
 \emph{does not} have an \code{NA} value in \code{vari}, and then copies that non-missing
 value. This approach leverages the spatial autocorrelation often present
 in environmental and species data.

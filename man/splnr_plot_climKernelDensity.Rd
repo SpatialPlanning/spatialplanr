@@ -6,7 +6,8 @@
 \usage{
 splnr_plot_climKernelDensity(
   soln,
-  names = NA,
+  solution_names = "solution_1",
+  climate_names = "metric",
   type = "Normal",
   colorMap = "C",
   legendTitle = expression(" °C y"^"-1" * ""),
@@ -19,9 +20,11 @@ splnr_plot_climKernelDensity(
 a \code{solution_1} column.
 For \code{type = "Basic"}: A single \code{prioritizr} solution \code{sf} object.}
 
-\item{names}{A character vector of names corresponding to each solution in
+\item{solution_names}{A character vector of names corresponding to each solution in
 \code{soln} when \code{type = "Normal"}. Not used for \code{type = "Basic"}.
 Defaults to \code{NA}.}
+
+\item{climate_names}{A character string of the name of the climate}
 
 \item{type}{A character string specifying the plotting style. Must be either
 \code{"Normal"} or \code{"Basic"}. Defaults to \code{"Normal"}.}
@@ -59,7 +62,7 @@ style is streamlined for clarity and quick interpretation, ideal for
 stakeholder engagement.
 
 Both underlying functions require a \code{prioritizr} solution containing a
-\code{metric} column with climate metric information and a \code{solution_1} column
+climate metric column with climate metric information and a prioritizr solution column
 indicating selected planning units.
 }
 \examples{
@@ -110,7 +113,7 @@ print(plot_basic_kde)
 # Example 2: Normal (Fancy) kernel density plot for a single solution
 plot_normal_kde_single <- splnr_plot_climKernelDensity(
   soln = list(dat_solnClim),
-  names = c("Solution 1"),
+  solution_names = c("Solution 1"),
   type = "Normal"
 )
 print(plot_normal_kde_single)
@@ -122,7 +125,8 @@ dat_solnClim_2 <- dat_solnClim \%>\%
 
 plot_normal_kde_multi <- splnr_plot_climKernelDensity(
   soln = list(dat_solnClim, dat_solnClim_2),
-  names = c("Solution A", "Solution B"),
+  solution_names = c("Solution A", "Solution B"),
+  climate_names = "metric",
   type = "Normal",
   colorMap = "plasma",
   legendTitle = "Climate Value",

@@ -243,7 +243,8 @@ However, we are also interested how climate-smart the selected planning units in
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
   soln = list(dat_solnClim),
-  names = c("Input 1"), type = "Normal",
+  # names = c("Input 1"), 
+  type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"
 ))
@@ -283,7 +284,7 @@ targets <- Percentile_Approach$Targets
 ```
 
 
-We now add other information required to perform the spatial planning, such as the cost, and extract the names of all used features to then run a prioritisation.
+We now add other information required to perform the spatial planning, such as the cost, and extract the names of all used features to then run a prioritization.
 
 ```{r, warning=FALSE}
 out_sf$Cost_None <- rep(1, 397)
@@ -323,7 +324,8 @@ However, we are also interested how climate-smart the selected planning units in
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
   soln = list(dat_solnClimPercentile),
-  names = c("Input 1"), type = "Normal",
+  # names = c("Input 1"), 
+  type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"
 ))
@@ -359,10 +361,10 @@ targets <- Feature_Approach$Targets
 ```
 
 
-We now add other information required to perform the spatial planning, such as the cost, and extract the names of all used features to then run a prioritisation.
+We now add other information required to perform the spatial planning, such as the cost, and extract the names of all used features to then run a prioritization.
 
 ```{r}
-out_sf$Cost_None <- rep(1, 397)
+out_sf$Cost_None <- 1
 
 usedFeatures <- out_sf %>%
   sf::st_drop_geometry() %>%
@@ -395,7 +397,8 @@ However, we are also interested how climate-smart the selected planning units in
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
   soln = list(dat_solnClimFeature),
-  names = c("Input 1"), type = "Normal",
+  # names = c("Input 1"), 
+  type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"
 ))

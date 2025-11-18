@@ -26,7 +26,7 @@ A \code{ggplot} object representing the spatial comparison of the two solutions.
 \description{
 The \code{splnr_plot_comparison()} function spatially visualizes the differences
 between two \code{prioritizr} conservation solutions. This helps in understanding
-which planning units are common, added, or removed between two scenarios.
+which Planning Units are common, added, or removed between two scenarios.
 }
 \details{
 Conservation planning often involves comparing outputs from different
@@ -35,7 +35,7 @@ by requiring two \code{sf} objects, \code{soln1} and \code{soln2}, each represen
 \code{prioritizr} solution and containing a \code{solution_1} column (binary,
 indicating selected vs. not selected).
 
-The function categorizes planning units into "Same" (selected in both),
+The function categorizes Planning Units into "Same" (selected in both),
 "Added (+)" (selected in \code{soln2} but not \code{soln1}), and "Removed (-)"
 (selected in \code{soln1} but not \code{soln2}). It then plots these categories with
 distinct colors for clear visualization. The output is a \code{ggplot} object

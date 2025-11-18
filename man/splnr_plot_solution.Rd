@@ -55,7 +55,7 @@ problems). It outputs a \code{ggplot} object, which can be further customized
 by combining it with the \code{spatialplanr} function \code{splnr_gg_add()}.
 
 For multi-zone problems (\code{zones = TRUE}), the function sums the selected
-zones for each planning unit and plots the resulting combined selection.
+zones for each Planning Unit and plots the resulting combined selection.
 The \code{colorVals} and \code{legendLabels} should be provided to match the number of
 selection levels (e.g., "Not selected", "Zone 1", "Zone 2", etc.).
 }

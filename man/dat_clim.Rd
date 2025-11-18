@@ -20,6 +20,6 @@ A data frame with 780 rows and 3 columns:
 dat_clim
 }
 \description{
-An sf dataframe of planning units for spatial prioritisation
+An sf dataframe of Planning Units for spatial prioritization
 }
 \keyword{datasets}

@@ -18,7 +18,7 @@ splnr_climate_featureApproach(
 distribution data).}
 
 \item{metric}{An \code{sf} object containing climate metric information. It must
-have a column named 'metric' with the climate metric values per planning unit.}
+have a column named 'metric' with the climate metric values per Planning Unit.}
 
 \item{targets}{A \code{data.frame} with two columns: \code{feature} (character, listing
 the original feature names) and \code{target} (numeric, the initial conservation
@@ -41,7 +41,7 @@ assigned to the overall climate-smart layer. Defaults to \code{0.3} (30\%).}
 A \code{list} with two components:
 \itemize{
 \item \code{Features}: An \code{sf} object containing the binary information per
-planning unit for each original feature, plus the new \code{climate_layer}
+Planning Unit for each original feature, plus the new \code{climate_layer}
 feature. This is ready to be passed to \code{prioritizr}.
 \item \code{Targets}: A \code{data.frame} with the adjusted targets for all features,
 including the \code{climate_layer}. This is also ready for \code{prioritizr}.

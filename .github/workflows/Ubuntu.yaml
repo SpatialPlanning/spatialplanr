@@ -53,6 +53,7 @@ jobs:
             any::rcmdcheck
             any::remotes
             any::lpsymphony
+            any::slam
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2

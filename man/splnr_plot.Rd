@@ -29,7 +29,7 @@ splnr_plot(
 an \code{sf} object and include a geometry column.}
 
 \item{colNames}{A character vector of column names from \code{df} to be used for
-coloring the plot. If \code{NULL} (default), only the planning unit outlines are plotted.
+coloring the plot. If \code{NULL} (default), only the Planning Unit outlines are plotted.
 If a single column is specified, it checks for binary, logical, or continuous data.
 If multiple columns are specified, it sums the values across these columns to create
 a "FeatureSum" for plotting.}
@@ -66,7 +66,7 @@ the planning unit outlines.
 This function provides a versatile way to plot spatial data (\code{sf} objects)
 within the \code{spatialplanr} package. It can visualize various data types,
 including binary presence/absence, logical values, continuous data, or simply
-the planning unit outlines.
+the Planning Unit outlines.
 }
 \details{
 The \code{splnr_plot} function automatically detects the type of data specified by
@@ -83,11 +83,11 @@ workflow within the package.
 Written by Kilian Barreiro and Jason Everett.
 Last modified: February 2024.
 
-The \code{splnr_plot} function automatically detects the type of data specified by
+The \code{splnr_plot()} function automatically detects the type of data specified by
 \code{colNames} (binary, logical, or continuous) and adjusts the plotting
 aesthetics accordingly. If multiple \code{colNames} are provided, it calculates
-the sum of features for each planning unit and plots this sum. If \code{colNames}
-is \code{NULL}, it will simply plot the outlines of the planning units.
+the sum of features for each Planning Unit and plots this sum. If \code{colNames}
+is \code{NULL}, it will simply plot the outlines of the Planning Units.
 
 This function is designed to be a flexible replacement for several plotting
 functions, such as \code{splnr_plot_cost()}, \code{splnr_plot_binFeature()},

@@ -35,9 +35,9 @@
 #'
 #' @param features An `sf` object representing conservation features. Each column
 #'   (excluding geometry) should typically be a binary representation of a feature's
-#'   presence (1) or absence (0) in each planning unit.
+#'   presence (1) or absence (0) in each Planning Unit.
 #' @param metric An `sf` object containing climate metric information. It must
-#'   have a column named 'metric' with the climate metric values for each planning unit.
+#'   have a column named 'metric' with the climate metric values for each Planning Unit.
 #' @param percentile A numeric value (0-100) representing the cutoff threshold for
 #'   determining climate-smart areas. For example, `percentile = 5` means the
 #'   most climate-smart 5% of areas (based on `direction`) are considered.
@@ -144,7 +144,7 @@ splnr_climate_priorityArea_preprocess <- function(features,
 
     # Handle cases where filteredDF might be empty (feature not present in any unit or only in NAs)
     if (nrow(filteredDF) == 0) {
-      warning(paste0("Feature '", spp[i], "' is not present in any planning unit with valid metric data. Skipping climate-smart area calculation for this feature."))
+      warning(paste0("Feature '", spp[i], "' is not present in any Planning Unit with valid metric data. Skipping climate-smart area calculation for this feature."))
       # Create an empty sf object with expected columns for binding later
       temp_df <- df %>%
         dplyr::mutate(V1 = 0, V2 = 0) %>% # Add V1 and V2 columns with 0 values
@@ -459,9 +459,9 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
 #' @param features An `sf` object representing conservation features (e.g., species
 #'   distribution data). Each column (excluding geometry) should typically be a
 #'   binary representation of a feature's presence (1) or absence (0) in each
-#'   planning unit.
+#'   Planning Unit.
 #' @param metric An `sf` object containing climate metric information. It must
-#'   have a column named 'metric' with the climate metric values per planning unit.
+#'   have a column named 'metric' with the climate metric values per Planning Unit.
 #' @param targets A `data.frame` with two columns: `feature` (character, listing
 #'   the original feature names) and `target` (numeric, the initial conservation
 #'   target for each feature as a proportion, e.g., 0.3).
@@ -480,7 +480,7 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
 #' @return A `list` with two components:
 #'   \itemize{
 #'     \item `Features`: An `sf` object containing the binary information per
-#'           planning unit for each feature, now split into `_CS` (climate-smart)
+#'           Planning Unit for each feature, now split into `_CS` (climate-smart)
 #'           and `_NCS` (non-climate-smart) components. This is ready to be
 #'           passed to `prioritizr` when creating a conservation problem.
 #'     \item `Targets`: A `data.frame` with the adjusted targets for the
@@ -621,7 +621,7 @@ splnr_climate_priorityAreaApproach <- function(features,
 #'
 #' @param features An `sf` object representing conservation features.
 #' @param metric An `sf` object containing climate metric information. It must
-#'   have a column named 'metric' with the climate metric values per planning unit.
+#'   have a column named 'metric' with the climate metric values per Planning Unit.
 #' @param percentile A numeric value (0-100) representing the cutoff threshold for
 #'   determining whether an area is a climate priority area or not. This is applied
 #'   globally to the `metric` data.
@@ -632,8 +632,8 @@ splnr_climate_priorityAreaApproach <- function(features,
 #'   }
 #'
 #' @return An `sf` dataframe identical to the input `features`, but with an
-#'   additional binary column named `climate_layer` indicating which planning
-#'   units are considered climate-smart.
+#'   additional binary column named `climate_layer` indicating which Planning
+#'   Units are considered climate-smart.
 #' @keywords internal
 #' @noRd
 #' @importFrom assertthat assert_that
@@ -888,7 +888,7 @@ splnr_climate_feature_assignTargets <- function(climateSmartDF,
 #' @param features An `sf` object representing conservation features (e.g., species
 #'   distribution data).
 #' @param metric An `sf` object containing climate metric information. It must
-#'   have a column named 'metric' with the climate metric values per planning unit.
+#'   have a column named 'metric' with the climate metric values per Planning Unit.
 #' @param targets A `data.frame` with two columns: `feature` (character, listing
 #'   the original feature names) and `target` (numeric, the initial conservation
 #'   target for each feature as a proportion, e.g., 0.3).
@@ -906,7 +906,7 @@ splnr_climate_feature_assignTargets <- function(climateSmartDF,
 #' @return A `list` with two components:
 #'   \itemize{
 #'     \item `Features`: An `sf` object containing the binary information per
-#'           planning unit for each original feature, plus the new `climate_layer`
+#'           Planning Unit for each original feature, plus the new `climate_layer`
 #'           feature. This is ready to be passed to `prioritizr`.
 #'     \item `Targets`: A `data.frame` with the adjusted targets for all features,
 #'           including the `climate_layer`. This is also ready for `prioritizr`.
@@ -1052,9 +1052,9 @@ splnr_climate_featureApproach <- function(features,
 #'
 #' @param features An `sf` object representing conservation features. Each column
 #'   (excluding geometry) should typically be a binary representation of a feature's
-#'   presence (1) or absence (0) in each planning unit.
+#'   presence (1) or absence (0) in each Planning Unit.
 #' @param metric An `sf` object containing climate metric information. It must
-#'   have a column named 'metric' with the climate metric values per planning unit.
+#'   have a column named 'metric' with the climate metric values per Planning Unit.
 #' @param percentile A numeric value (0-100) representing the cutoff threshold for
 #'   determining whether an area is a climate priority area or not. This is applied
 #'   *per feature* to its distribution.
@@ -1066,7 +1066,7 @@ splnr_climate_featureApproach <- function(features,
 #'
 #' @return An `sf` dataframe where each column represents an original feature,
 #'   but its values are now filtered (`_filtered` suffix implicitly removed in `rename_all`)
-#'   to 1 only in planning units that are part of its climate-smart percentile.
+#'   to 1 only in Planning Units that are part of its climate-smart percentile.
 #'   All other values are 0. The dataframe retains the original geometry.
 #' @keywords internal
 #' @noRd
@@ -1164,7 +1164,7 @@ splnr_climate_percentile_preprocess <- function(features,
 
     # Handle cases where filteredDF might be empty (feature not present in any unit or only in NAs)
     if (nrow(filteredDF) == 0) {
-      warning(paste0("Feature '", spp[i], "' is not present in any planning unit with valid metric data. Skipping percentile calculation for this feature."))
+      warning(paste0("Feature '", spp[i], "' is not present in any Planning Unit with valid metric data. Skipping percentile calculation for this feature."))
       # Create an empty df with expected column for binding later
       temp_df <- df %>%
         sf::st_drop_geometry() %>% # Drop geometry for consistency with other iterations
@@ -1409,7 +1409,7 @@ splnr_climate_percentile_assignTargets <- function(features,
 #' @param features An `sf` object representing conservation features (e.g., species
 #'   distribution data).
 #' @param metric An `sf` object containing climate metric information. It must
-#'   have a column named 'metric' with the climate metric values per planning unit.
+#'   have a column named 'metric' with the climate metric values per Planning Unit.
 #' @param targets A `data.frame` with two columns: `feature` (character, listing
 #'   the original feature names) and `target` (numeric, the initial conservation
 #'   target for each feature as a proportion, e.g., 0.3).
@@ -1425,7 +1425,7 @@ splnr_climate_percentile_assignTargets <- function(features,
 #' @return A `list` with two components:
 #'   \itemize{
 #'     \item `Features`: An `sf` object containing the binary information per
-#'           planning unit for each feature, now filtered to include only its
+#'           Planning Unit for each feature, now filtered to include only its
 #'           climate-smart occurrences. This is ready to be passed to `prioritizr`.
 #'     \item `Targets`: A `data.frame` with the adjusted targets for the
 #'           filtered features. This is also ready for `prioritizr`.

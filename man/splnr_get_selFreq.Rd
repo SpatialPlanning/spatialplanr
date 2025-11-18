@@ -19,10 +19,10 @@ column named \code{solution_1}.}
 \value{
 An \code{sf} object (\code{selFreq}) containing a column named \code{selFreq}.
 This column is a factor representing the selection frequency (sum of
-selected occurrences across all solutions) for each planning unit.
+selected occurrences across all solutions) for each Planning Unit.
 }
 \description{
-\code{splnr_get_selFreq()} calculates how many times each planning unit is
+\code{splnr_get_selFreq()} calculates how many times each Planning Unit is
 selected across an array of \code{prioritizr} solutions. This "selection
 frequency" can be derived from either a list of individual solutions or
 a \code{prioritizr} portfolio object.
@@ -43,7 +43,7 @@ object representing a single \code{prioritizr} solution (each with a
 "solution_1" column).
 }
 For both types, the function sums the binary \code{solution} values (0 or 1)
-across all solutions for each planning unit. The result is converted to a
+across all solutions for each Planning Unit. The result is converted to a
 factor to represent discrete frequency levels.
 
 The output \code{sf} object can then be passed to \code{splnr_plot_selectionFreq()}

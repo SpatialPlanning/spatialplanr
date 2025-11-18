@@ -220,7 +220,7 @@ cells.
 
 To get a better idea of the overall distribution of the used features,
 we can also plot the number of features with suitable habitat within a
-planning unit of the study region.
+Planning Unit of the study region.
 
 ```{r}
 (ggFeatNo <- splnr_plot(df = datEx_species_bin, 
@@ -234,7 +234,7 @@ planning unit of the study region.
    ))
 ```
 
-## Prepare Data for prioritisation
+## Prepare Data for prioritization
 
 For the spatial prioritization we also need to extract the names of our
 features to pass into `prioritizr`.
@@ -444,7 +444,7 @@ legends <- c("Important", "Representative")
 ### Visualization of importance scores
 
 Importance scores can help to assess the relative importance of an
-individual selected planning unit in the spatial plan (for more
+individual selected Planning Unit in the spatial plan (for more
 information, see <https://prioritizr.net/reference/importance.html>)
 
 Here, we use two different importance scores, the Ferrier Score and
@@ -575,9 +575,9 @@ datEx_soln2 <- datEx_problem2 %>%
     ))
 ```
 
-But we locked in areas that were already existing MPAs. If we want to
-show the overlap between the selected planning units and the current
-MPAs, we can can add this to the `splnr_gg_add()`function.
+But we locked-in areas that were already existing Marine Protected Areas (MPAs). If we want to
+show the overlap between the selected Planning Units and the current
+MPAs, we can add this to the `splnr_gg_add()` function.
 
 ```{r}
 (splnr_plot_solution(datEx_soln2) +
@@ -589,8 +589,8 @@ MPAs, we can can add this to the `splnr_gg_add()`function.
    ))
 ```
 
-If we instead only want to see the contours of the locked in areas we
-can set `typeLockIn = "Contours"`in `splnr_gg_add()`.
+If we instead only want to see the contours of the locked-in areas we
+can set `typeLockIn = "Contours"` in `splnr_gg_add()`.
 
 ```{r}
 (splnr_plot_solution(datEx_soln2) +
@@ -634,7 +634,7 @@ correlation between solution 1 and solution 2.
 ### Plotting selection frequency
 
 Sometimes when multiple spatial plans are generated, we are interested
-in how many times a planning unit is selected across the array of
+in how many times a Planning Unit is selected across the array of
 solutions. To demonstrate how this can be done using this package, we
 first create an array (= portfolio) of solutions. One example of this is
 by using the portfolio

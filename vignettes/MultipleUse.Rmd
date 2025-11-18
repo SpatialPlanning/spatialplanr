@@ -128,7 +128,7 @@ col_name <- spDataFiltered %>%
 
 ### Spatial planning including zones
 
-So far, all steps were exactly the same as in a spatial plan that does not include zones. To have a direct comparison, we will first run a spatial plan that does not include zoning. For this, we will define targets for our features (here: 30% for all features) and create a conservation problem where we include an area-based cost in our prioritisation.
+So far, all steps were exactly the same as in a spatial plan that does not include zones. To have a direct comparison, we will first run a spatial plan that does not include zoning. For this, we will define targets for our features (here: 30% for all features) and create a conservation problem where we include an area-based cost in our prioritization.
 
 ```{r}
 target <- rep(0.3, nrow(Dict))
@@ -325,7 +325,7 @@ s3 <- p3 %>%
   prioritizr::solve.ConservationProblem()
 ```
 
-With `add_boundary_penalties()` we set a penalty of 0.5 between the zones we defined in `zm1`. For the purpose of this example, we also set a 10 second time limit for the prioritisation. The results show less fragmentation than in the previous solution without penalties:
+With `add_boundary_penalties()` we set a penalty of 0.5 between the zones we defined in `zm1`. For the purpose of this example, we also set a 10 second time limit for the prioritization. The results show less fragmentation than in the previous solution without penalties:
 
 ```{r, fig.width=9}
 (gg_s3 <- splnr_plot_solution(
@@ -431,7 +431,7 @@ mpas <- MPAsCoralSea %>%
   dplyr::filter(status == 1)
 ```
 
-We need to specify which zone the constraint should be applied to, give information on the planning unit identifier, rename the column of interest to "status" and filter out only the planning units that should be locked in.
+We need to specify which zone the constraint should be applied to, give information on the Planning Unit identifier, rename the column of interest to "status" and filter out only the Planning Units that should be locked-in.
 
 ```{r}
 # NOTE: When using sf input, we need as many cost columns as we have zones
@@ -830,7 +830,7 @@ print(r12)
 ### Next steps
 
 #### Short-term
-* Test for run time of zones compared to a normal prioritisation
+* Test for run time of zones compared to a normal prioritization
 * Communicate zones outcomes effectively (e.g. targets, cost overlay etc.)
 
 #### Longer-term

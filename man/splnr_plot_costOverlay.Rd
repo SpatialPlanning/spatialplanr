@@ -16,7 +16,7 @@ splnr_plot_costOverlay(
 \item{soln}{The \code{prioritizr} solution object, expected as an \code{sf} object,
 containing at least a \code{solution_1} column.}
 
-\item{cost}{An \code{sf} object containing the cost data for planning units.
+\item{cost}{An \code{sf} object containing the cost data for Planning Units.
 If the \code{prioritizr} solution \code{soln} already contains the cost column
 specified by \code{costName}, this parameter can be \code{NA} (default). Otherwise,
 provide an \code{sf} object with the cost data.}
@@ -34,18 +34,18 @@ Defaults to \code{"Solution overlaid with cost"}.}
 A \code{ggplot} object representing the solution with cost overlay.
 }
 \description{
-The \code{splnr_plot_costOverlay()} function visualizes the cost of each planning
-unit overlaid on the solution of a \code{prioritizr} conservation problem. This
+The \code{splnr_plot_costOverlay()} function visualizes the cost of each Planning
+Unit overlaid on the solution of a \code{prioritizr} conservation problem. This
 allows for a customizable \code{ggplot2} visualization, highlighting the costs
-within selected planning units.
+within selected Planning Units.
 }
 \details{
 This function requires a \code{prioritizr} solution as an \code{sf} object, which
 must contain a \code{solution_1} column indicating selected (1) or unselected (0)
-planning units. It also requires a cost column, either present within the
+Planning Units. It also requires a cost column, either present within the
 \code{soln} object or provided separately via the \code{Cost} parameter.
 
-The function filters the solution to show only the selected planning units
+The function filters the solution to show only the selected Planning Units
 and then overlays these with a gradient representing the cost. This output
 is a \code{ggplot} object that can be further customized using \code{splnr_gg_add()}.
 }

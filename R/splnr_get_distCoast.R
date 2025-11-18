@@ -2,7 +2,7 @@
 #'
 #' @description
 #' This function calculates the shortest distance from the centroid of each
-#' planning unit in an `sf` object to the nearest coastline. It can use either
+#' Planning Unit in an `sf` object to the nearest coastline. It can use either
 #' a default coastline from the `rnaturalearth` package or a custom-provided
 #' coastline `sf` object.
 #'
@@ -13,7 +13,7 @@
 #' a suitable projected CRS for accurate distance calculations.
 #'
 #' @param dat_sf `[sf]` \cr An `sf` object containing polygon or point features
-#'   representing the planning units. Must have a valid CRS.
+#'   representing the Planning Units. Must have a valid CRS.
 #' @param custom_coast `[sf]` \cr An optional `sf` object representing a
 #'   custom coastline. If `NULL` (the default), the coastline is downloaded
 #'   from `rnaturalearth`.
@@ -99,12 +99,12 @@ splnr_get_distCoast <- function(dat_sf, custom_coast = NULL, res = "medium") {
       sf::st_transform(crs = sf::st_crs(dat_sf))
   }
 
-  # Calculate centroids of the planning units
-  # Using centroids is a standard approach to represent the location of each planning unit
-  message("Calculating centroids for planning units.")
+  # Calculate centroids of the Planning Units
+  # Using centroids is a standard approach to represent the location of each Planning Unit
+  message("Calculating centroids for Planning Units.")
   grid_centroid <- sf::st_centroid(sf::st_geometry(dat_sf))
 
-  # Calculate the distance matrix between each planning unit centroid and the coastline
+  # Calculate the distance matrix between each Planning Unit centroid and the coastline
   message("Calculating distances to coastline.")
   dist_mat <- sf::st_distance(grid_centroid, coast) %>%
     # Explicitly set the distance units to kilometers
@@ -112,7 +112,7 @@ splnr_get_distCoast <- function(dat_sf, custom_coast = NULL, res = "medium") {
     # Drop the units class to get a numeric matrix for easier computation
     units::drop_units()
 
-  # Find the minimum distance for each planning unit (each row in the matrix)
+  # Find the minimum distance for each Planning Unit (each row in the matrix)
   # This identifies the shortest distance from each centroid to any part of the coastline
   message("Finding minimum distances and adding to dataframe.")
   dat_sf$coastDistance_km <- do.call(pmin, as.data.frame(dist_mat))

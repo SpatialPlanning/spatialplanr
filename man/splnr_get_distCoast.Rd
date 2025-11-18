@@ -8,7 +8,7 @@ splnr_get_distCoast(dat_sf, custom_coast = NULL, res = "medium")
 }
 \arguments{
 \item{dat_sf}{\verb{[sf]} \cr An \code{sf} object containing polygon or point features
-representing the planning units. Must have a valid CRS.}
+representing the Planning Units. Must have a valid CRS.}
 
 \item{custom_coast}{\verb{[sf]} \cr An optional \code{sf} object representing a
 custom coastline. If \code{NULL} (the default), the coastline is downloaded
@@ -25,7 +25,7 @@ kilometers.
 }
 \description{
 This function calculates the shortest distance from the centroid of each
-planning unit in an \code{sf} object to the nearest coastline. It can use either
+Planning Unit in an \code{sf} object to the nearest coastline. It can use either
 a default coastline from the \code{rnaturalearth} package or a custom-provided
 coastline \code{sf} object.
 }

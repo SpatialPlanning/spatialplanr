@@ -17,7 +17,7 @@ splnr_climate_percentileApproach(
 distribution data).}
 
 \item{metric}{An \code{sf} object containing climate metric information. It must
-have a column named 'metric' with the climate metric values per planning unit.}
+have a column named 'metric' with the climate metric values per Planning Unit.}
 
 \item{targets}{A \code{data.frame} with two columns: \code{feature} (character, listing
 the original feature names) and \code{target} (numeric, the initial conservation
@@ -37,7 +37,7 @@ determining whether an area is a climate priority area or not. This is applied
 A \code{list} with two components:
 \itemize{
 \item \code{Features}: An \code{sf} object containing the binary information per
-planning unit for each feature, now filtered to include only its
+Planning Unit for each feature, now filtered to include only its
 climate-smart occurrences. This is ready to be passed to \code{prioritizr}.
 \item \code{Targets}: A \code{data.frame} with the adjusted targets for the
 filtered features. This is also ready for \code{prioritizr}.

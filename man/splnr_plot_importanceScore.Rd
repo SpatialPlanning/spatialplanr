@@ -42,11 +42,11 @@ A \code{ggplot} object representing the plot of importance scores.
 }
 \description{
 The \code{splnr_plot_importanceScore()} function visualizes the importance scores
-(irreplaceability) of planning units from a \code{prioritizr} conservation problem
+(irreplaceability) of Planning Units from a \code{prioritizr} conservation problem
 using \code{ggplot2}. It supports different methods for calculating importance scores.
 }
 \details{
-Importance scores quantify the irreplaceability of a planning unit in a
+Importance scores quantify the irreplaceability of a Planning Unit in a
 conservation solution. This function leverages the \code{prioritizr} package to
 calculate and plot three different types of importance scores:
 \itemize{

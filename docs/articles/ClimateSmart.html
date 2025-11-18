@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.9</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -115,14 +115,6 @@ planning units.</p>
 <p>Get the boundary for your chosen region.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Bndry</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_get_boundary.html">splnr_get_boundary</a></span><span class="op">(</span>Limits <span class="op">=</span> <span class="va">Region</span>, Type <span class="op">=</span> <span class="va">Type</span>, cCRS <span class="op">=</span> <span class="va">cCRS</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Reading layer `ne_10m_geography_marine_polys' from data source </span></span>
-<span><span class="co">#&gt;   `/private/var/folders/p1/b5fzmqs56hg6y8473_y3bzxc0000gn/T/RtmpLjt7It/ne_10m_geography_marine_polys.shp' </span></span>
-<span><span class="co">#&gt;   using driver `ESRI Shapefile'</span></span>
-<span><span class="co">#&gt; Simple feature collection with 306 features and 37 fields</span></span>
-<span><span class="co">#&gt; Geometry type: MULTIPOLYGON</span></span>
-<span><span class="co">#&gt; Dimension:     XY</span></span>
-<span><span class="co">#&gt; Bounding box:  xmin: -180 ymin: -85.19206 xmax: 179.9999 ymax: 90</span></span>
-<span><span class="co">#&gt; Geodetic CRS:  WGS 84</span></span>
 <span></span>
 <span><span class="va">landmass</span> <span class="op">&lt;-</span> <span class="fu">rnaturalearth</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/rnaturalearth/reference/ne_countries.html" class="external-link">ne_countries</a></span><span class="op">(</span>scale <span class="op">=</span> <span class="st">"medium"</span>, returnclass <span class="op">=</span> <span class="st">"sf"</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">cCRS</span><span class="op">)</span></span></code></pre></div>
@@ -211,7 +203,7 @@ interest (here: the velocity data) <code>metric</code>.</p>
 <span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-10-1.png" width="864"></p>
+<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" width="864"></p>
 <p>In our case, there were few areas with low climate velocity, which
 are the areas we define as climate refugia in our example. Usually, we
 would combine several metrics (e.g. exposure, velocity etc.) of multiple
@@ -234,7 +226,7 @@ DATA).</p>
 <span>      Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-11-1.png" width="864"></p>
+<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" width="864"></p>
 <p>We then use the climate priority area approach
 <code><a href="../reference/splnr_climate_priorityAreaApproach.html">splnr_climate_priorityAreaApproach()</a></code> detailed in <a href="https://doi.org/10.1002/eap.2852" class="external-link">Buenafe et al (2023)</a> to
 determine climate refugia. Briefly, this approach selects a percentile
@@ -314,18 +306,19 @@ the same as when running a non-climate-smart spatial prioritization.</p>
 <span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-15-1.png" width="864"></p>
+<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" width="864"></p>
 <p>However, we are also interested how climate-smart the selected
 planning units in the solution actually are. For this, we can use a
 kernel density plot.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggClimDens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_climKernelDensity.html">splnr_plot_climKernelDensity</a></span><span class="op">(</span></span>
 <span>  soln <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">dat_solnClim</span><span class="op">)</span>,</span>
-<span>  names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Input 1"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
+<span>  <span class="co"># names = c("Input 1"), </span></span>
+<span>  type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
 <span>  legendTitle <span class="op">=</span> <span class="st">"Climate velocity (add unit)"</span>,</span>
 <span>  xAxisLab <span class="op">=</span> <span class="st">"Climate velocity"</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-16-1.png" width="864"></p>
+<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" width="864"></p>
 </div>
 </div>
 <div class="section level3">
@@ -349,7 +342,6 @@ kernel density plot.</p>
 <span>  direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>, </span>
 <span>  percentile <span class="op">=</span> <span class="fl">35</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "Lower values mean more climate-smart areas."</span></span>
 <span></span>
 <span><span class="va">out_sf</span> <span class="op">&lt;-</span> <span class="va">Percentile_Approach</span><span class="op">$</span><span class="va">Features</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_join.html" class="external-link">st_join</a></span><span class="op">(</span></span>
@@ -364,7 +356,7 @@ kernel density plot.</p>
 <span><span class="va">targets</span> <span class="op">&lt;-</span> <span class="va">Percentile_Approach</span><span class="op">$</span><span class="va">Targets</span></span></code></pre></div>
 <p>We now add other information required to perform the spatial
 planning, such as the cost, and extract the names of all used features
-to then run a prioritisation.</p>
+to then run a prioritization.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out_sf</span><span class="op">$</span><span class="va">Cost_None</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">397</span><span class="op">)</span></span>
 <span></span>
@@ -393,18 +385,19 @@ to then run a prioritisation.</p>
 <span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-19-1.png" width="864"></p>
+<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" width="864"></p>
 <p>However, we are also interested how climate-smart the selected
 planning units in the solution actually are. For this, we can use a
 kernel density plot</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggClimDens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_climKernelDensity.html">splnr_plot_climKernelDensity</a></span><span class="op">(</span></span>
 <span>  soln <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">dat_solnClimPercentile</span><span class="op">)</span>,</span>
-<span>  names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Input 1"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
+<span>  <span class="co"># names = c("Input 1"), </span></span>
+<span>  type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
 <span>  legendTitle <span class="op">=</span> <span class="st">"Climate velocity (add unit)"</span>,</span>
 <span>  xAxisLab <span class="op">=</span> <span class="st">"Climate velocity"</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-20-1.png" width="864"></p>
+<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" width="864"></p>
 </div>
 <div class="section level4">
 <h4 id="feature-approach">Feature Approach<a class="anchor" aria-label="anchor" href="#feature-approach"></a>
@@ -423,7 +416,6 @@ kernel density plot</p>
 <span>  targets <span class="op">=</span> <span class="va">targets</span>, </span>
 <span>  direction <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "Higher values mean more climate-smart areas."</span></span>
 <span></span>
 <span><span class="va">out_sf</span> <span class="op">&lt;-</span> <span class="va">Feature_Approach</span><span class="op">$</span><span class="va">Features</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_join.html" class="external-link">st_join</a></span><span class="op">(</span></span>
@@ -437,9 +429,9 @@ kernel density plot</p>
 <span><span class="va">targets</span> <span class="op">&lt;-</span> <span class="va">Feature_Approach</span><span class="op">$</span><span class="va">Targets</span></span></code></pre></div>
 <p>We now add other information required to perform the spatial
 planning, such as the cost, and extract the names of all used features
-to then run a prioritisation.</p>
+to then run a prioritization.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">out_sf</span><span class="op">$</span><span class="va">Cost_None</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">397</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">out_sf</span><span class="op">$</span><span class="va">Cost_None</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span></span>
 <span><span class="va">usedFeatures</span> <span class="op">&lt;-</span> <span class="va">out_sf</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_drop_geometry</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
@@ -462,18 +454,19 @@ to then run a prioritisation.</p>
 <span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-23-1.png" width="864"></p>
+<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-23-1.png" class="r-plt" width="864"></p>
 <p>However, we are also interested how climate-smart the selected
 planning units in the solution actually are. For this, we can use a
 kernel density plot</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggClimDens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_climKernelDensity.html">splnr_plot_climKernelDensity</a></span><span class="op">(</span></span>
 <span>  soln <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">dat_solnClimFeature</span><span class="op">)</span>,</span>
-<span>  names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Input 1"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
+<span>  <span class="co"># names = c("Input 1"), </span></span>
+<span>  type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
 <span>  legendTitle <span class="op">=</span> <span class="st">"Climate velocity (add unit)"</span>,</span>
 <span>  xAxisLab <span class="op">=</span> <span class="st">"Climate velocity"</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-24-1.png" width="864"></p>
+<p><img src="ClimateSmart_files/figure-html/unnamed-chunk-24-1.png" class="r-plt" width="864"></p>
 </div>
 </div>
 </div>
@@ -488,7 +481,7 @@ kernel density plot</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>
