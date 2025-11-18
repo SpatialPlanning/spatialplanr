@@ -601,7 +601,7 @@ datEx_soln2 <- datEx_problem2 %>%
 
 But we locked-in areas that were already existing Marine Protected Areas
 (MPAs). If we want to show the overlap between the selected Planning
-Units and the current MPAs, we can can add this to the
+Units and the current MPAs, we can add this to the
 [`splnr_gg_add()`](https://mathmarecol.github.io/spatialplanr/reference/splnr_gg_add.md)
 function.
 
