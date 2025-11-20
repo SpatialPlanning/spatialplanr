@@ -2,35 +2,60 @@
 % Please edit documentation in R/splnr_plotting.R
 \name{splnr_plot_costOverlay}
 \alias{splnr_plot_costOverlay}
-\title{Plot cost overlay}
+\title{Plot Cost Overlay on Solution}
 \usage{
 splnr_plot_costOverlay(
   soln,
-  Cost = NA,
-  Cost_name = "Cost",
+  cost = NA,
+  costName = "Cost",
   legendTitle = "Cost",
   plotTitle = "Solution overlaid with cost"
 )
 }
 \arguments{
-\item{soln}{The \code{prioritizr} solution}
+\item{soln}{The \code{prioritizr} solution object, expected as an \code{sf} object,
+containing at least a \code{solution_1} column.}
 
-\item{Cost}{An \code{sf} object of cost for \code{prioritizr}.In case \code{prioritizr}solution does not contain cost, alternative cost object has to be provided here that was used to generate solution (default: NA).}
+\item{cost}{An \code{sf} object containing the cost data for Planning Units.
+If the \code{prioritizr} solution \code{soln} already contains the cost column
+specified by \code{costName}, this parameter can be \code{NA} (default). Otherwise,
+provide an \code{sf} object with the cost data.}
 
-\item{Cost_name}{Name of the cost column}
+\item{costName}{A character string specifying the name of the cost column
+within the \code{soln} object or the \code{Cost} object. Defaults to \code{"Cost"}.}
 
-\item{legendTitle}{A character value for the title of the legend. Can be empty ("").}
+\item{legendTitle}{A character string for the title of the cost legend.
+Defaults to \code{"Cost"}.}
 
-\item{plotTitle}{A character value for the title of the plot. Can be empty ("").}
+\item{plotTitle}{A character string for the subtitle of the plot.
+Defaults to \code{"Solution overlaid with cost"}.}
 }
 \value{
-A ggplot object of the plot
+A \code{ggplot} object representing the solution with cost overlay.
 }
 \description{
-\code{splnr_plot_costOverlay()} allows to plot the cost of each planning units of a planning region on top of the solution of a conservation problem created with \code{prioritizr} in a customisable way using \code{ggplot2}. This function requires a solution as an \code{sf} object with a column called \code{solution_1} as well as a cost column and outputs a \code{ggobject}. It can be combined with the \code{spatialplanr} function \code{\link[=splnr_gg_add]{splnr_gg_add()}}.
+The \code{splnr_plot_costOverlay()} function visualizes the cost of each Planning
+Unit overlaid on the solution of a \code{prioritizr} conservation problem. This
+allows for a customizable \code{ggplot2} visualization, highlighting the costs
+within selected Planning Units.
+}
+\details{
+This function requires a \code{prioritizr} solution as an \code{sf} object, which
+must contain a \code{solution_1} column indicating selected (1) or unselected (0)
+Planning Units. It also requires a cost column, either present within the
+\code{soln} object or provided separately via the \code{Cost} parameter.
+
+The function filters the solution to show only the selected Planning Units
+and then overlays these with a gradient representing the cost. This output
+is a \code{ggplot} object that can be further customized using \code{splnr_gg_add()}.
 }
 \examples{
-dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+\dontrun{
+# Assuming 'dat_species_bin' is an existing sf object in your package.
+
+# Create a dummy prioritizr problem and solve it for demonstration.
+dat_problem <- prioritizr::problem(
+  dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   cost_column = "Cost"
 ) \%>\%
@@ -42,5 +67,21 @@ dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = ru
 dat_soln <- dat_problem \%>\%
   prioritizr::solve.ConservationProblem()
 
-splnr_plot_costOverlay(soln = dat_soln)
+# Plot the solution overlaid with cost
+plot_cost_overlay <- splnr_plot_costOverlay(soln = dat_soln)
+print(plot_cost_overlay)
+
+# Example: If cost is in a separate sf object (e.g., dat_PUs with a cost column)
+# Create a dummy cost column in dat_PUs for this example
+# Replace this with your actual cost data if it's external
+dat_PUs_with_cost <- dat_PUs \%>\% dplyr::mutate(MyCost = runif(n = dim(.)[[1]]))
+plot_cost_overlay_external <- splnr_plot_costOverlay(
+  soln = dat_soln,
+  cost = dat_PUs_with_cost,
+  costName = "MyCost",
+  legendTitle = "Custom Cost",
+  plotTitle = "Solution with External Cost"
+)
+print(plot_cost_overlay_external)
+}
 }

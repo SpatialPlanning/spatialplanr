@@ -3,7 +3,7 @@
 \docType{data}
 \name{dat_mpas}
 \alias{dat_mpas}
-\title{MPA Data}
+\title{Marine Protected Areas (MPAs) Data}
 \format{
 \code{dat_mpas}
 A data frame with XXXX rows and XXX columns:
@@ -20,6 +20,6 @@ A data frame with XXXX rows and XXX columns:
 dat_mpas
 }
 \description{
-An sf dataframe of planning units for spatial prioritisation
+An sf dataframe of Planning Units for spatial prioritization
 }
 \keyword{datasets}

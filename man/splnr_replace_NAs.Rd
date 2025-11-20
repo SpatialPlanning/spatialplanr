@@ -2,23 +2,47 @@
 % Please edit documentation in R/utils.R
 \name{splnr_replace_NAs}
 \alias{splnr_replace_NAs}
-\title{Remove NAs from spatial data using nearest neighbour}
+\title{Remove NAs from Spatial Data Using Nearest Neighbour}
 \usage{
 splnr_replace_NAs(df, vari)
 }
 \arguments{
-\item{df}{An \code{sf} dataframe}
+\item{df}{An \code{sf} dataframe. This dataframe must contain a geometry column
+and the \code{vari} column with potential NA values.}
 
-\item{vari}{Variable to remove NAs from}
+\item{vari}{A character string specifying the name of the column in \code{df}
+from which NA values are to be removed and replaced. This column must
+exist in \code{df}.}
 }
 \value{
-An \code{sf} object with NAs replaced with the nearest neighbour
+An \code{sf} object identical to the input \code{df}, but with NA values
+in the \code{vari} column replaced by values from their nearest non-NA neighbors.
+If no NAs are found, the original \code{df} is returned unchanged.
 }
 \description{
-\code{splnr_replace_NAs()} allows you to replace NA values in your data with the value of the nearest neighbour.
-The nearest neighbour is determined using \code{st_nearest_feature()} from the \code{sf} package.
+\code{splnr_replace_NAs()} replaces missing (NA) values in a specified column
+of an \code{sf} dataframe with the value from the nearest spatial neighbor.
+}
+\details{
+This function is useful for imputing missing data in spatial contexts.
+It identifies all Planning Units with \code{NA} values in the \code{vari} column.
+For each of these, it finds the geographically closest Planning Unit that
+\emph{does not} have an \code{NA} value in \code{vari}, and then copies that non-missing
+value. This approach leverages the spatial autocorrelation often present
+in environmental and species data.
+
+The \code{st_nearest_feature()} function from the \code{sf} package is used for
+determining the closest neighbor.
 }
 \examples{
-df <- dat_species_prob \%>\%
-  splnr_replace_NAs("Spp2")
+\dontrun{
+# Assuming 'dat_species_prob' is an existing sf object in your package.
+# For demonstration, let's artificially introduce some NAs in 'Spp2'.
+df_with_na <- dat_species_prob \%>\%
+  dplyr::mutate(Spp2 = ifelse(runif(n()) < 0.2, NA, Spp2))
+
+# Replace NAs in 'Spp2' using nearest neighbor imputation.
+df_no_na <- splnr_replace_NAs(df = df_with_na, vari = "Spp2")
+print(sum(is.na(df_no_na$Spp2))) # Should be 0 if successful
+}
 }

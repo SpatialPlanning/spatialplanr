@@ -1,78 +1,123 @@
-#' Function to compute distances to nearest coastline for each centroid of each planning unit in the 'sf' object provided.
+#' @title Calculate Distance to Coastline
 #'
-#' The code takes a sf object and return it updated with a new coastDistance column.
-#' The output inherits the crs from this sf object so ensure it is in the correct projection for your needs
+#' @description
+#' This function calculates the shortest distance from the centroid of each
+#' Planning Unit in an `sf` object to the nearest coastline. It can use either
+#' a default coastline from the `rnaturalearth` package or a custom-provided
+#' coastline `sf` object.
 #'
-#' Written by Kristine Buenafe
-#' Written: March/April 2023
-#' Modified by Kilian Barreiro
-#' Updated: December 2023
+#' @details
+#' The function adds a new column named `coastDistance_km` to the input `sf`
+#' object, containing the calculated distances in kilometers. The CRS of the
+#' input data is preserved. It is crucial to ensure the input `sf` object has
+#' a suitable projected CRS for accurate distance calculations.
 #'
-#' @param dat_sf An sf object.
-#' @param custom_coast An sf coastline object (optional)
-#' @param res Allow user to choose resolution (`small`, `medium`, `large`) of `rnaturalearth` data used for coastline.
+#' @param dat_sf `[sf]` \cr An `sf` object containing polygon or point features
+#'   representing the Planning Units. Must have a valid CRS.
+#' @param custom_coast `[sf]` \cr An optional `sf` object representing a
+#'   custom coastline. If `NULL` (the default), the coastline is downloaded
+#'   from `rnaturalearth`.
+#' @param res `[character(1)]` \cr The resolution of the `rnaturalearth`
+#'   coastline to use. Options are `"small"`, `"medium"` (default), or
+#'   `"large"`. This parameter is ignored if `custom_coast` is provided.
 #'
-#' @return An `sf` object with distances to the nearest coast
+#' @family cost_features
+#'
+#' @return An `sf` object identical to `dat_sf` but with an added column
+#'   `coastDistance_km` representing the distance to the nearest coastline in
+#'   kilometers.
+#'
+#' @importFrom assertthat assert_that is.flag
+#' @importFrom units set_units drop_units
+#' @importFrom rnaturalearth ne_coastline
+#' @importFrom sf st_crs st_centroid st_geometry st_distance st_transform
+#' @importFrom rlang .data
+#'
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' # Example 1: Calculate distance to coast for a simple grid
 #' bbox <- sf::st_bbox(c(xmin = 0, ymin = 0, xmax = 3, ymax = 3))
-#' grid <- sf::st_make_grid(bbox, n = c(3, 3), what = "polygons")
-#' grid <- sf::st_sf(geometry = grid) %>%
-#'   sf::st_set_crs("EPSG:4326")
-#' splnr_get_distCoast(grid)
+#' grid <- sf::st_as_sf(sf::st_make_grid(bbox, n = c(3, 3)))
+#' grid_with_dist <- splnr_get_distCoast(grid)
+#' plot(grid_with_dist["coastDistance_km"])
 #'
-#' cCRS <- "ESRI:54009"
+#' # Example 2: Using a specific resolution for the coastline
+#' # Note: Requires the 'dat_sf' object to be created first, e.g., using
+#' # splnr_get_planning_units()
+#' if (exists("dat_sf")) {
+#'   dat_sf_dist <- splnr_get_distCoast(dat_sf, res = "large")
+#'   summary(dat_sf_dist$coastDistance_km)
+#' }
 #'
-#' Bndry <- splnr_get_boundary(Limits = "Coral Sea",
-#'                             Type = "Oceans",
-#'                             cCRS = cCRS)
-#'
+#' # Example 3: Using a custom coastline
+#' # First, create a custom coastline (e.g., from a country polygon)
 #' landmass <- rnaturalearth::ne_countries(
 #'   scale = "medium",
 #'   returnclass = "sf"
-#' ) %>%
-#'   sf::st_transform(cCRS)
+#' )
 #'
-# dat_sf <- spatialgridr::get_grid(boundary = Bndry,
-#                                  projection_crs = cCRS,
-#                                  option = "sf_hex",
-#                                  resolution = 10000,
-#                                  sf_method = "centroid") %>%
-#   splnr_get_distCoast(res = "medium")
-
-splnr_get_distCoast <- function(dat_sf, custom_coast = NULL, res = NULL) {
-
+#' if (exists("dat_sf") && exists("landmass")) {
+#'    # Transform landmass to the same CRS as the planning units
+#'   landmass_proj <- sf::st_transform(landmass, sf::st_crs(dat_sf))
+#'   dat_sf_custom_coast <- splnr_get_distCoast(dat_sf, custom_coast = landmass_proj)
+#'   summary(dat_sf_custom_coast$coastDistance_km)
+#' }
+#' }
+splnr_get_distCoast <- function(dat_sf, custom_coast = NULL, res = "medium") {
+  # Input validation using assertthat
   assertthat::assert_that(
     inherits(dat_sf, "sf"),
-    !is.null(sf::st_crs(dat_sf)),
+    msg = "'dat_sf' must be an 'sf' object."
+  )
+  assertthat::assert_that(
+    !is.na(sf::st_crs(dat_sf)),
+    msg = "'dat_sf' must have a valid Coordinate Reference System (CRS)."
+  )
+  assertthat::assert_that(
     is.null(custom_coast) || inherits(custom_coast, "sf"),
-    is.null(res) || res %in% c("small", "medium", "large")
+    msg = "'custom_coast' must be either NULL or an 'sf' object."
+  )
+  assertthat::assert_that(
+    is.character(res) && length(res) == 1 && res %in% c("small", "medium", "large"),
+    msg = "'res' must be a single character string: 'small', 'medium', or 'large'."
   )
 
-  # Load coast
+  # Load or prepare the coastline data
   if (is.null(custom_coast)) {
-    if (is.null(res)) {res <- "medium"}
-    coast <- rnaturalearth::ne_coastline(scale = res) %>%
-      sf::st_as_sf() %>%
+    message(paste0("Downloading coastline data from rnaturalearth at '", res, "' resolution."))
+    # If no custom coast is provided, download from rnaturalearth
+    coast <- rnaturalearth::ne_coastline(scale = res, returnclass = "sf") %>%
+      # Transform the coastline to match the CRS of the input data
       sf::st_transform(crs = sf::st_crs(dat_sf))
   } else {
+    message("Using custom coastline data.")
+    # If a custom coast is provided, use it
     coast <- custom_coast %>%
+      # Ensure the custom coastline has the same CRS as the input data
       sf::st_transform(crs = sf::st_crs(dat_sf))
   }
 
-  # Convert grid to points (centroids)
+  # Calculate centroids of the Planning Units
+  # Using centroids is a standard approach to represent the location of each Planning Unit
+  message("Calculating centroids for Planning Units.")
   grid_centroid <- sf::st_centroid(sf::st_geometry(dat_sf))
 
-  # Get distance matrix
+  # Calculate the distance matrix between each Planning Unit centroid and the coastline
+  message("Calculating distances to coastline.")
   dist_mat <- sf::st_distance(grid_centroid, coast) %>%
-    units::set_units("km") %>% # Convert to km
-    units::drop_units() # Remove units (include in header below)
+    # Explicitly set the distance units to kilometers
+    units::set_units("km") %>%
+    # Drop the units class to get a numeric matrix for easier computation
+    units::drop_units()
 
-  # Find min distance for each row and convert to km.
+  # Find the minimum distance for each Planning Unit (each row in the matrix)
+  # This identifies the shortest distance from each centroid to any part of the coastline
+  message("Finding minimum distances and adding to dataframe.")
   dat_sf$coastDistance_km <- do.call(pmin, as.data.frame(dist_mat))
 
+  # Return the original sf object with the new distance column
+  message("Distance calculation complete.")
   return(dat_sf)
 }
-
-

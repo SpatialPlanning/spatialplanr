@@ -8,7 +8,7 @@
 \code{dat_category}
 A data frame with XXXX rows and XXX columns:
 \describe{
-\item{feature}{all features available for spatial prioritisation}
+\item{feature}{all features available for spatial prioritization}
 \item{category}{the categories of all features}
 ...
 }

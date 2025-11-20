@@ -2,8 +2,7 @@
 % Please edit documentation in R/splnr_get_gfw.R
 \name{splnr_get_gfw}
 \alias{splnr_get_gfw}
-\title{The \code{get_gfwData} function recover the data of Global Fishing Watch and
-returns it as a sf object.}
+\title{Retrieve Global Fishing Watch Data}
 \usage{
 splnr_get_gfw(
   region,
@@ -18,54 +17,88 @@ splnr_get_gfw(
 )
 }
 \arguments{
-\item{region}{Region studied (character) or a geojson shape to filter raster}
+\item{region}{A character string specifying the name of the region (e.g., an EEZ name)
+or a numeric ID for the region, or an \code{sf} object if \code{region_source} is set
+to "USER_SHAPEFILE".}
 
-\item{start_date}{Start date (waited format : "\%Y-\%m-\%d").}
+\item{start_date}{The start date for data retrieval, expected in "\%Y-\%m-\%d" format (e.g., "2021-01-01").}
 
-\item{end_date}{End date (waited format : "\%Y-\%m-\%d").}
+\item{end_date}{The end date for data retrieval, expected in "\%Y-\%m-\%d" format (e.g., "2022-12-31").}
 
-\item{temp_res}{Temporal resolution ("daily","monthly","yearly").}
+\item{temp_res}{The desired temporal resolution for the data. Must be one of:
+"DAILY", "MONTHLY", or "YEARLY".}
 
-\item{spat_res}{Spatial resolution ("low" for 0.1 degree, "high" for 0.01 degree).}
+\item{spat_res}{The desired spatial resolution for the data. Must be one of:
+"LOW" (0.1 degree) or "HIGH" (0.01 degree). Defaults to "LOW".}
 
-\item{region_source}{source of the region ('eez','mpa', 'rfmo' or 'user_json')}
+\item{region_source}{The source of the region definition. Must be one of:
+'EEZ', 'MPA', 'RFMO', or 'USER_SHAPEFILE'. Defaults to "EEZ".}
 
-\item{key}{Token for GFW API (see details GlobalFishingWatch vignette).}
+\item{key}{Your API token for the GFW API. If not provided, it attempts to
+authenticate using \code{gfwr::gfw_auth()}. See the GlobalFishingWatch vignette
+for details on obtaining a key.}
 
-\item{cCRS}{The crs to which the sf will be returned (default = "EPSG:4326").}
+\item{cCRS}{The Coordinate Reference System (CRS) to which the output \code{sf} object
+will be transformed. Defaults to "EPSG:4326".}
 
-\item{compress}{Binary operator to compress (aggregate) the data per coordinates (default = FALSE).}
+\item{compress}{A logical value. If \code{TRUE}, the data will be compressed (aggregated)
+by coordinates, summing fishing hours for each unique location. If \code{FALSE},
+the raw data points are returned. Defaults to \code{FALSE}.}
 }
 \value{
-An \code{sf} object with gfw data.
+An \code{sf} object containing the requested GFW data. The structure of
+the \code{sf} object will vary depending on the \code{compress} and \code{temp_res}
+parameters.
 }
 \description{
-The possibilities offered by this function are explained in \code{vignette("GlobalFishingWatch")}
+The \code{splnr_get_gfw} function retrieves Global Fishing Watch (GFW) data and
+returns it as an \code{sf} (simple features) object. This function allows for
+flexible data queries based on geographical region, time range, and desired
+spatial and temporal resolutions.
 }
 \details{
-We have the same parameters than the \code{get_raster} function, plus \code{cCRS}
-which is the crs for the sf_modification \if{html}{\out{<br>}}
-Different possible values can be combined and are : \if{html}{\out{<br>}}
-\itemize{
-\item \verb{Time Range}, \code{Flag}, \code{Geartype}. \if{html}{\out{<br>}}
-\strong{(A combination can be : c('Time Range','Geartype'), if you want to get}
-\strong{the sum of fishing hours per date and geartype, for example you want to}
-\strong{display the drifting longline fishing in a specific year)} \if{html}{\out{<br>}} \if{html}{\out{<br>}}
-\strong{Notes :} \if{html}{\out{<br>}}
-}
-\enumerate{
-\item For the moment we are limited to the EEZs of each region, but we can
-potentially restrict the working area to specific MPAs. \if{html}{\out{<br>}}
-\item Days indicated in the__ \code{start_date} \strong{and} \code{end_date} __variables are
-included in the data recovery.
-}
+The possibilities offered by this function are extensively explained in
+\code{vignette("GlobalFishingWatch")}.
 
-The code takes several parameters described below and return an sf object
-with gfw data aggregated or not (param compress)
+This function shares many parameters with the \code{get_raster} function from the
+\code{gfwr} package, with the addition of \code{cCRS} for specifying the Coordinate
+Reference System of the output \code{sf} object.
+
+Fishing activity data can be aggregated (\code{group_by}) by "FLAGANDGEARTYPE"
+by default, combining flags and gear types.
+
+\strong{Notes:}
+\itemize{
+\item Currently, the function is primarily designed for data within
+Exclusive Economic Zones (EEZs), but it can potentially be
+extended to specific Marine Protected Areas (MPAs) or RFMOs.
+\item Days specified in the \code{start_date} and \code{end_date} variables are
+inclusive in the data recovery.
+}
 }
 \examples{
 \dontrun{
-gfw_data <- splnr_get_gfw('Australia', "2021-01-01", "2022-12-31", "YEARLY",
-    cCRS = "ESRI:54009", compress = TRUE)
+# Example: Retrieve yearly GFW data for Australia, transformed to a
+# Mollweide projection (ESRI:54009) and compressed (aggregated) by location.
+gfw_data <- splnr_get_gfw(
+  region = 'Australia',
+  start_date = "2021-01-01",
+  end_date = "2022-12-31",
+  temp_res = "YEARLY",
+  cCRS = "ESRI:54009",
+  compress = TRUE
+)
+
+# Example: Retrieve monthly GFW data for a specific EEZ ID,
+# keeping individual time ranges and locations.
+# Note: Replace 1000 with an actual EEZ ID if needed for testing.
+gfw_data_monthly <- splnr_get_gfw(
+  region = 1000, # Example numeric EEZ ID
+  start_date = "2022-01-01",
+  end_date = "2022-03-31",
+  temp_res = "MONTHLY",
+  region_source = "EEZ",
+  compress = FALSE
+)
 }
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_plotting.R
 \name{splnr_plot_comparison}
 \alias{splnr_plot_comparison}
-\title{Plot solution comparison}
+\title{Plot Solution Comparison}
 \usage{
 splnr_plot_comparison(
   soln1,
@@ -11,22 +11,43 @@ splnr_plot_comparison(
 )
 }
 \arguments{
-\item{soln1}{The first \code{prioritizr} solution}
+\item{soln1}{The first \code{prioritizr} solution, expected as an \code{sf} object
+with a \code{solution_1} column. This serves as the baseline for comparison.}
 
-\item{soln2}{The second \code{prioritizr} solution}
+\item{soln2}{The second \code{prioritizr} solution, expected as an \code{sf} object
+with a \code{solution_1} column. This is the solution being compared against \code{soln1}.}
 
-\item{legendTitle}{A character value for the title of the legend. Can be empty ("").}
+\item{legendTitle}{A character string for the title of the legend.
+Defaults to \code{"Scenario 2 compared to Scenario 1:"}.}
 }
 \value{
-A ggplot object of the plot
+A \code{ggplot} object representing the spatial comparison of the two solutions.
 }
 \description{
-Conservation planning often requires the comparison of the outputs of the solutions of different conservation problems. One way to compare solutions is by spatially visualising the different planning units that were selected in two separate solutions to conservation problems.
-\code{splnr_plot_comparison()} allows to map the differences of two solutions in customisable way using \code{ggplot2}. This function requires two separate \code{sf} objects each containing a \code{solution_1} column indicating the binary solution (selected vs not selected) of a \code{prioritizr} conservation problem. It outputs a \code{ggobject} and can be combined with the \code{spatialplanr} function \code{\link[=splnr_gg_add]{splnr_gg_add()}}.
+The \code{splnr_plot_comparison()} function spatially visualizes the differences
+between two \code{prioritizr} conservation solutions. This helps in understanding
+which Planning Units are common, added, or removed between two scenarios.
+}
+\details{
+Conservation planning often involves comparing outputs from different
+conservation problems or scenarios. This function facilitates this comparison
+by requiring two \code{sf} objects, \code{soln1} and \code{soln2}, each representing a
+\code{prioritizr} solution and containing a \code{solution_1} column (binary,
+indicating selected vs. not selected).
+
+The function categorizes Planning Units into "Same" (selected in both),
+"Added (+)" (selected in \code{soln2} but not \code{soln1}), and "Removed (-)"
+(selected in \code{soln1} but not \code{soln2}). It then plots these categories with
+distinct colors for clear visualization. The output is a \code{ggplot} object
+that can be combined with \code{splnr_gg_add()} for further customization.
 }
 \examples{
-# 30 \% target for problem/solution 1
-dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+\dontrun{
+# Assuming 'dat_species_bin' is an existing sf object in your package.
+
+# Create Problem 1 with 30\% target and solve it.
+dat_problem <- prioritizr::problem(
+  dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   cost_column = "Cost"
 ) \%>\%
@@ -38,7 +59,7 @@ dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = ru
 dat_soln <- dat_problem \%>\%
   prioritizr::solve.ConservationProblem()
 
-# 50 \% target for problem/solution 2
+# Create Problem 2 with 50\% target and solve it.
 dat_problem2 <- prioritizr::problem(
   dat_species_bin \%>\%
     dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
@@ -53,5 +74,8 @@ dat_problem2 <- prioritizr::problem(
 dat_soln2 <- dat_problem2 \%>\%
   prioritizr::solve.ConservationProblem()
 
-(splnr_plot_comparison(dat_soln, dat_soln2))
+# Plot the comparison between the two solutions.
+plot_comparison <- splnr_plot_comparison(dat_soln, dat_soln2)
+print(plot_comparison)
+}
 }

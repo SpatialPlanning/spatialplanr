@@ -185,9 +185,9 @@ the binary habitat suitability map for Green sea turtles:
 ```{r}
 (ggFeature1 <- splnr_plot(
   df = datEx_species_bin,
-  col_names = "Chelonia_mydas",
-  plot_title = "Chelonia mydas",
-  legend_labels = c("Absence", "Presence")
+  colNames = "Chelonia_mydas",
+  plotTitle = "Chelonia mydas",
+  legendLabels = c("Absence", "Presence")
 ) +
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
@@ -205,7 +205,7 @@ are fairly ubiquitous across the whole Coral Sea.
 (ggFeature <- splnr_plot(
   datEx_species_bin,
   "Megaptera_novaeangliae",
-  plot_title = "Megaptera novaeangliae"
+  plotTitle = "Megaptera novaeangliae"
 ) +
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
@@ -220,21 +220,21 @@ cells.
 
 To get a better idea of the overall distribution of the used features,
 we can also plot the number of features with suitable habitat within a
-planning unit of the study region.
+Planning Unit of the study region.
 
 ```{r}
 (ggFeatNo <- splnr_plot(df = datEx_species_bin, 
-                        col_names =  colnames(datEx_species_bin %>% 
+                        colNames =  colnames(datEx_species_bin %>% 
                                                 sf::st_drop_geometry()),
-                        plot_title = "", 
-                        legend_title = "Number of features") +
+                        plotTitle = "", 
+                        legendTitle = "Number of features") +
    splnr_gg_add(
      PUs = PUs, Bndry = Bndry, overlay = landmass,
      cropOverlay = PUs, ggtheme = splnr_theme
    ))
 ```
 
-## Prepare Data for prioritisation
+## Prepare Data for prioritization
 
 For the spatial prioritization we also need to extract the names of our
 features to pass into `prioritizr`.
@@ -260,8 +260,8 @@ units are assigned an equal cost of 1.
 
 ```{r}
 out_sf$Cost_None <- 1
-(ggCost <- splnr_plot(out_sf, col_names = "Cost_None", 
-                      legend_title = "Cost", legend_labels = "1") +
+(ggCost <- splnr_plot(out_sf, colNames = "Cost_None", 
+                      legendTitle = "Cost", legendLabels = "1") +
     splnr_gg_add(
       PUs = PUs, Bndry = Bndry, overlay = landmass,
       cropOverlay = PUs, ggtheme = splnr_theme
@@ -289,7 +289,7 @@ out_sf$Apparent.Fishing.Hours[as.numeric(rownames(PUs))] <-
   gfw_data$Apparent.Fishing.Hours # Put corresponding data in PUs
 
 
-(ggCost <- splnr_plot(out_sf, col_names = "Apparent.Fishing.Hours") +
+(ggCost <- splnr_plot(out_sf, colNames = "Apparent.Fishing.Hours") +
     splnr_gg_add(
       PUs = PUs, Bndry = Bndry, overlay = landmass,
       cropOverlay = PUs, ggtheme = splnr_theme
@@ -316,7 +316,7 @@ enviro_regions <- oceandatr::get_enviro_regions(planning_grid = PUs,
 
 
 ```{r, eval=FALSE, echo=FALSE}
-splnr_plot(df = bathymetry, col_names = "bathymetry", plot_title = "") + 
+splnr_plot(df = bathymetry, colNames = "bathymetry", plotTitle = "") + 
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
     cropOverlay = PUs, ggtheme = splnr_theme
@@ -370,9 +370,9 @@ importance scores
 
 ```{r}
 (ggSoln <- splnr_plot(datEx_soln, 
-                      col_names = "solution_1", 
-                      legend_title = "Solution", 
-                      legend_labels = c("0","1")) +
+                      colNames = "solution_1", 
+                      legendTitle = "Solution", 
+                      legendLabels = c("0","1")) +
    splnr_gg_add(
      PUs = PUs, Bndry = Bndry, overlay = landmass,
      cropOverlay = PUs, ggtheme = splnr_theme
@@ -389,8 +389,8 @@ overlay of the cost to show how the solution avoids highly costly areas:
 ```{r}
 (ggCostOverlay <- splnr_plot_costOverlay(
   soln = datEx_soln,
-  Cost = NA,
-  Cost_name = "Cost_None"
+  cost = NA,
+  costName = "Cost_None"
 ) +
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
@@ -444,7 +444,7 @@ legends <- c("Important", "Representative")
 ### Visualization of importance scores
 
 Importance scores can help to assess the relative importance of an
-individual selected planning unit in the spatial plan (for more
+individual selected Planning Unit in the spatial plan (for more
 information, see <https://prioritizr.net/reference/importance.html>)
 
 Here, we use two different importance scores, the Ferrier Score and
@@ -575,9 +575,9 @@ datEx_soln2 <- datEx_problem2 %>%
     ))
 ```
 
-But we locked in areas that were already existing MPAs. If we want to
-show the overlap between the selected planning units and the current
-MPAs, we can can add this to the `splnr_gg_add()`function.
+But we locked-in areas that were already existing Marine Protected Areas (MPAs). If we want to
+show the overlap between the selected Planning Units and the current
+MPAs, we can add this to the `splnr_gg_add()` function.
 
 ```{r}
 (splnr_plot_solution(datEx_soln2) +
@@ -589,8 +589,8 @@ MPAs, we can can add this to the `splnr_gg_add()`function.
    ))
 ```
 
-If we instead only want to see the contours of the locked in areas we
-can set `typeLockIn = "Contours"`in `splnr_gg_add()`.
+If we instead only want to see the contours of the locked-in areas we
+can set `typeLockIn = "Contours"` in `splnr_gg_add()`.
 
 ```{r}
 (splnr_plot_solution(datEx_soln2) +
@@ -634,7 +634,7 @@ correlation between solution 1 and solution 2.
 ### Plotting selection frequency
 
 Sometimes when multiple spatial plans are generated, we are interested
-in how many times a planning unit is selected across the array of
+in how many times a Planning Unit is selected across the array of
 solutions. To demonstrate how this can be done using this package, we
 first create an array (= portfolio) of solutions. One example of this is
 by using the portfolio

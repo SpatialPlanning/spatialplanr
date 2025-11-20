@@ -2,23 +2,93 @@
 % Please edit documentation in R/splnr_apply_cutoffs.R
 \name{splnr_apply_cutoffs}
 \alias{splnr_apply_cutoffs}
-\title{Function to apply cutoffs to feature data}
+\title{Apply Cutoffs to Feature Data}
 \usage{
 splnr_apply_cutoffs(features, Cutoffs, inverse = FALSE)
 }
 \arguments{
-\item{features}{A sf dataframe with all the feature information}
+\item{features}{An \code{sf} dataframe. It must contain a \code{geometry} column and
+at least one numeric column to which cutoffs will be applied.}
 
-\item{Cutoffs}{A single value or a named vector of cutoffs.}
+\item{Cutoffs}{A numeric value or a named numeric vector of cutoffs.
+\itemize{
+\item If a single unnamed numeric value, it's applied to all numeric columns.
+\item If a named numeric vector, names must correspond to numeric column names in \code{features}.
+}
+All cutoff values must be between \code{0} and \code{1}.}
 
-\item{inverse}{If TRUE, values below the \code{Cutoffs} are used. If FALSE (default), values above are kept.}
+\item{inverse}{A logical value (\code{TRUE} or \code{FALSE}). If \code{TRUE}, values below
+the \code{Cutoffs} are converted to \code{1} (and others to \code{0}). If \code{FALSE} (default),
+values at or above the \code{Cutoffs} are converted to \code{1}.}
 }
 \value{
-A new sf dataframe that has cutoffs applied.
+A modified \code{sf} dataframe with the same structure and geometry as
+\code{features}, but with all targeted numeric columns transformed into binary
+(0 or 1) values based on the specified cutoffs and \code{inverse} setting.
 }
 \description{
-Function to apply cutoffs to feature data
+\code{splnr_apply_cutoffs()} transforms numeric feature data in an \code{sf} dataframe
+into binary (0 or 1) presence/absence values based on specified cutoffs.
+It provides flexibility to either keep values above a cutoff as 1 (default)
+or invert this logic to keep values below a cutoff as 1.
+}
+\details{
+This function is crucial for standardizing feature data, such as species
+probability distributions or habitat suitability scores, into a binary format
+often required for conservation planning and spatial analysis (e.g., in
+\code{prioritizr}).
+
+The function operates in two primary modes based on the \code{Cutoffs} parameter:
+\itemize{
+\item \strong{Single Cutoff:} If \code{Cutoffs} is a single numeric value (e.g., \code{0.5}),
+this value is applied uniformly to \strong{all numeric columns} in the
+\code{features} dataframe, excluding the \code{geometry} column.
+For each numeric cell:
+- If \code{value >= Cutoffs}, it becomes \code{1}.
+- If \code{value < Cutoffs}, it becomes \code{0}.
+- \code{NA} values are always converted to \code{0}.
+\item \strong{Named Vector of Cutoffs:} If \code{Cutoffs} is a named numeric vector
+(e.g., \code{c("feature1" = 0.5, "feature2" = 0.3)}), each specified cutoff
+is applied individually to its corresponding named column in \code{features}.
+This allows for different thresholds for different features. The same
+transformation rules as above apply to each specified column.
+}
+
+The \code{inverse} parameter provides additional control over the binarization:
+\itemize{
+\item \code{inverse = FALSE} (default): Values \strong{at or above} the cutoff become \code{1}.
+\item \code{inverse = TRUE}: Values \strong{below} the cutoff become \code{1}. After initial
+binarization (where values >= cutoff are 1), the binary results are
+flipped (0s become 1s, and 1s become 0s) to achieve the inverse effect.
+}
+All \code{NA} values in the numeric columns are consistently converted to \code{0} during
+the binarization process, regardless of the \code{inverse} setting.
 }
 \examples{
-df <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5)
+
+# Example 1: Single cutoff (0.5) applied to all numeric feature columns
+# (Spp1_Prob, Spp2_Prob, and Cost will be binarized based on 0.5)
+df_single_cutoff <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5)
+print(df_single_cutoff)
+
+# Example 2: Named cutoffs for specific columns
+# Spp1_Prob >= 0.6 becomes 1, Spp2_Prob >= 0.4 becomes 1
+df_named_cutoffs <- splnr_apply_cutoffs(
+  dat_species_prob,
+  Cutoffs = c("Spp1" = 0.6, "Spp2" = 0.4)
+)
+print(df_named_cutoffs)
+
+# Example 3: Single cutoff (0.5) with inverse logic
+# Values BELOW 0.5 become 1.
+df_inverse_cutoff <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = TRUE)
+print(df_inverse_cutoff)
+
+# Example 4: Named cutoffs with inverse logic
+df_named_inverse <- splnr_apply_cutoffs(
+  dat_species_prob,
+  Cutoffs = c("Spp1" = 0.7, "Spp2" = 0.3),
+  inverse = TRUE
+)
+print(df_named_inverse)
 }

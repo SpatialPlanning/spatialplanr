@@ -3,7 +3,7 @@
 \docType{data}
 \name{dat_bndry}
 \alias{dat_bndry}
-\title{Boundary of planning units}
+\title{Boundary of Planning Units}
 \format{
 \code{dat_bndry}
 A data frame with XXXX rows and XXX columns:
@@ -19,6 +19,6 @@ A data frame with XXXX rows and XXX columns:
 dat_bndry
 }
 \description{
-An sf dataframe of planning units for spatial prioritisation
+An sf dataframe of Planning Units for spatial prioritization
 }
 \keyword{datasets}

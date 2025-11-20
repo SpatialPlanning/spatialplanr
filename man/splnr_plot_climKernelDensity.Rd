@@ -2,11 +2,12 @@
 % Please edit documentation in R/splnr_plotting_climate.R
 \name{splnr_plot_climKernelDensity}
 \alias{splnr_plot_climKernelDensity}
-\title{Kernel Density Plots for climate-smart spatial plans}
+\title{Kernel Density Plots for Climate-Smart Spatial Plans}
 \usage{
 splnr_plot_climKernelDensity(
   soln,
-  names = NA,
+  solution_names = "solution_1",
+  climate_names = "metric",
   type = "Normal",
   colorMap = "C",
   legendTitle = expression(" °C y"^"-1" * ""),
@@ -14,25 +15,62 @@ splnr_plot_climKernelDensity(
 )
 }
 \arguments{
-\item{soln}{For type "Publication": A list of \code{prioirtizr} solutions (e.g. solution_list = list(s1, s2)) containing a "metric" column containing the used climate metric information; For type "App": needs to be a prioritizr solution}
+\item{soln}{For \code{type = "Normal"}: A \code{list} of \code{prioritizr} solution objects
+(e.g., \code{list(s1, s2)}). Each solution must contain a \code{metric} column and
+a \code{solution_1} column.
+For \code{type = "Basic"}: A single \code{prioritizr} solution \code{sf} object.}
 
-\item{names}{A list of names of the solutions (names = c("Input 1", "Input 2"))}
+\item{solution_names}{A character vector of names corresponding to each solution in
+\code{soln} when \code{type = "Normal"}. Not used for \code{type = "Basic"}.
+Defaults to \code{NA}.}
 
-\item{type}{The plotting style of the kernel density plots. Either "Publication" which gives axis information etc., or "App" which condenses the information in the plot to simplify it for stakeholders.}
+\item{climate_names}{A character string of the name of the climate}
 
-\item{colorMap}{A character string indicating the color map to use (see https://ggplot2.tidyverse.org/reference/scale_viridis.html for all options)}
+\item{type}{A character string specifying the plotting style. Must be either
+\code{"Normal"} or \code{"Basic"}. Defaults to \code{"Normal"}.}
 
-\item{legendTitle}{A character value for the title of the legend. Can be empty ("").}
+\item{colorMap}{A character string indicating the \code{viridis} color map to use
+(e.g., "A", "B", "C", "D", "E"). See
+\url{https://ggplot2.tidyverse.org/reference/scale_viridis.html} for all options.
+Defaults to \code{"C"}.}
 
-\item{xAxisLab}{A characted value for the x Axis label depending on the climate metric input}
+\item{legendTitle}{A character string or \code{expression} for the title of the legend.
+Defaults to \code{expression(" \\u00B0C y"^"-1" * "")}, representing "°C year⁻¹".}
+
+\item{xAxisLab}{A character string or \code{expression} for the x-axis label,
+depending on the climate metric input. Defaults to
+\code{expression("Climate warming ( \\u00B0C y"^"-1" * ")")}.}
 }
 \value{
-A ggplot object of the plot
+A \code{ggplot} object representing the kernel density plot.
 }
 \description{
-Kernel Density Plots for climate-smart spatial plans
+\code{splnr_plot_climKernelDensity()} generates kernel density plots for
+climate-smart spatial plans, offering two distinct plotting styles:
+"Normal" (for publication-quality comparison of multiple solutions) and
+"Basic" (for simplified visualization for stakeholders).
+}
+\details{
+This wrapper function intelligently dispatches to either
+\code{splnr_plot_climKernelDensity_Fancy()} (for \code{type = "Normal"}) or
+\code{splnr_plot_climKernelDensity_Basic()} (for \code{type = "Basic"}) based on the
+\code{type} parameter.
+
+The "Normal" (Fancy) style is suitable for detailed comparisons,
+accommodating a list of solutions and custom axis labels, while the "Basic"
+style is streamlined for clarity and quick interpretation, ideal for
+stakeholder engagement.
+
+Both underlying functions require a \code{prioritizr} solution containing a
+climate metric column with climate metric information and a prioritizr solution column
+indicating selected planning units.
 }
 \examples{
+\dontrun{
+# Assuming 'dat_species_bin' and 'dat_clim' are existing sf objects
+# in your package.
+
+# Prepare data for a climate-priority area approach (CPA)
 target <- dat_species_bin \%>\%
   sf::st_drop_geometry() \%>\%
   colnames() \%>\%
@@ -48,15 +86,18 @@ CPA <- splnr_climate_priorityAreaApproach(
   refugiaTarget = 1
 )
 
+# Join climate metric to features for the problem
 out_sf <- CPA$Features \%>\%
-  dplyr::mutate(Cost_None = rep(1, 780)) \%>\%
+  dplyr::mutate(Cost_None = rep(1, dim(.)[[1]])) \%>\% # Ensure enough costs for PUs
   sf::st_join(dat_clim, join = sf::st_equals)
 
+# Define features for the prioritizr problem
 usedFeatures <- out_sf \%>\%
   sf::st_drop_geometry() \%>\%
   dplyr::select(-tidyselect::starts_with("Cost_"), -"metric") \%>\%
   names()
 
+# Create and solve a prioritizr problem
 p1 <- prioritizr::problem(out_sf, usedFeatures, "Cost_None") \%>\%
   prioritizr::add_min_set_objective() \%>\%
   prioritizr::add_relative_targets(CPA$Targets$target) \%>\%
@@ -64,6 +105,33 @@ p1 <- prioritizr::problem(out_sf, usedFeatures, "Cost_None") \%>\%
   prioritizr::add_default_solver(verbose = FALSE)
 
 dat_solnClim <- prioritizr::solve.ConservationProblem(p1)
-splnr_plot_climKernelDensity(dat_solnClim, type = "Basic")
-splnr_plot_climKernelDensity(soln = list(dat_solnClim), names = c("Input 1"), type = "Normal")
+
+# Example 1: Basic kernel density plot
+plot_basic_kde <- splnr_plot_climKernelDensity(soln = dat_solnClim, type = "Basic")
+print(plot_basic_kde)
+
+# Example 2: Normal (Fancy) kernel density plot for a single solution
+plot_normal_kde_single <- splnr_plot_climKernelDensity(
+  soln = list(dat_solnClim),
+  solution_names = c("Solution 1"),
+  type = "Normal"
+)
+print(plot_normal_kde_single)
+
+# Example 3: Normal (Fancy) plot comparing two solutions (create a dummy second solution)
+# For demonstration, let's create another dummy solution
+dat_solnClim_2 <- dat_solnClim \%>\%
+  dplyr::mutate(solution_1 = sample(c(0, 1), n(), replace = TRUE)) # Randomize selection
+
+plot_normal_kde_multi <- splnr_plot_climKernelDensity(
+  soln = list(dat_solnClim, dat_solnClim_2),
+  solution_names = c("Solution A", "Solution B"),
+  climate_names = "metric",
+  type = "Normal",
+  colorMap = "plasma",
+  legendTitle = "Climate Value",
+  xAxisLab = "Climate Metric (units)"
+)
+print(plot_normal_kde_multi)
+}
 }

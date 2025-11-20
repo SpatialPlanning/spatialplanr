@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-climate.R
 \name{splnr_climate_percentileApproach}
 \alias{splnr_climate_percentileApproach}
-\title{Function to run the percentile approach}
+\title{Run the Percentile Climate-Smart Approach}
 \usage{
 splnr_climate_percentileApproach(
   features,
@@ -13,37 +13,88 @@ splnr_climate_percentileApproach(
 )
 }
 \arguments{
-\item{features}{feature \code{sf}object}
+\item{features}{An \code{sf} object representing conservation features (e.g., species
+distribution data).}
 
-\item{metric}{climate metric \code{sf} object with 'metric' as the column name of the metric values per planning unit.}
+\item{metric}{An \code{sf} object containing climate metric information. It must
+have a column named 'metric' with the climate metric values per Planning Unit.}
 
-\item{targets}{\code{data.frame}with list of features under "feature" column and their corresponding targets under "target" column}
+\item{targets}{A \code{data.frame} with two columns: \code{feature} (character, listing
+the original feature names) and \code{target} (numeric, the initial conservation
+target for each feature as a proportion, e.g., 0.3).}
 
-\item{direction}{If direction = 1, metric values are from low (least climate-smart) to high (most climate-smart). If direction = -1, metric values are from high (least climate-smart) to low (most climate-smart).}
+\item{direction}{An integer specifying the direction of climate-smartness:
+\itemize{
+\item \code{1}: Higher metric values mean more climate-smart areas.
+\item \code{-1}: Lower metric values mean more climate-smart areas.
+}}
 
-\item{percentile}{cut-off threshold for determining whether an area is a climate priority area or not (e.g., lower 35th percentile of warming or upper 65th percentile of acidification). Note that the percentile here is the lower limit of the threshold.}
+\item{percentile}{A numeric value (0-100) representing the cutoff threshold for
+determining whether an area is a climate priority area or not. This is applied
+\emph{per feature} to its distribution. Defaults to \code{35}.}
 }
 \value{
-A \code{list} with two components: 1. is the data frame passed to \code{prioritizr} when creating a conservation problem containing the binary information per planning unit per feature. 2. are the targets for the features in the conservation problem when the CPA approach is used.
+A \code{list} with two components:
+\itemize{
+\item \code{Features}: An \code{sf} object containing the binary information per
+Planning Unit for each feature, now filtered to include only its
+climate-smart occurrences. This is ready to be passed to \code{prioritizr}.
+\item \code{Targets}: A \code{data.frame} with the adjusted targets for the
+filtered features. This is also ready for \code{prioritizr}.
+}
 }
 \description{
-Function to run the percentile approach
+\code{splnr_climate_percentileApproach()} implements the Percentile Approach to
+climate-smart conservation planning. This involves filtering features to
+their most climate-resilient areas and adjusting their conservation targets
+to account for this reduced feature distribution.
+}
+\details{
+This function orchestrates the steps for the Percentile Approach:
+\enumerate{
+\item \strong{Preprocessing:} It calls \code{splnr_climate_percentile_preprocess()} to
+identify, for each feature, its occurrences within the most climate-resilient
+\code{percentile} of its distribution based on a climate metric. This effectively
+"filters" the feature data to only include its climate-smart components.
+\item \strong{Target Assignment:} It then calls \code{splnr_climate_percentile_assignTargets()}
+to calculate and assign new targets for these filtered features. The targets
+are scaled up to ensure that the original conservation goals are still met,
+but specifically by selecting areas from the climate-smart portions of the
+features' distributions.
+}
+
+The output is a list containing the modified features (filtered to their
+climate-smart occurrences) and their corresponding adjusted targets, ready
+to be used in a \code{prioritizr} conservation problem.
 }
 \examples{
+\dontrun{
+# Assuming 'dat_species_bin' and 'dat_clim' are existing sf objects
+# in your package.
 
-targets <- dat_species_bin \%>\%
+# Define initial targets for species features.
+initial_targets <- dat_species_bin \%>\%
   sf::st_drop_geometry() \%>\%
   colnames() \%>\%
   data.frame() \%>\%
   setNames(c("feature")) \%>\%
   dplyr::mutate(target = 0.3)
 
-Percentile_Approach <- splnr_climate_percentileApproach(
+# Run the Percentile Approach where higher climate metric values mean
+# more climate-smart areas.
+Percentile_Approach_result <- splnr_climate_percentileApproach(
   features = dat_species_bin,
   metric = dat_clim,
-  targets = targets,
-  direction = 1
+  targets = initial_targets,
+  direction = 1, # Example: higher metric values are more climate-smart
+  percentile = 35
 )
-out_sf <- Percentile_Approach$Features
-targets <- Percentile_Approach$Targets
+
+# Access the processed features and targets:
+out_sf_percentile <- Percentile_Approach_result$Features
+targets_percentile <- Percentile_Approach_result$Targets
+
+print(head(out_sf_percentile))
+print(head(targets_percentile))
+}
 }

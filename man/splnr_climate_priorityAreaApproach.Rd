@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils-climate.R
 \name{splnr_climate_priorityAreaApproach}
 \alias{splnr_climate_priorityAreaApproach}
-\title{Function to run the climate-priority-area approach}
+\title{Run the Climate Priority Area (CPA) Approach}
 \usage{
 splnr_climate_priorityAreaApproach(
   features,
@@ -14,39 +14,94 @@ splnr_climate_priorityAreaApproach(
 )
 }
 \arguments{
-\item{features}{feature \code{sf}object}
+\item{features}{An \code{sf} object representing conservation features (e.g., species
+distribution data). Each column (excluding geometry) should typically be a
+binary representation of a feature's presence (1) or absence (0) in each
+Planning Unit.}
 
-\item{metric}{climate metric \code{sf} object with 'metric' as the column name of the metric values per planning unit.}
+\item{metric}{An \code{sf} object containing climate metric information. It must
+have a column named 'metric' with the climate metric values per Planning Unit.}
 
-\item{targets}{\code{data.frame}with list of features under "feature" column and their corresponding targets under "target" column}
+\item{targets}{A \code{data.frame} with two columns: \code{feature} (character, listing
+the original feature names) and \code{target} (numeric, the initial conservation
+target for each feature as a proportion, e.g., 0.3).}
 
-\item{direction}{If direction = 1, metric values are from low (least climate-smart) to high (most climate-smart). If direction = -1, metric values are from high (least climate-smart) to low (most climate-smart).}
+\item{direction}{An integer specifying the direction of climate-smartness:
+\itemize{
+\item \code{1}: Higher metric values mean more climate-smart areas.
+\item \code{-1}: Lower metric values mean more climate-smart areas.
+}}
 
-\item{percentile}{cut-off threshold for determining whether an area is a climate priority area or not (e.g., lower 35th percentile of warming or upper 65th percentile of acidification). Note that the percentile here is the lower limit of the threshold.}
+\item{percentile}{A numeric value (0-100) representing the cutoff threshold for
+determining climate-smart areas. For example, \code{percentile = 5} means the
+most climate-smart 5\% of areas (based on \code{direction}) are considered.
+This value represents the lower limit of the threshold. Defaults to \code{5}.}
 
-\item{refugiaTarget}{target assigned to climate-smart areas}
+\item{refugiaTarget}{A numeric value (0-1) representing the target proportion
+assigned specifically to climate-smart areas (refugia). Defaults to \code{1} (100\%).}
 }
 \value{
-A \code{list} with two components: 1. is the data frame passed to \code{prioritizr} when creating a conservation problem containing the binary information per planning unit per feature. 2. are the targets for the features in the conservation problem when the CPA approach is used.
+A \code{list} with two components:
+\itemize{
+\item \code{Features}: An \code{sf} object containing the binary information per
+Planning Unit for each feature, now split into \verb{_CS} (climate-smart)
+and \verb{_NCS} (non-climate-smart) components. This is ready to be
+passed to \code{prioritizr} when creating a conservation problem.
+\item \code{Targets}: A \code{data.frame} with the adjusted targets for the
+climate-split features. This is also ready for \code{prioritizr}.
+}
 }
 \description{
-Function to run the climate-priority-area approach
+\code{splnr_climate_priorityAreaApproach()} implements the Climate Priority Area
+approach by splitting conservation features into climate-smart (CS) and
+non-climate-smart (NCS) components and adjusting their targets accordingly.
+This allows conservation planning to prioritize areas with higher climate resilience.
+}
+\details{
+This function orchestrates the steps required for the CPA approach:
+\enumerate{
+\item \strong{Preprocessing:} It calls \code{splnr_climate_priorityArea_preprocess()} to
+categorize each feature's occurrences into CS and NCS areas based on a
+climate metric and a specified \code{percentile} cutoff.
+\item \strong{Target Assignment:} It then calls \code{splnr_climate_priorityArea_assignTargets()}
+to calculate and assign new targets for these CS and NCS feature components.
+This ensures that conservation goals reflect the desired emphasis on climate-smart
+areas (e.g., aiming for 100\% representation of features in highly resilient areas).
+}
+
+The output of this function is a list containing the modified features (now
+split into CS/NCS components) and their corresponding adjusted targets, ready
+to be used in a \code{prioritizr} conservation problem.
 }
 \examples{
+\dontrun{
+# Assuming 'dat_species_bin' and 'dat_clim' are existing sf objects
+# in your package.
 
-targets <- dat_species_bin \%>\%
+# Define initial targets for species features.
+initial_targets <- dat_species_bin \%>\%
   sf::st_drop_geometry() \%>\%
   colnames() \%>\%
   data.frame() \%>\%
   setNames(c("feature")) \%>\%
   dplyr::mutate(target = 0.3)
 
-CPA_Approach <- splnr_climate_priorityAreaApproach(
+# Run the Climate Priority Area Approach where lower climate metric
+# values mean more climate-smart areas.
+CPA_Approach_result <- splnr_climate_priorityAreaApproach(
   features = dat_species_bin,
   metric = dat_clim,
-  targets = targets,
-  direction = -1
+  targets = initial_targets,
+  direction = -1, # Example: lower metric values are more climate-smart
+  percentile = 5,
+  refugiaTarget = 1
 )
-out_sf <- CPA_Approach$Features
-targets <- CPA_Approach$Targets
+
+# Access the processed features and targets:
+out_sf_cpa <- CPA_Approach_result$Features
+targets_cpa <- CPA_Approach_result$Targets
+
+print(head(out_sf_cpa))
+print(head(targets_cpa))
+}
 }

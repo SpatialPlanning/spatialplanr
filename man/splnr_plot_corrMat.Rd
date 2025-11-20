@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_plotting.R
 \name{splnr_plot_corrMat}
 \alias{splnr_plot_corrMat}
-\title{Plot correlation matrices}
+\title{Plot Correlation Matrices of Conservation Solutions}
 \usage{
 splnr_plot_corrMat(
   x,
@@ -13,26 +13,55 @@ splnr_plot_corrMat(
 )
 }
 \arguments{
-\item{x}{A correlation matrix of \code{prioritizr} solutions}
+\item{x}{A numeric correlation matrix of \code{prioritizr} solutions.}
 
-\item{colourGradient}{A list of three colour values for high positive, no and high negative correlation}
+\item{colourGradient}{A character vector of three color values:
+\itemize{
+\item \code{colourGradient[1]}: Color for high positive correlation.
+\item \code{colourGradient[2]}: Color for no correlation (midpoint).
+\item \code{colourGradient[3]}: Color for high negative correlation.
+}
+Defaults to \code{c("#BB4444", "#FFFFFF", "#4477AA")}.}
 
-\item{legendTitle}{A character value for the title of the legend. Can be empty ("").}
+\item{legendTitle}{A character string for the title of the legend.
+Defaults to \code{"Correlation \\ncoefficient"}.}
 
-\item{AxisLabels}{A list of labels of the solutions to be correlated (Default: NULL). Length needs to match number of correlated solutions.}
+\item{AxisLabels}{A character vector of labels for the x and y axes of the
+correlation matrix, representing the names of the correlated solutions.
+If \code{NULL} (default), the column names of \code{x} will be used. The length of
+this vector must match the number of rows/columns in \code{x}.}
 
-\item{plotTitle}{A character value for the title of the plot. Can be empty ("").}
+\item{plotTitle}{A character string for the title of the plot. Defaults to \code{""}.}
 }
 \value{
-A ggplot object of the plot
+A \code{ggplot} object representing the correlation matrix plot.
 }
 \description{
-Conservation planning often requires the comparison of the outputs of the solutions of different conservation problems.
-One way to compare solutions is by correlating the solutions using Cohen's Kappa. \code{splnr_plot_corrMat()} allows to visualize the correlation matrix of the different solutions (for example produced with the \code{spatialplanr} function \code{\link[=splnr_get_kappaCorrData]{splnr_get_kappaCorrData()}}).
+The \code{splnr_plot_corrMat()} function visualizes a correlation matrix of
+\code{prioritizr} conservation solutions, typically computed using Cohen's Kappa.
+This helps in understanding the agreement or disagreement between different
+spatial plans.
+}
+\details{
+Conservation planning often involves comparing the outputs of various
+conservation problems. One effective method for this is correlating solutions
+using metrics like Cohen's Kappa. This function takes a correlation matrix
+(e.g., produced by the \code{spatialplanr} function \code{splnr_get_kappaCorrData()})
+and generates a heatmap visualization using \code{ggcorrplot}.
+
+The plot highlights positive, negative, and no correlation using a color
+gradient, and labels the correlation coefficients directly on the plot.
+The output is a \code{ggplot} object that can be combined with the \code{spatialplanr}
+function \code{splnr_gg_add()} for further customization, though its primary use
+is for standalone correlation visualization.
 }
 \examples{
-# 30 \% target for problem/solution 1
-dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+\dontrun{
+# Assuming 'dat_species_bin' is an existing sf object in your package.
+
+# Create Problem 1 (30\% target) and solve it.
+dat_problem <- prioritizr::problem(
+  dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   cost_column = "Cost"
 ) \%>\%
@@ -44,7 +73,7 @@ dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = ru
 dat_soln <- dat_problem \%>\%
   prioritizr::solve.ConservationProblem()
 
-# 50 \% target for problem/solution 2
+# Create Problem 2 (50\% target) and solve it.
 dat_problem2 <- prioritizr::problem(
   dat_species_bin \%>\%
     dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
@@ -59,7 +88,14 @@ dat_problem2 <- prioritizr::problem(
 dat_soln2 <- dat_problem2 \%>\%
   prioritizr::solve.ConservationProblem()
 
+# Get the Kappa correlation data for the two solutions.
 CorrMat <- splnr_get_kappaCorrData(list(dat_soln, dat_soln2), name_sol = c("soln1", "soln2"))
 
-(splnr_plot_corrMat(CorrMat, AxisLabels = c("Solution 1", "Solution 2")))
+# Plot the correlation matrix with custom axis labels.
+plot_correlation_matrix <- splnr_plot_corrMat(
+  CorrMat,
+  AxisLabels = c("Solution 1", "Solution 2")
+)
+print(plot_correlation_matrix)
+}
 }

@@ -2,23 +2,49 @@
 % Please edit documentation in R/utils.R
 \name{splnr_scale_01}
 \alias{splnr_scale_01}
-\title{Scale spatial layers to between 0 and 1}
+\title{Scale Spatial Layers to Between 0 and 1}
 \usage{
 splnr_scale_01(dat, col_name)
 }
 \arguments{
-\item{dat}{\code{sf} dataframe}
+\item{dat}{An \code{sf} dataframe containing the column to be scaled.}
 
-\item{col_name}{Name of the column to scale}
+\item{col_name}{A character string specifying the name of the numeric column
+in \code{dat} that needs to be scaled.}
 }
 \value{
-\code{sf} dataframe
+An \code{sf} dataframe identical to the input \code{dat}, but with the values
+in the \code{col_name} column re-scaled to be between 0 and 1.
 }
 \description{
-\code{splnr_scale_01()} allows you to re-scale your data from values that are greater than 1 to values that are between 0 and 1.
+\code{splnr_scale_01()} re-scales the numeric values in a specified column of an
+\code{sf} dataframe to a range between 0 and 1. This is particularly useful for
+normalizing data like probabilities or costs.
+}
+\details{
+This function inspects the maximum value (\code{mx}) in the \code{col_name} column.
+It then divides all values in that column by a \code{divi} factor to bring them
+into the 0-1 range. The \code{divi} factor is determined heuristically:
+\itemize{
+\item If \code{mx > 100}, \code{divi} is \code{1000}.
+\item If \code{mx > 10}, \code{divi} is \code{100}.
+\item If \code{mx > 1}, \code{divi} is \code{10}.
+\item If \code{mx <= 1}, no division is performed (\code{divi} is \code{1}), as the data is
+already within the desired range.
+}
+
+This approach ensures that the data is scaled appropriately without
+hardcoding a fixed division factor.
 }
 \examples{
-df <- dat_species_prob \%>\%
-  dplyr::mutate(Spp1 = Spp1 * 100) \%>\%
-  splnr_scale_01(col_name = "Spp1")
+\dontrun{
+# Scale the 'Spp1' column.
+df_scaled_spp1 <- splnr_scale_01(dat = dat_species_prob, col_name = "Spp1")
+print(df_scaled_spp1)
+
+# Example where max is already <= 1
+df_already_scaled <- dat_species_prob \%>\% dplyr::mutate(Spp1 = Spp1 / 100)
+df_no_change <- splnr_scale_01(dat = df_already_scaled, col_name = "Spp1")
+print(df_no_change) # Spp1 values should remain unchanged
+}
 }

@@ -63,19 +63,14 @@ _(You could be asked to restart R for changes to take effect.)_
 usethis::edit_r_environ()
 ```
 
-We save the key in an object that will be used in gfwr functions.
-```{r, eval=FALSE}
-key <- gfwr::gfw_auth()
-```
-
 
 ## Fishing effort visualization
 
 A region_id is necessary to use the `get_raster` function.
 ```{r, results='hide'}
-region_id <- gfwr::get_region_id(region_name = "Australia", 
+region_id <- get_region_id(region = "Australia", 
                                  region_source = "EEZ",
-                                 key = gfwr::gfw_auth())$id
+                                 key = gfwr::gfw_auth())$id[2]
 ```
 
 The `get_raster` function gets a raster of fishing effort from the API and 
@@ -90,7 +85,7 @@ Data can be provided through :<br>
 - `VESSEL_ID`, `FLAG`, `GEARTYPE`, `FLAGANDGEARTYPE`.
 
 ```{r, eval=FALSE, message=FALSE}
-gfwr::get_raster(
+get_raster(
   spatial_resolution = "LOW",
   temporal_resolution = "MONTHLY",
   group_by = "FLAGANDGEARTYPE",

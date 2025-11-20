@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_plotting_climate.R
 \name{splnr_plot_climData}
 \alias{splnr_plot_climData}
-\title{Plot climate data}
+\title{Plot Climate Metric Data}
 \usage{
 splnr_plot_climData(
   df,
@@ -13,22 +13,62 @@ splnr_plot_climData(
 )
 }
 \arguments{
-\item{df}{An \code{sf} object with climate metric information with}
+\item{df}{An \code{sf} object containing the climate metric information. It must
+have a geometry column.}
 
-\item{colInterest}{column of data frame that contains the metric informatin}
+\item{colInterest}{A character string specifying the name of the column in \code{df}
+that contains the climate metric data to be plotted.}
 
-\item{colorMap}{A character string indicating the color map to use (see https://ggplot2.tidyverse.org/reference/scale_viridis.html for all options)}
+\item{colorMap}{A character string indicating the \code{viridis} color map to use
+(e.g., "A", "B", "C", "D", "E"). See
+\url{https://ggplot2.tidyverse.org/reference/scale_viridis.html} for all options.
+Defaults to \code{"C"}.}
 
-\item{plotTitle}{A character value for the title of the plot. Can be empty ("").}
+\item{plotTitle}{A character string for the subtitle of the plot.
+Defaults to \code{" "} (a single space, effectively no subtitle).}
 
-\item{legendTitle}{A character value for the title of the legend. Can be empty ("").}
+\item{legendTitle}{A character string for the title of the legend.
+Defaults to \code{"Climate metric"}.}
 }
 \value{
-A ggplot object of the plot
+A \code{ggplot} object representing the spatial plot of the climate metric.
 }
 \description{
-Plot climate data
+The \code{splnr_plot_climData()} function creates a spatial plot of climate metric
+information from an \code{sf} object. It provides a customizable visualization
+using \code{ggplot2} and \code{viridis} color palettes.
+}
+\details{
+This function is designed to visualize spatial data that contains a specific
+climate metric. It expects an \code{sf} object (\code{df}) with a geometry column and
+the climate metric data in a column specified by \code{colInterest}. The plot uses
+a continuous color scale (viridis) to represent the metric values across the
+planning units.
+
+This function can be easily integrated into a larger plotting workflow or
+used independently to inspect climate data distributions.
 }
 \examples{
-splnr_plot_climData(df = dat_clim, colInterest = "metric")
+\dontrun{
+# Assuming 'dat_clim' is an existing sf object in your package
+# with a column named "metric" or another relevant climate metric.
+
+# Example: Plot climate data using "metric" column
+plot_climate_metric <- splnr_plot_climData(
+  df = dat_clim,
+  colInterest = "metric",
+  plotTitle = "Annual Climate Warming",
+  legendTitle = "Warming (°C/year)"
+)
+print(plot_climate_metric)
+
+# Example with a different color map
+plot_climate_alt_cmap <- splnr_plot_climData(
+  df = dat_clim,
+  colInterest = "metric",
+  colorMap = "D", # Using 'D' for a different viridis palette
+  plotTitle = "Climate Metric (Alternative Colors)"
+)
+print(plot_climate_alt_cmap)
+}
 }

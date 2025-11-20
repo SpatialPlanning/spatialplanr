@@ -2,28 +2,53 @@
 % Please edit documentation in R/utils.R
 \name{splnr_get_kappaCorrData}
 \alias{splnr_get_kappaCorrData}
-\title{Prepare data to plot Cohen's Kappa correlation matrix}
+\title{Prepare Data to Plot Cohen's Kappa Correlation Matrix}
 \usage{
 splnr_get_kappaCorrData(sol, name_sol)
 }
 \arguments{
-\item{sol}{List of \code{prioritizr} solutions (\code{sf} objects) with solutions having a column name \code{solution_1}}
+\item{sol}{A \code{list} of \code{prioritizr} solution objects. Each element in the list
+must be an \code{sf} object containing a binary column named \code{solution_1}.}
 
-\item{name_sol}{Name tags to the different solutions}
+\item{name_sol}{A character vector providing descriptive names for each
+solution in the \code{sol} list. The length of this vector must match the
+length of \code{sol}. These names will be used as row and column names in the
+output correlation matrix.}
 }
 \value{
-\code{matrixOut} matrix
+A numeric \code{matrix} (\code{matrixOut}) representing the Cohen's Kappa
+correlation matrix between all pairs of solutions. Rows and columns are
+named according to \code{name_sol}.
 }
 \description{
-Conservation planning often requires the comparison of the outputs of the solutions of different conservation problems.
-One way to compare solutions is by correlating the solutions using Cohen's Kappa.
-\code{splnr_get_kappaCorrData()} takes a list of \code{prioritizr} solutions to perform the Cohen's Kappa correlation between the solution.
-The resulting correlation matrix is symmetrical along the main diagonal and contains Cohen's Kappa of pairwise correlation between the solutions.
-The main diagonal should always be 1. The correlation matrix obtained from this function can be passed onto \code{\link[=splnr_plot_corrMat]{splnr_plot_corrMat()}}.
+\code{splnr_get_kappaCorrData()} calculates Cohen's Kappa correlation coefficients
+between a list of \code{prioritizr} conservation solutions. The output is a
+symmetrical matrix suitable for visualizing pairwise agreement using a heatmap.
+}
+\details{
+This function is essential for assessing the similarity or divergence among
+different conservation plans. It takes a list of \code{prioritizr} solution objects,
+each expected to contain a binary column named \code{solution_1} (indicating
+selected or unselected planning units).
+
+For every unique pair of solutions in the input list, it computes Cohen's Kappa
+using the \code{irr::kappa2()} function. Cohen's Kappa measures the agreement
+between two raters (in this case, two conservation solutions) for categorical
+items, correcting for chance agreement. A Kappa value of 1 indicates perfect
+agreement, 0 indicates agreement equivalent to chance, and negative values
+indicate agreement worse than chance.
+
+The resulting matrix is symmetrical, with diagonal elements always equal to 1
+(a solution perfectly agrees with itself). This matrix can then be passed to
+visualization functions like \code{splnr_plot_corrMat()} to create a correlation heatmap.
 }
 \examples{
-# 30 \% target for problem/solution 1
-dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+\dontrun{
+# Assuming 'dat_species_bin' is an existing sf object in your package.
+
+# Create a dummy prioritizr problem and solve it for solution 1 (30\% target).
+dat_problem1 <- prioritizr::problem(
+  dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   cost_column = "Cost"
 ) \%>\%
@@ -32,10 +57,10 @@ dat_problem <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = ru
   prioritizr::add_binary_decisions() \%>\%
   prioritizr::add_default_solver(verbose = FALSE)
 
-dat_soln <- dat_problem \%>\%
+dat_soln1 <- dat_problem1 \%>\%
   prioritizr::solve.ConservationProblem()
 
-# 50 \% target for problem/solution 2
+# Create another dummy prioritizr problem and solve it for solution 2 (50\% target).
 dat_problem2 <- prioritizr::problem(
   dat_species_bin \%>\%
     dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
@@ -50,5 +75,14 @@ dat_problem2 <- prioritizr::problem(
 dat_soln2 <- dat_problem2 \%>\%
   prioritizr::solve.ConservationProblem()
 
-corrMat <- splnr_get_kappaCorrData(list(dat_soln, dat_soln2), name_sol = c("soln1", "soln2"))
+# Calculate the Cohen's Kappa correlation matrix between the two solutions.
+corrMat <- splnr_get_kappaCorrData(
+  sol = list(dat_soln1, dat_soln2),
+  name_sol = c("Solution_A_30pct", "Solution_B_50pct")
+)
+print(corrMat)
+
+# This output can then be directly passed to splnr_plot_corrMat().
+# splnr_plot_corrMat(corrMat, AxisLabels = c("Sol A (30\%)", "Sol B (50\%)"))
+}
 }

@@ -2,47 +2,68 @@
 % Please edit documentation in R/splnr_get_distCoast.R
 \name{splnr_get_distCoast}
 \alias{splnr_get_distCoast}
-\title{Function to compute distances to nearest coastline for each centroid of each planning unit in the 'sf' object provided.}
+\title{Calculate Distance to Coastline}
 \usage{
-splnr_get_distCoast(dat_sf, custom_coast = NULL, res = NULL)
+splnr_get_distCoast(dat_sf, custom_coast = NULL, res = "medium")
 }
 \arguments{
-\item{dat_sf}{An sf object.}
+\item{dat_sf}{\verb{[sf]} \cr An \code{sf} object containing polygon or point features
+representing the Planning Units. Must have a valid CRS.}
 
-\item{custom_coast}{An sf coastline object (optional)}
+\item{custom_coast}{\verb{[sf]} \cr An optional \code{sf} object representing a
+custom coastline. If \code{NULL} (the default), the coastline is downloaded
+from \code{rnaturalearth}.}
 
-\item{res}{Allow user to choose resolution (\code{small}, \code{medium}, \code{large}) of \code{rnaturalearth} data used for coastline.}
+\item{res}{\verb{[character(1)]} \cr The resolution of the \code{rnaturalearth}
+coastline to use. Options are \code{"small"}, \code{"medium"} (default), or
+\code{"large"}. This parameter is ignored if \code{custom_coast} is provided.}
 }
 \value{
-An \code{sf} object with distances to the nearest coast
+An \code{sf} object identical to \code{dat_sf} but with an added column
+\code{coastDistance_km} representing the distance to the nearest coastline in
+kilometers.
 }
 \description{
-The code takes a sf object and return it updated with a new coastDistance column.
-The output inherits the crs from this sf object so ensure it is in the correct projection for your needs
+This function calculates the shortest distance from the centroid of each
+Planning Unit in an \code{sf} object to the nearest coastline. It can use either
+a default coastline from the \code{rnaturalearth} package or a custom-provided
+coastline \code{sf} object.
 }
 \details{
-Written by Kristine Buenafe
-Written: March/April 2023
-Modified by Kilian Barreiro
-Updated: December 2023
+The function adds a new column named \code{coastDistance_km} to the input \code{sf}
+object, containing the calculated distances in kilometers. The CRS of the
+input data is preserved. It is crucial to ensure the input \code{sf} object has
+a suitable projected CRS for accurate distance calculations.
 }
 \examples{
+\dontrun{
+# Example 1: Calculate distance to coast for a simple grid
 bbox <- sf::st_bbox(c(xmin = 0, ymin = 0, xmax = 3, ymax = 3))
-grid <- sf::st_make_grid(bbox, n = c(3, 3), what = "polygons")
-grid <- sf::st_sf(geometry = grid) \%>\%
-  sf::st_set_crs("EPSG:4326")
-splnr_get_distCoast(grid)
+grid <- sf::st_as_sf(sf::st_make_grid(bbox, n = c(3, 3)))
+grid_with_dist <- splnr_get_distCoast(grid)
+plot(grid_with_dist["coastDistance_km"])
 
-cCRS <- "ESRI:54009"
+# Example 2: Using a specific resolution for the coastline
+# Note: Requires the 'dat_sf' object to be created first, e.g., using
+# splnr_get_planning_units()
+if (exists("dat_sf")) {
+  dat_sf_dist <- splnr_get_distCoast(dat_sf, res = "large")
+  summary(dat_sf_dist$coastDistance_km)
+}
 
-Bndry <- splnr_get_boundary(Limits = "Coral Sea",
-                            Type = "Oceans",
-                            cCRS = cCRS)
-
+# Example 3: Using a custom coastline
+# First, create a custom coastline (e.g., from a country polygon)
 landmass <- rnaturalearth::ne_countries(
   scale = "medium",
   returnclass = "sf"
-) \%>\%
-  sf::st_transform(cCRS)
+)
 
+if (exists("dat_sf") && exists("landmass")) {
+   # Transform landmass to the same CRS as the planning units
+  landmass_proj <- sf::st_transform(landmass, sf::st_crs(dat_sf))
+  dat_sf_custom_coast <- splnr_get_distCoast(dat_sf, custom_coast = landmass_proj)
+  summary(dat_sf_custom_coast$coastDistance_km)
 }
+}
+}
+\concept{cost_features}

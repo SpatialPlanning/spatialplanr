@@ -2,27 +2,63 @@
 % Please edit documentation in R/splnr_targets.R
 \name{splnr_targets_byCategory}
 \alias{splnr_targets_byCategory}
-\title{Assign targets to all features by category}
+\title{Assign Targets by Category}
 \usage{
 splnr_targets_byCategory(dat, catTarg, catName = "Category")
 }
 \arguments{
-\item{dat}{A sf object with the features and categories}
+\item{dat}{An \code{sf} object (or data frame) containing the features and their
+associated categories. Each row should represent a feature (e.g., a species)
+with its attributes, including the category.}
 
-\item{catTarg}{A named character vector with categories and target}
+\item{catTarg}{A named numeric vector where names are the categories
+(e.g., \code{"Group1"}, \code{"Endangered"}) and values are the corresponding
+conservation targets (e.g., \code{0.5}, \code{0.8}).}
 
-\item{catName}{An optional argument for the name of the category column in dat}
+\item{catName}{A character string specifying the name of the column in \code{dat}
+that contains the category information. Defaults to \code{"Category"}.}
 }
 \value{
-An sf object with targets added
+An \code{sf} object (or data frame) identical to the input \code{dat}, but with an
+additional column named \code{target} containing the assigned conservation target
+for each feature. Features whose categories are not found in \code{catTarg} will
+have \code{NA} in the \code{target} column unless they already have a 'target' column.
 }
 \description{
-\code{splnr_targets_byCategory()} allows to assign targets for conservation planning based on species categories.
+The \code{splnr_targets_byCategory()} function assigns conservation targets to
+features (e.g., species) based on their assigned categories. This allows for
+differentiated conservation goals for different groups of features.
+}
+\details{
+This function is useful in conservation planning when different types of
+features (e.g., endangered species, common species, ecosystem types) require
+distinct conservation targets. It performs a left join with a provided
+named vector (\code{catTarg}) where names correspond to categories in your data
+and values are the desired targets.
+
+The \code{dat} input should be an \code{sf} object (or data frame) that contains a
+column (\code{catName}) identifying the category for each feature.
 }
 \examples{
-dat <- splnr_targets_byCategory(
-  dat = dat_category,
+\dontrun{
+# Assuming 'dat_category' is an existing sf object in your package
+# with a column named "category" and other feature data.
+
+# Example: Assign targets based on predefined categories
+targets_by_group <- splnr_targets_byCategory(
+  dat = dat_category, # Assuming dat_category has a 'category' column
   catTarg = c("Group1" = 0.5, "Group2" = 0.2),
   catName = "category"
 )
+print(targets_by_group)
+
+# Example: Assign targets with a different category column name
+dat_alt_cat <- data.frame(Feature = letters[1:5], Type = c("A", "B", "A", "C", "B"))
+targets_by_type <- splnr_targets_byCategory(
+  dat = dat_alt_cat,
+  catTarg = c("A" = 0.7, "B" = 0.4),
+  catName = "Type"
+)
+print(targets_by_type)
+}
 }

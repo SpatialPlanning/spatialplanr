@@ -2,20 +2,42 @@
 % Please edit documentation in R/utils.R
 \name{splnr_arrangeFeatures}
 \alias{splnr_arrangeFeatures}
-\title{Ensure all features are in the same order.}
+\title{Arrange Features by Spatial Coordinates}
 \usage{
 splnr_arrangeFeatures(df)
 }
 \arguments{
-\item{df}{An sf object to sort by Lon and Lat}
+\item{df}{An \code{sf} object whose rows are to be sorted.}
 }
 \value{
-A sorted sf object
+A sorted \code{sf} object, with rows ordered primarily by longitude (X)
+and secondarily by latitude (Y) of their centroids.
 }
 \description{
-\code{splnr_arrangeFeatures()} sorts your data based on longitude and latitude values.
+\code{splnr_arrangeFeatures()} sorts the rows of an \code{sf} object based on the
+longitude (X) and then latitude (Y) of its centroids. This ensures a
+consistent ordering of planning units, which can be important for
+reproducibility in some spatial analyses or data processing steps.
+}
+\details{
+This function computes the centroid for each polygon (or point/multipoint)
+in the input \code{sf} object. It then extracts the X and Y coordinates of these
+centroids and uses them to sort the entire \code{sf} object. The primary sort key
+is the longitude (X-coordinate), and the secondary sort key is the latitude
+(Y-coordinate).
+
+Sorting can be beneficial for tasks like debugging, comparing data from
+different runs, or ensuring deterministic behavior in algorithms that
+process spatial units sequentially.
 }
 \examples{
-df <- dat_species_prob \%>\%
-  splnr_arrangeFeatures()
+\dontrun{
+print("Original order:")
+print(dat_species_prob)
+
+# Sort the features.
+df_arranged <- splnr_arrangeFeatures(df = dat_species_prob)
+print("Sorted order:")
+print(df_arranged)
+}
 }

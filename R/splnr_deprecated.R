@@ -90,8 +90,8 @@ splnr_plot_MPAs <- function(df, colorVals = c("TRUE" = "blue", "FALSE" = "white"
 #'
 #' `r lifecycle::badge("deprecated")`
 #'
-#' @param Cost An `sf` object of cost for `prioritizr`
-#' @param Cost_name Name of the cost column
+#' @param cost An `sf` object of cost for `prioritizr`
+#' @param costName Name of the cost column
 #' @param legendTitle A character value for the title of the legend. Can be empty ("").
 #' @param paletteName A string (or number) for the color palette to use. Available palettes can be found at https://ggplot2.tidyverse.org/reference/scale_brewer.html.
 #' @param plotTitle A character value for the title of the plot. Can be empty ("").
@@ -101,7 +101,7 @@ splnr_plot_MPAs <- function(df, colorVals = c("TRUE" = "blue", "FALSE" = "white"
 #'
 #' @examples
 #' \dontrun{
-#' dat_problem <- prioritizr::problem(dat_species_bin %>% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+#' dat_problem <- prioritizr::problem(dat_species_bin %>% dplyr::mutate(cost = runif(n = dim(.)[[1]])),
 #'   features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
 #'   cost_column = "Cost"
 #' ) %>%
@@ -118,7 +118,7 @@ splnr_plot_MPAs <- function(df, colorVals = c("TRUE" = "blue", "FALSE" = "white"
 #'
 #' (splnr_plot_cost(dat_cost))
 #' }
-splnr_plot_cost <- function(Cost, Cost_name = "Cost", legendTitle = "Cost",
+splnr_plot_cost <- function(cost, costName = "Cost", legendTitle = "Cost",
                             paletteName = "YlGnBu", plotTitle = "") {
 
   lifecycle::deprecate_stop("0.6.2", "splnr_plot_MPAs()", "splnr_plot()")

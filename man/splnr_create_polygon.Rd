@@ -2,24 +2,50 @@
 % Please edit documentation in R/utils.R
 \name{splnr_create_polygon}
 \alias{splnr_create_polygon}
-\title{Function for creating polygon}
+\title{Create Spatial Polygon from Coordinates}
 \usage{
 splnr_create_polygon(x, cCRS = "EPSG:4326")
 }
 \arguments{
-\item{x}{A named vector of lon/lat coordinates from which to make an \code{sf} polygon}
+\item{x}{A \code{tibble} (or \code{tbl_df}) object with at least two columns,
+typically named \code{x} (for longitude) and \code{y} (for latitude), representing
+the vertices of the polygon in sequence. The first and last coordinate
+pair should be the same to form a closed polygon.}
 
-\item{cCRS}{The CRS to use for the polygon}
+\item{cCRS}{A character string specifying the target CRS for the output polygon
+in an EPSG code format (e.g., "EPSG:4326"). Defaults to "EPSG:4326" (WGS 84).}
 }
 \value{
-An \code{sf} object for the polygon
+An \code{sf} object representing the created polygon, with the specified CRS.
 }
 \description{
-\code{splnr_create_polygon()} allows you to create a polygon based on longitude and latitude coordinates in your input data.
+\code{splnr_create_polygon()} constructs an \code{sf} polygon object from a series
+of longitude and latitude coordinates provided in a tibble.
+}
+\details{
+This utility function simplifies the creation of spatial polygons from a
+tabular format of coordinates. It takes a tibble where columns 'x' and 'y'
+represent longitude and latitude, respectively. These coordinates are
+converted into a matrix, then to an \code{sf} polygon, and finally to an \code{sf}
+object with the specified Coordinate Reference System (CRS).
+
+The function assumes that the input coordinates (\code{x}) are initially in
+WGS 84 (EPSG:4326) and then transforms them to the \code{cCRS} if a different
+CRS is specified.
 }
 \examples{
-splnr_create_polygon(x = dplyr::tibble(x = seq(-50, 50, by = 1), y = 120) \%>\%
-  dplyr::bind_rows(dplyr::tibble(x = 50, y = seq(120, 180, by = 1))) \%>\%
-  dplyr::bind_rows(dplyr::tibble(x = seq(50, -50, by = -1), y = 180)) \%>\%
-  dplyr::bind_rows(dplyr::tibble(x = -50, y = seq(150, 120, by = -1))))
+# Example: Create a simple square polygon
+square_coords <- dplyr::tibble(
+  x = c(-50, 50, 50, -50, -50),
+  y = c(120, 120, 180, 180, 120)
+)
+simple_polygon <- splnr_create_polygon(x = square_coords)
+print(simple_polygon)
+
+# Example: Create a polygon and transform to a different CRS (e.g., a UTM zone)
+\dontrun{
+# Note: EPSG:32611 is UTM Zone 11N. Ensure it's appropriate for your coordinates.
+transformed_polygon <- splnr_create_polygon(x = square_coords, cCRS = "EPSG:32611")
+print(transformed_polygon)
+}
 }

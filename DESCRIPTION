@@ -1,6 +1,6 @@
 Package: spatialplanr
 Title: Help files for prioritzr Spatial Planning projects
-Version: 0.6.9
+Version: 0.7.0
 Authors@R: c(
     person(
       given = "Jason D.",
@@ -23,7 +23,7 @@ BugReports: https://github.com/SpatialPlanning/spatialplanr/issues
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Suggests:
     gfwr,
     ggcorrplot,
@@ -32,16 +32,12 @@ Suggests:
     knitr,
     oceandatr,
     patchwork,
-    prioritizr,
     RColorBrewer,
     rmarkdown,
     rnaturalearthdata,
     rnaturalearthhires,
     rredlist,
     testthat (>= 3.0.0),
-    units,
-    vctrs,
-    viridis,
     wdpar
 VignetteBuilder: knitr
 Depends:
@@ -54,7 +50,7 @@ Imports:
     ggplot2,
     lifecycle,
     magrittr,
-    methods,
+    prioritizr,
     purrr,
     rappdirs,
     rlang,
@@ -66,7 +62,10 @@ Imports:
     terra,
     tibble,
     tidyr,
-    tidyselect
+    tidyselect,
+    units,
+    vctrs,
+    viridis
 Remotes: 
     github::emlab-ucsb/oceandatr,
     github::emlab-ucsb/spatialgridr,

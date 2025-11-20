@@ -19,6 +19,6 @@ A data frame with XXXX rows and XXX columns:
 dat_species_bin2
 }
 \description{
-An sf dataframe of planning units for spatial prioritisation
+An sf dataframe of Planning Units for spatial prioritization
 }
 \keyword{datasets}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/splnr_featureRep.R
 \name{splnr_get_featureRep}
 \alias{splnr_get_featureRep}
-\title{Prepare data to plot how well targets are met}
+\title{Prepare Data to Plot How Well Targets Are Met}
 \usage{
 splnr_get_featureRep(
   soln,
@@ -14,27 +14,97 @@ splnr_get_featureRep(
 )
 }
 \arguments{
-\item{soln}{The \code{prioritizr} solution}
+\item{soln}{An \code{sf} object representing the \code{prioritizr} solution, containing
+a column indicating selected planning units (default: \code{solution_1}).}
 
-\item{pDat}{The \code{prioritizr} problem}
+\item{pDat}{A \code{prioritizr} problem object, as defined by \code{prioritizr::problem()}.
+This object provides the original feature data and targets.}
 
-\item{targets}{\code{data.frame}with list of features under "feature" column and their corresponding targets under "target" column}
+\item{targets}{A \code{data.frame} (optional). If provided, it should contain a
+\code{feature} column (character) and a \code{target} column (numeric). This is used
+to override or supplement targets from \code{pDat}, especially for climate-smart
+approaches where targets might be pre-adjusted. Defaults to \code{NA}.}
 
-\item{climsmart}{logical denoting whether spatial planning was done climate-smart (and targets have to be calculated differently)}
+\item{climsmart}{A logical value (\code{TRUE} or \code{FALSE}). If \code{TRUE}, special
+handling for climate-smart approaches is enabled. Defaults to \code{FALSE}.}
 
-\item{climsmartApproach}{either 0,1,2 or 3 depending on the climate-smart approach used (0 = None; 1 = Climate Priority Area; 2 = Feature; 3 = Percentile).}
+\item{climsmartApproach}{An integer (0, 1, 2, or 3) indicating the type of
+climate-smart approach used:
+\itemize{
+\item \code{0}: No climate-smart approach.
+\item \code{1}: Climate Priority Area approach (features split into CS/NCS).
+\item \code{2}: Feature approach (not explicitly handled in this function's
+\code{climsmart} logic, targets taken from \code{pDat} by default).
+\item \code{3}: Percentile approach (features are filtered).
+}
+Defaults to \code{0}.}
 
-\item{solnCol}{Name of the column with the solution}
+\item{solnCol}{A character string specifying the name of the column in \code{soln}
+that contains the binary solution (1 for selected, 0 for not selected).
+Defaults to \code{"solution_1"}.}
 }
 \value{
-\code{tbl_df} dataframe
+A \code{tibble} dataframe containing the \code{feature} names, their
+\code{total_amount} (total units available), \code{absolute_held} (total units
+selected), \code{relative_held} (proportion held), \code{target} (conservation target),
+and \code{incidental} (TRUE if target was 0 or NA, but feature still present).
 }
 \description{
-Prepare data to plot how well targets are met
+\code{splnr_get_featureRep()} calculates the representation of conservation
+features within a \code{prioritizr} solution. This function determines how much
+of each feature's total abundance (or area) is captured in the selected
+planning units, and compares it against specified conservation targets.
+It can also account for different climate-smart planning approaches.
+}
+\details{
+This function processes the output of a \code{prioritizr} conservation problem
+(\code{soln}) and its corresponding problem definition (\code{pDat}) to provide a
+summary of feature representation. It is designed to work whether or not
+explicit targets are provided, and can adjust calculations based on the
+climate-smart approach used.
+
+The function calculates:
+\itemize{
+\item \code{total_amount}: The total available amount/area of each feature across all planning units.
+\item \code{absolute_held}: The total amount/area of each feature captured in the
+\emph{selected} planning units (where \code{solution_1} is 1).
+\item \code{relative_held}: The proportion of \code{absolute_held} relative to \code{total_amount},
+indicating the percentage representation of the feature in the solution.
+\item \code{target}: The conservation target for each feature (either from the
+\code{pDat} problem definition or the \code{targets} dataframe).
+\item \code{incidental}: A logical flag indicating if a feature's representation
+was 'incidental' (i.e., its target was 0 or NA, but it was still
+partially or fully captured in the solution).
+}
+
+\strong{Climate-Smart Considerations (\code{climsmart = TRUE}):}
+If \code{climsmart} is \code{TRUE}, the function adjusts its calculations based on the
+\code{climsmartApproach} parameter:
+\itemize{
+\item \code{climsmartApproach = 1} (Climate Priority Area): The function sums the
+\code{absolute_held} and \code{total_amount} for features that were split into
+\verb{_CS} (Climate-Smart) and \verb{_NCS} (Non-Climate-Smart) components. This
+provides a single, aggregated representation for the original feature,
+allowing comparison with its original target.
+\item \code{climsmartApproach = 3} (Percentile Approach): The function directly
+uses the targets provided in the \code{targets} dataframe, which are
+expected to be adjusted for the percentile approach.
+\item For other \code{climsmartApproach} values or if \code{climsmart} is \code{FALSE},
+targets are taken directly from the \code{prioritizr} problem's target data.
+}
+
+The output dataframe is designed to be directly plottable by functions
+like \code{splnr_plot_featureRep()}.
 }
 \examples{
-pDat <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
-  features = c("Spp1", "Spp2", "Spp3"),
+\dontrun{
+# Assuming 'dat_species_bin' is an existing sf object with binary species data
+# and 'Cost' column.
+
+# Create a dummy prioritizr problem for basic demonstration
+pDat_basic <- prioritizr::problem(
+  dat_species_bin \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+  features = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5"),
   cost_column = "Cost"
 ) \%>\%
   prioritizr::add_min_set_objective() \%>\%
@@ -42,11 +112,62 @@ pDat <- prioritizr::problem(dat_species_bin \%>\% dplyr::mutate(Cost = runif(n =
   prioritizr::add_binary_decisions() \%>\%
   prioritizr::add_default_solver(verbose = FALSE)
 
-soln <- pDat \%>\%
+# Solve the problem
+soln_basic <- pDat_basic \%>\%
   prioritizr::solve.ConservationProblem()
 
-df <- splnr_get_featureRep(
-  soln = soln,
-  pDat = pDat
+# Get feature representation for a basic (non-climate-smart) solution
+df_basic_rep <- splnr_get_featureRep(
+  soln = soln_basic,
+  pDat = pDat_basic
 )
+print(df_basic_rep)
+
+# Example with Climate Priority Area (CPA) approach
+# Assuming 'dat_clim' is an sf object with a 'metric' column.
+# These would typically come from splnr_climate_priorityAreaApproach()
+# For example purposes, we'll create some dummy data and targets.
+
+# Simulate CPA processed features and targets
+cpa_features_sim <- dat_species_bin \%>\%
+  dplyr::mutate(
+    Spp1_CS = ifelse(Spp1 == 1 & runif(n()) < 0.5, 1, 0),
+    Spp1_NCS = ifelse(Spp1 == 1 & Spp1_CS == 0, 1, 0),
+    Spp2_CS = ifelse(Spp2 == 1 & runif(n()) < 0.6, 1, 0),
+    Spp2_NCS = ifelse(Spp2 == 1 & Spp2_CS == 0, 1, 0),
+    Spp3_CS = ifelse(Spp3 == 1 & runif(n()) < 0.7, 1, 0),
+    Spp3_NCS = ifelse(Spp3 == 1 & Spp3_CS == 0, 1, 0)
+  ) \%>\%
+  dplyr::select(Spp1_CS, Spp1_NCS, Spp2_CS, Spp2_NCS, Spp3_CS, Spp3_NCS, geometry)
+
+cpa_targets_sim <- data.frame(
+  feature = c("Spp1_CS", "Spp1_NCS", "Spp2_CS", "Spp2_NCS", "Spp3_CS", "Spp3_NCS"),
+  target = c(0.8, 0.2, 0.9, 0.1, 0.7, 0.3) # Example targets for CS/NCS parts
+)
+
+# Create a problem with the simulated CPA features
+pDat_cpa_sim <- prioritizr::problem(
+  cpa_features_sim \%>\% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
+  features = c("Spp1_CS", "Spp1_NCS", "Spp2_CS", "Spp2_NCS", "Spp3_CS", "Spp3_NCS"),
+  cost_column = "Cost"
+) \%>\%
+  prioritizr::add_min_set_objective() \%>\%
+  prioritizr::add_relative_targets(cpa_targets_sim$target, cpa_targets_sim$feature) \%>\%
+  prioritizr::add_binary_decisions() \%>\%
+  prioritizr::add_default_solver(verbose = FALSE)
+
+# Solve the CPA problem
+soln_cpa_sim <- pDat_cpa_sim \%>\%
+  prioritizr::solve.ConservationProblem()
+
+# Get feature representation for CPA approach
+df_cpa_rep <- splnr_get_featureRep(
+  soln = soln_cpa_sim,
+  pDat = pDat_cpa_sim,
+  targets = cpa_targets_sim, # Pass the original CPA targets
+  climsmart = TRUE,
+  climsmartApproach = 1 # Indicate CPA approach
+)
+print(df_cpa_rep)
+}
 }
