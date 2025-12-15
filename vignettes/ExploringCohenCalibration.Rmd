@@ -1,0 +1,717 @@
+---
+title: "Exploring Cohen's calibration"
+author: "Kris Esturas"
+date: "2025-12-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Boundary penalties are a commonly used in spatial conservation planning to **reduce fragmentation**. In *prioritzr*, boundary penalties encourage solutions that form compact clusters of planning units, rather than scattered selections. Compact solutions are often easier to manage and may better support ecological procceses, but they typically come at a higher cost.
+
+A practical difficulty is that the appropriate magnitude of the boundary penalty can be arbitrary. If the penalty is too small, solutions remain fragmented. If it is too large, solutions can become overly compact and very expensive. In many applications, boundary penalties may be therefore chosen in an ad hoc way, with limited guidance on whether the resulting trade-off between cost and compactness is reasonable.
+
+The function `calibrate_cohon_penalty()` in *prioritizr* provides a systematic way to address this problem. It implements a **Cohen-style calibration** that identifies a boundary penalty intended to balance cost and compactness, based on two extreme solutions:
+
+In this vignette, we use the Tasmania example data to ask three simple
+questions:
+
+**1. How does the Cohen-calibrated boundary penalty change when we change the conservation targets?**
+
+**2. How does it change when we change the number of features in the problem?**
+
+**3. What are the speed implications?**
+
+The aim is not to identify a single "correct" penalty, but to understand how sensitive the calibration is to problem structure, and what this implies for tools such as *spatialplanr* and *shinyplanr*.
+
+## A brief note on Cohen-style calibration
+Very briefly, `calibrate_cohon_penalty()`:
+
+1. Solves an “**ignore boundary**” problem (penalty ≈ 0) to find a very cheap but fragmented solution.
+
+2. Solves a “**boundary-only**” problem (very large penalty) to find a very compact but expensive solution.
+
+3. Uses these two “anchor” solutions (costs and boundary lengths) to
+compute a **boundary penalty** that trades off cost and boundary
+length in a more balanced way.
+
+4. Returns this penalty so we can re-solve the problem with a **single calibrated value.**
+
+The calibrated penalty therefore depends on how fragmented the cheap solution is and how expensive the compact solution needs to be. Any change to the problem—such as altering targets or reducing the number of features—can affect these anchor solutions and, in turn, the calibrated penalty.
+
+## Data and baseline set-up
+We use the Tasmania planning unit and feature data from
+**prioritizrdata**. These data represent a real-world conservation
+planning problem and are used in other *prioritizr* examples.To keep the vignette reasonably fast, we crop the study area to a
+smaller subregion.
+
+```{r load-packages, echo = FALSE}
+library(prioritizr)
+library(prioritizrdata)
+library(spatialplanr)
+
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(ggrepel)
+library(tibble)
+```
+
+### Load and prepare the Tasmania data
+The code below loads the planning units and features, interpolates feature data onto planning units, converts features to presence-absence, and crops the study areas. Features that are absent everywhere in the cropped region are removed to avoid unneccary computation.
+```{r planning-region, echo = TRUE}
+# planning units
+tas_pu <- get_tas_pu() %>%
+mutate(cost = cost)
+
+# features as sf
+tas_features <- get_tas_features() %>% 
+  stars::st_as_stars() %>% 
+  sf::st_as_sf()
+
+# interpolate features onto planning units
+tas <- sf::st_interpolate_aw(
+tas_features,
+tas_pu,
+extensive = FALSE,
+keep_NA   = FALSE,
+na.rm     = FALSE
+) %>%
+sf::st_join(tas_pu, join = sf::st_equals)
+
+# identify feature columns
+all_features <- tas %>%
+sf::st_drop_geometry() %>%
+dplyr::select(-all_of(c("id", "cost", "locked_in", "locked_out"))) %>%
+names()
+
+# convert features to binary (presence/absence)
+tas <- tas |>
+mutate(across(all_of(all_features), ~ if_else(.x > 0, 1, 0)))
+
+# crop to a smaller subregion to speed up the vignette
+bbox <- sf::st_bbox(tas)
+frac <- 0.50
+
+bbox_small <- bbox
+bbox_small["xmax"] <- bbox["xmin"] + frac * (bbox["xmax"] - bbox["xmin"])
+bbox_small["ymax"] <- bbox["ymin"] + frac * (bbox["ymax"] - bbox["ymin"])
+
+tas_small <- sf::st_crop(tas, bbox_small)
+tas <- tas_small
+
+# drop features that are all-zero in the cropped region
+feature_totals <- tas %>%
+  sf::st_drop_geometry() %>%
+  dplyr::select(all_of(all_features)) %>%
+  dplyr::summarise(across(everything(), ~ sum(.x, na.rm = TRUE)))
+
+zero_features <- names(feature_totals)[feature_totals[1, ] == 0]
+
+# remove zero features from tas
+tas <- tas %>%
+  dplyr::select(-all_of(zero_features))
+
+# update all_features vector
+all_features <- setdiff(all_features, zero_features)
+
+
+# plot
+ggplot(tas) + 
+  geom_sf() +
+  theme_minimal() +
+  labs(
+    title = "Tasmania example (cropped study area)", 
+    x = NULL, y = NULL)
+
+```
+
+## Helper functions
+To keep the main analysis readable, two helper functions are defined below. The first summarises solution characteristics, while the second builds, calibrates, and solves a *prioritizr* problem for a given scenario.
+
+### Fragmentation and cost metrics
+The function below extracts a set of simple, interpretable metrics from each solution. These include the number of selected planning units, total selected area, patch structure, costs, boundary length, and solver runtime. Together, these metrics provide a compact summary of both spatial structure and efficiency.
+
+```{r helper-function}
+summarise_solution <- function(label,
+                               solution_sf,
+                               solve_time_sec,
+                               min_patch_size   = NULL,
+                               boundary_penalty = 0) {
+
+# check and subset selected PUs
+if (!"solution_1" %in% names(solution_sf)) {
+stop("summarise_solution(): column 'solution_1' not found in solution_sf")
+}
+
+sel <- solution_sf[solution_sf$solution_1 == 1, ]
+n_selected <- nrow(sel)
+
+if (n_selected == 0) {
+return(tibble(
+method             = label,
+n_selected         = 0L,
+total_area_km2     = 0,
+n_patches          = 0L,
+valid_patches      = NA_integer_,
+median_patch_km2   = NA_real_,
+pu_cost_total      = 0,
+pu_cost_mean       = NA_real_,
+boundary_length_km = 0,
+boundary_cost      = 0,
+total_cost         = 0,
+solver_time_sec    = solve_time_sec
+))
+}
+
+# area of each selected PU (m²)
+pu_areas_m2    <- as.numeric(sf::st_area(sel))
+total_area_km2 <- sum(pu_areas_m2) / 1e6
+
+# contiguous patches
+patches <- sel |>
+sf::st_union() |>
+sf::st_cast("POLYGON")
+
+patch_areas_m2   <- as.numeric(sf::st_area(patches))
+n_patches        <- length(patch_areas_m2)
+median_patch_km2 <- stats::median(patch_areas_m2) / 1e6
+
+# valid patches if a minimum patch size is given
+if (!is.null(min_patch_size)) {
+min_patch_size_m2 <- as.numeric(min_patch_size)
+valid_patches <- sum(patch_areas_m2 >= min_patch_size_m2)
+} else {
+valid_patches <- NA_integer_
+}
+
+# boundary length (outer boundary of patches, in km)
+patch_boundaries   <- sf::st_cast(sf::st_boundary(patches), "MULTILINESTRING")
+boundary_length_km <- sum(as.numeric(sf::st_length(patch_boundaries))) / 1000
+
+# cost metrics
+if (!"cost" %in% names(solution_sf)) {
+stop("summarise_solution(): column 'cost' not found in solution_sf")
+}
+
+pu_cost_total <- sum(sel$cost, na.rm = TRUE)
+pu_cost_mean  <- mean(sel$cost, na.rm = TRUE)
+
+boundary_cost <- boundary_length_km * boundary_penalty
+total_cost    <- pu_cost_total + boundary_cost
+
+tibble(
+method             = label,
+n_selected         = n_selected,
+total_area_km2     = total_area_km2,
+n_patches          = n_patches,
+valid_patches      = valid_patches,
+median_patch_km2   = median_patch_km2,
+pu_cost_total      = pu_cost_total,
+pu_cost_mean       = pu_cost_mean,
+boundary_length_km = boundary_length_km,
+boundary_cost      = boundary_cost,
+total_cost         = total_cost,
+solver_time_sec    = solve_time_sec
+)
+}
+
+```
+
+### Building and calibrating problems
+Next, we define a small helper to:
+1. build a *prioritizr* problem for a given **target** and a chosen set of **features**,
+2. add a temporary boundary penalty,
+3. run `calibrate_cohon_penalty()` to find a calibrated boundary penalty,
+4. solve the problem with the calibrated penalty, and
+5. return a tidy row with the penalty, timings, and solution metrics.
+```{r build-problem}
+run_cohon_experiment <- function(label,
+target,
+feature_names) {
+
+# build the base problem
+prob <- problem(
+x           = tas,
+features    = feature_names,
+cost_column = "cost"
+) |>
+add_min_set_objective() |>
+add_relative_targets(target) |>
+add_binary_decisions() |>
+add_cbc_solver(verbose = TRUE)
+
+# add a dummy boundary penalty
+prob_bp <- prob |>
+add_boundary_penalties(penalty = 0.0001, edge_factor = 1)
+
+# calibrate using Cohon's method
+calib_time <- system.time({
+cohon_penalty <- calibrate_cohon_penalty(
+prob_bp,
+approx  = TRUE,   # approximate mode for speed
+verbose = TRUE
+)
+})
+
+# solve the problem with the calibrated penalty
+prob_final <- prob |>
+add_boundary_penalties(penalty = cohon_penalty, edge_factor = 1)
+
+solve_time <- system.time({
+solution <- solve(prob_final,
+                  force = TRUE)
+})
+
+# summarise the solution
+metrics <- summarise_solution(
+label            = label,
+solution_sf      = solution,
+solve_time_sec   = solve_time[["elapsed"]],
+min_patch_size   = NULL,
+boundary_penalty = as.numeric(cohon_penalty)
+)
+
+metrics |>
+mutate(
+scenario         = label,
+n_features       = length(feature_names),
+target           = target,
+cohon_penalty    = as.numeric(cohon_penalty),
+calib_time_sec   = calib_time[["elapsed"]],
+total_time_sec   = calib_time[["elapsed"]] + solve_time[["elapsed"]]
+)
+}
+```
+
+## How does the Cohon penalty change with target level?
+First, we hold the **set of features constant** and only change the **target**. Here we use all features and compare targets with incremental increases of 5% from 0 to 50%.
+
+```{r cohen-targets, echo = TRUE}
+# 5% steps from 5% to 50%
+targets <- seq(0.05, 0.50, by = 0.05)
+targets
+
+cohon_target_results <- purrr::map_dfr(
+  targets,
+  ~ {
+    message("\nRunning target = ", .x * 100, "%")
+    run_cohon_experiment(
+      label         = paste0("target_", .x * 100),
+      target        = .x,
+      feature_names = all_features
+    )
+  }
+)
+
+cohon_target_results
+```
+
+The table and figures below focus on the calibrated penalty, runtime, and overall cost structure. Together, they show how increasing targets influence both the calibration outcome and computational effort.
+
+```{r}
+cohon_target_results |>
+select(
+scenario, n_features, target,
+cohon_penalty,
+calib_time_sec, solver_time_sec, total_time_sec,
+boundary_length_km, pu_cost_total, total_cost
+) |>
+arrange(target) |>
+knitr::kable(
+digits  = 2,
+caption = "Cohon-calibrated boundary penalties for different targets (all features)."
+)
+
+ggplot(cohon_target_results,
+aes(x = target * 100, y = cohon_penalty)) +
+geom_line() +
+geom_point() +
+theme_minimal() +
+labs(
+x = "Target (% of each feature)",
+y = "Calibrated boundary penalty",
+title = "How does the Cohon penalty change with target level?"
+)
+
+ggplot(cohon_target_results,
+aes(x = target * 100, y = total_time_sec)) +
+geom_line() +
+geom_point() +
+theme_minimal() +
+labs(
+x = "Target (% of each feature)",
+y = "Calibration + solve time (s)",
+title = "Runtime for Cohon calibration at different targets"
+)
+
+```
+
+Overall, these results illustrate how increasing conservation ambition can influence both the magnitude of the calibrated boundary penalty and the time required to obtain it.
+
+## How do the results change when we vary both targets and the subset of features used?
+The previous section varies targets while keeping the feature set fixed (at 100%). To examine how sensitive Cohon's calibration is to reduced number of features, we repeat the target experiment while using random feature subsets. 
+
+For each target level, we draw subsets containing 25%, 50%, 75%, and 100% of the available features.
+
+```{r targets-features}
+set.seed(123) 
+
+# targets
+targets <- seq(0.05, 0.50, by = 0.05)
+
+# feature subset proportions to test
+feature_props_targets <- c(0.25, 0.50, 0.75, 1.00)  
+target_label <- function(t) paste0("target_", round(t * 100))
+
+n_all <- length(all_features)
+
+# run experiment
+cohon_target_results_multi <- purrr::map_dfr(
+  targets,
+  ~{
+    t_i <- .x
+
+    purrr::map_dfr(
+      feature_props_targets,
+      ~{
+        prop_f <- .x
+        n_sub  <- max(1, floor(prop_f * n_all))
+
+        # reproducible subset for each (target, feature_prop)
+        seed_tf <- 200000 + (as.integer(round(t_i * 1000)) * 100) + as.integer(round(prop_f * 100))
+        set.seed(seed_tf)
+
+        feature_subset <- sample(all_features, size = n_sub)
+
+        message(sprintf(
+          "\nRunning target = %.0f%% | features = %.0f%% (%d of %d)",
+          t_i * 100, prop_f * 100, n_sub, n_all
+        ))
+
+        run_cohon_experiment(
+          label         = paste0(target_label(t_i), "_feat_", n_sub, "_of_", n_all),
+          target        = t_i,
+          feature_names = feature_subset
+        ) |>
+          dplyr::mutate(
+            feature_prop = prop_f,
+            n_features_requested = n_sub,
+            seed = seed_tf
+          )
+      }
+    )
+  }
+)
+```
+
+The summary compares penalties and runtimes across target levels while accounting for the feature subset size.
+```{r}
+cohon_target_results_multi |>
+  dplyr::select(
+    scenario, n_features, target,
+    feature_prop, n_features_requested, seed,
+    cohon_penalty,
+    calib_time_sec, solver_time_sec, total_time_sec,
+    boundary_length_km, pu_cost_total, total_cost
+  ) |>
+  dplyr::arrange(target, n_features_requested) |>
+  knitr::kable(
+    digits  = 2,
+    caption = "Cohon-calibrated penalties across target levels, using 25/50/75/100% random feature subsets."
+  )
+```
+
+The first plot shows how the calibrated penalty varies with targets for each feature proporiton. The second plot shows the combined runtime (calibration+solve)
+```{r}
+# Plot 1
+ggplot(
+  cohon_target_results_multi,
+  aes(
+    x = target * 100,
+    y = cohon_penalty,
+    colour = factor(feature_prop),
+    group  = factor(feature_prop)
+  )
+) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    x = "Target (% of each feature)",
+    y = "Calibrated boundary penalty",
+    colour = "Feature proportion",
+    title = "Cohon penalty vs target level (25/50/75/100% feature subsets)"
+  )
+
+# Plot 2
+ggplot(
+  cohon_target_results_multi,
+  aes(
+    x = target * 100,
+    y = total_time_sec,
+    colour = factor(feature_prop),
+    group  = factor(feature_prop)
+  )
+) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    x = "Target (% of each feature)",
+    y = "Calibration + solve time (s)",
+    colour = "Feature proportion",
+    title = "Runtime vs target level (25/50/75/100% feature subsets)"
+  )
+```
+
+## How does the Cohon penalty change with the number of features?
+Next, we fix the **target** at 30% and vary the **number of features.** 
+
+For each feature proportion (20% to 100% in 10% increments), we run multiple replicates (20 replicates) using different random feature subsets.The subsets are chosen at random but with a fixed seed so they are reproducible.
+
+```{r cohen-features, echo = TRUE}
+set.seed(123) 
+
+n_all <- length(all_features)
+
+# 20%, 30%, ..., 100% of features
+feature_props <- seq(0.20, 1.00, by = 0.10)
+
+target_fixed <- 0.30
+
+n_reps <- 20  # number of replicates
+
+cohon_feature_results <- purrr::map_dfr(
+  feature_props,
+  ~{
+    prop_i <- .x
+
+    # number of features for this proportion
+    n_sub <- max(1, floor(prop_i * n_all))
+
+    purrr::map_dfr(
+      seq_len(n_reps),
+      ~{
+        rep_id <- .x
+
+  
+        seed_rep <- 10000 + (n_sub * 100) + rep_id  
+        set.seed(seed_rep)
+
+        # sample subset of features
+        feature_ix     <- sample(n_all, size = n_sub)
+        feature_subset <- all_features[feature_ix]
+
+        # progress message
+        message(sprintf(
+          "\nRunning %.0f%% of features (%d of %d) | run %d/%d | target = %.0f%%",
+          prop_i * 100, n_sub, n_all, rep_id, n_reps, target_fixed * 100
+        ))
+
+        # run experiment
+        run_cohon_experiment(
+          label         = paste0("features_", n_sub, "_of_", n_all, "_run_", rep_id),
+          target        = target_fixed,
+          feature_names = feature_subset
+        ) |>
+          mutate(
+            feature_prop         = prop_i,
+            n_features_requested = n_sub,
+            run                 = rep_id,
+            seed                = seed_rep
+          )
+      }
+    )
+  }
+)
+
+```
+
+```{r} 
+cohon_feature_results |>
+  select(
+    scenario, n_features, target,
+    cohon_penalty,
+    calib_time_sec, solver_time_sec, total_time_sec,
+    boundary_length_km, pu_cost_total, total_cost,
+    feature_prop, run, seed
+  ) |>
+  arrange(n_features, run) |>
+  knitr::kable(
+    digits  = 2,
+    caption = paste0(
+      "Cohon-calibrated penalties for different numbers of features (target 30%), ",
+      "with ", n_reps, " random feature-subset runs per feature count."
+    )
+  )
+```
+
+```{r} 
+# Plot
+ggplot(
+  cohon_feature_results,
+  aes(
+    x = n_features,
+    y = cohon_penalty,
+    colour = factor(run),
+    group  = factor(run)
+  )
+) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    x = "Number of features in the problem",
+    y = "Calibrated boundary penalty",
+    colour = "Run",
+    title = "How does the Cohon penalty change with the number of features? (random subsets)"
+  )
+
+# Plot
+ggplot(
+  cohon_feature_results,
+  aes(
+    x = n_features,
+    y = total_time_sec,
+    
+    colour = factor(run),
+    group  = factor(run)
+  )
+) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    x = "Number of features in the problem",
+    y = "Calibration + solve time (s)",
+    colour = "Run",
+    title = "Runtime for Cohon calibration at different feature counts (random subsets)"
+  )
+```
+
+# How does the Cohon penalty change with the number of features? (In reverse order)
+To check whether evaluation order affects results, we repeat the same experiment but iterate through feature proportions in reverse order (100% down to 20%). In principle, results should be consistent given identical random seeds. 
+
+```{r}
+set.seed(123) 
+
+n_all <- length(all_features)
+
+# REVERSE: 100%, 90%, ..., 20% of features
+feature_props <- seq(1.00, 0.20, by = -0.10)
+
+target_fixed <- 0.30
+n_reps <- 20   # number of replicates
+
+cohon_feature_results_rev <- purrr::map_dfr(
+  feature_props,
+  ~{
+    prop_i <- .x
+
+    # number of features for this proportion
+    n_sub <- max(1, floor(prop_i * n_all))
+
+    purrr::map_dfr(
+      seq_len(n_reps),
+      ~{
+        rep_id <- .x
+
+        # Reproducible-but-different random subset per (n_sub, rep)
+        seed_rep <- 10000 + (n_sub * 100) + rep_id
+        set.seed(seed_rep)
+
+        # sample subset of features
+        feature_ix     <- sample(n_all, size = n_sub)
+        feature_subset <- all_features[feature_ix]
+
+        message(sprintf(
+          "\n[REVERSE] Running %.0f%% of features (%d of %d) | run %d/%d | target = %.0f%%",
+          prop_i * 100, n_sub, n_all, rep_id, n_reps, target_fixed * 100
+        ))
+
+        run_cohon_experiment(
+          label         = paste0("features_", n_sub, "_of_", n_all, "_run_", rep_id, "_rev"),
+          target        = target_fixed,
+          feature_names = feature_subset
+        ) |>
+          mutate(
+            feature_prop         = prop_i,
+            n_features_requested = n_sub,
+            run                 = rep_id,
+            seed                = seed_rep,
+            order               = "reverse"
+          )
+      }
+    )
+  }
+)
+```
+
+
+```{r}
+cohon_feature_results_rev |>
+  select(
+    scenario, n_features, target,
+    cohon_penalty,
+    calib_time_sec, solver_time_sec, total_time_sec,
+    boundary_length_km, pu_cost_total, total_cost,
+    feature_prop, run, seed, order
+  ) |>
+  arrange(n_features, run) |>
+  knitr::kable(
+    digits  = 2,
+    caption = paste0(
+      "REVERSE order: Cohon-calibrated penalties for different numbers of features (target 30%), ",
+      "with ", n_reps, " random feature-subset runs per feature count."
+    )
+  )
+```
+
+```{r}
+# Plot
+ggplot(
+  cohon_feature_results_rev,
+  aes(
+    x = n_features,
+    y = cohon_penalty,
+    colour = factor(run),
+    group  = factor(run)
+  )
+) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    x = "Number of features in the problem",
+    y = "Calibrated boundary penalty",
+    colour = "Run",
+    title = "Reverse order: Cohon penalty vs number of features (random subsets)"
+  )
+
+# Plot
+ggplot(
+  cohon_feature_results_rev,
+  aes(
+    x = n_features,
+    y = total_time_sec,
+    colour = factor(run),
+    group  = factor(run)
+  )
+) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    x = "Number of features in the problem",
+    y = "Calibration + solve time (s)",
+    colour = "Run",
+    title = "Reverse order: runtime vs number of features (random subsets)"
+  )
+
+```
+
