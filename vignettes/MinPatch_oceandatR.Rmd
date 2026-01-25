@@ -1,0 +1,1571 @@
+---
+title: "Using oceandatr and minpatch to reduce fragmentation in a marine planning region (Seychelles)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Marine example: oceandatr + minpatch (Seychelles)}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	fig.align = "center",
+	fig.height = 5,
+	fig.width = 7,
+	message = TRUE,
+	warning = TRUE,
+	collapse = TRUE,
+	comment = "#>"
+)
+options(scipen = 999)   
+
+```
+
+# 1. Introduction
+
+In many marine spatial planning problems, the goal is not only to meet
+representation targets at the lowest possible cost, but also to consider
+*how selected areas are arranged in space*. Highly fragmented marine
+protected areas can be difficult to manage and enforce. Small, isolated
+patches may not support viable populations or key ecological processes,
+and solutions that are scattered across space are often hard to explain
+to decision-makers and stakeholders.
+
+Two R packages are particularly useful for addressing these challenges
+in a marine context.
+
+-   The `oceandatr` package provides a practical way to build realistic,
+    analysis-ready marine planning datasets. It allows users to obtain
+    marine planning boundaries such as exclusive economic zones or
+    high-seas regions, generate planning-unit grids, and access global
+    ocean datasets—including bathymetry, geomorphology, seamounts, and
+    environmental conditions—that are aligned to those grids. Together,
+    these capabilities make it much easier to assemble consistent inputs
+    for marine spatial planning analyses.
+
+-   The `minpatch` package is a post-processing tool that modifies
+    conservation planning solutions produced by `prioritizr` to reduce
+    fragmentation. It enforces a user-defined minimum patch size by
+    removing patches that are too small and adding new areas to maintain
+    conservation targets. It then simplifies the solution by removing
+    unnecessary planning units, while tracking how these changes affect
+    patch structure and total cost.
+
+In this vignette, we demonstrate the use of `oceandatr` and `minpatch`
+using a simple marine example from the Seychelles Exclusive Economic
+Zone. We first use `oceandatr` to construct a gridded planning problem
+with a small set of marine features and then solve a standard
+`prioritizr` minimum-set problem. We then apply `minpatch` to explore
+how different minimum patch sizes and boundary penalties influence
+fragmentation, and to assess whether `minpatch` behaves as expected in a
+realistic marine planning setting.
+
+# 2. Study region and planning units with oceandatr
+
+## 2.1 Load packages
+
+```{r load-packages, echo=TRUE, message=FALSE, warning=FALSE}
+
+# if (!require(remotes)) install.packages("remotes")
+# might need to increase timeout as it is a large package
+# options(timeout = 9999)
+# remotes::install_github("emlab-ucsb/oceandatr")
+#install.packages("kableExtra")
+library(oceandatr)
+library(terra)
+library(sf)
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+library(prioritizr)
+library(minpatch)
+library(purrr)
+library(tibble)
+library(kableExtra)
+set.seed(123)
+# Note: oceandatr requires an up-to-date version of curl for data downloads
+# install.packages("curl") 
+# packageVersion("curl")
+
+```
+
+## 2.2 Seychelles EEZ as the planning region
+
+We start by using `get_boundary()` from `oceandatr` to obtain the
+Seychelles Exclusive Economic zone (EEZ). This defines our marine
+planning domain.
+
+```{r planning-domain, echo=TRUE, message=FALSE, warning=FALSE}
+Seychelles_eez <- get_boundary(name = "Seychelles")
+# Note: needes to update the packageVersion of curl before this worked
+
+# plot to check we have Seychelles' EEZ
+plot(Seychelles_eez[1], 
+     col = "lightgreen", 
+     main = "Seychelles EEZ", 
+     axes = TRUE)
+
+```
+
+## 2.3 Choose an equal-area projection
+
+We reproject the planning region into an equal-area projection to ensure
+that area- and distance-based calculations are meaningful.
+
+```{r projection, echo=TRUE}
+# use sf::st_bbox to get the bounding box coordinates (in lon/lat)
+#sf::st_bbox(Seychelles_eez)
+
+# use projectionwizard.org to choose an equal-area projection, then store as a PROJ string
+# https://projectionwizard.org 
+
+projection_Seychelles <- "+proj=laea +lon_0=55 +lat_0=-4.5 +datum=WGS84 +units=m +no_defs"
+
+# check CRS if needed
+# sf::st_crs(projection_Seychelles) 
+```
+
+## 2.4 Create a planning-unit grid
+
+We now create a grid over the EEZ. To keep runtime moderate, we use a
+fairly coarse resolution. Our units will be in meters.
+
+```{r grid, echo=TRUE}
+# check which units to use
+# sf::st_crs(projection_Seychelles, 
+#           parameters = TRUE)$units_gdal
+
+# grid the planning area
+Seychelles_grid <- get_grid(
+  boundary   = Seychelles_eez,
+  resolution = 30000, # 30,000 just to test the code but a finer resolution can be opted with a more powerful PC    
+  crs        = projection_Seychelles
+)
+
+# project the eez into same projection as grid for plotting
+Seychelles_eez_proj <- Seychelles_eez %>%
+  sf::st_transform(crs = projection_Seychelles) %>%
+  sf::st_geometry()
+
+# plot the grid
+terra::plot(Seychelles_grid, 
+            col = "gold3", 
+            axes = FALSE, 
+            legend = FALSE,
+            main = "Seychelles spatial grid (30 km)")
+plot(Seychelles_eez_proj, 
+     add = TRUE, 
+     border = "black", 
+     lwd = 1)
+
+```
+
+Each *cell* of `Seychelles_grid` is a planning unit. To build a
+`prioritizr` problem later, it's useful to have a vector version of the
+grid:
+
+```{r pu-polygon, echo=TRUE}
+# convert grid to sf polygons as minpatch only works with sf objects
+Seychelles_pu <- Seychelles_grid %>%
+terra::as.polygons(dissolve = FALSE) %>%
+sf::st_as_sf()
+
+# snap and validate geometry to avoid tiny gaps between cells [however, this does not work; we only snap the grid for counting the patches then]
+# this helps ensure shared edges line up cleanly for patch adjacency
+#if (!requireNamespace("lwgeom", quietly = TRUE)) install.packages("lwgeom")
+
+#Seychelles_pu <- Seychelles_pu %>%
+#  lwgeom::st_snap_to_grid(size = 1) %>%   # CRS units (metres)
+#  sf::st_make_valid()
+
+# assign planning unit ID and area (m²)
+Seychelles_pu <- Seychelles_pu %>%
+mutate(pu_id = row_number(),
+       area_m2 = as.numeric(st_area(geometry)),
+       cost   = area_m2 / 1e6        # convert meters2 to km2
+)
+# Note: our grid cells are 30km x 30 km, hence each cell is 900 square km
+
+# check area in km² of each cell
+Seychelles_pu$area_km2 <- as.numeric(st_area(Seychelles_pu)) / 1e6
+summary(Seychelles_pu$area_km2)
+
+# check approx side length in km (sqrt(area)) of each cell
+Seychelles_pu$side_km <- sqrt(Seychelles_pu$area_km2)
+summary(Seychelles_pu$side_km)
+
+```
+
+**Notes:**
+
+-   *Raise an issue* in MinPatch repository to snap and validate
+    geometry so that patches are counted correctly (using Rook's method)
+
+-   *Submit a pull request* related to how it counts the patches
+    (recount the patches in the table);
+
+-   Snapping the grid before the start of the prioritisation is
+    problematic because it results into a patchy baseline solution.
+    Thus, we just snap the grid for counting then.
+
+# 3. Building marine features with oceandatr
+
+To keep the example focused, we will use a small set of features
+obtained using `oceandatr`:
+
+-   bathymetric depth zones
+
+-   geomorphology - seafloor features (banks, ridges, etc.)
+
+-   knolls
+
+-   seamounts
+
+-   coral habitat
+
+-   environmental zones - clusters of environmental conditions
+
+## 3.1 Bathymetry, geomorphology, and knolls
+
+We could retrieve raw bathymetry, but for minpatch tests we mainly need
+***binary features*** that create patch structure. Using `oceandatr`, we
+retrieve bathymetric depth zones, seafloor geomorphology classes, and
+knolls, all of which are already gridded to `Seychelles_grid`.
+
+#### Bathymetry
+
+We start with bathymetry. Rather than using raw depth values, we
+classify bathymetry into discrete depth zones (*e.g.*, epipelagic,
+mesopelagic, bathypelagic, and abyssopelagic).
+
+```{r bathymetry, echo=TRUE, message=FALSE, warning=FALSE}
+# get bathymetry with classifications into different depth zones
+depth_zones <- get_bathymetry(spatial_grid = Seychelles_grid,
+                             classify_bathymetry = TRUE)
+# this may take seconds to minutes, depending on grid size
+
+# plot
+terra::plot(depth_zones, 
+            col = c("grey60", "navyblue"), 
+            axes = FALSE, fun =
+              function(){terra::lines(terra::vect(Seychelles_eez_proj))})
+# value of 1 indicates that depth zone is present
+```
+
+#### Geomorphology
+
+Next, we include seafloor geomorphology. These layers represent distinct
+physical features of the seabed (e.g. banks and ridges).
+
+```{r geomorphology, echo=TRUE, message=FALSE}
+geomorphology <- get_geomorphology(spatial_grid =
+                                     Seychelles_grid) %>%
+  remove_empty_layers() # can remove any empty layers so we don't have so many layers to plot
+
+# brown colour indicates that geomorphological feature is present
+terra::plot(geomorphology, 
+            col = data.frame(c(0,1), 
+                             c("grey60", "sienna")), 
+            axes = FALSE, 
+            legend = FALSE, 
+            fun = function(){terra::lines(terra::vect(Seychelles_eez_proj))})
+```
+
+#### Knolls
+
+Knolls are small, isolated topographic features that often form compact
+patches.
+
+```{r knolls, echo=TRUE, message=FALSE, warning=FALSE}
+knolls <- get_knolls(spatial_grid = Seychelles_grid)
+
+#value of 1 indicates that knolls are present
+terra::plot(knolls, 
+            col = c("grey60", "grey20"), 
+            axes = FALSE)
+plot(Seychelles_eez_proj, add=TRUE)
+```
+
+## 3.2 Seamounts and coral habitat
+
+#### Seamounts
+
+Seamounts are typically important biodiversity features. We buffer
+seamount peaks by 30 km so patches are not too tiny at our grid
+resolution.
+
+```{r seamounts, echo=TRUE, message=FALSE, warning=FALSE}
+# spatial grid units are meters, so set buffer to 30000 m = 30 km
+seamounts <- get_seamounts(spatial_grid = Seychelles_grid,
+                           buffer       = 30000  # 30 km
+                           )
+
+# value of 1 indicates that seamount is present
+terra::plot(seamounts, 
+            col = c( "grey60", "saddlebrown"),
+          #  main = "Seamount areas (buffered)",
+            axes = FALSE)
+plot(Seychelles_eez_proj, 
+     add = TRUE, 
+     border = "black")
+
+```
+
+#### Coral habitat
+
+Coral habitat here refers to deep-sea coral assemblages, such as
+antipatharians, cold-water corals, and octocorals, that form
+structurally complex habitats on hard substrates in deeper waters.
+
+```{r coral-habitat, echo=TRUE}
+coral_habitat <- get_coral_habitat(spatial_grid = Seychelles_grid)
+
+#show the seamounts areas on the plot: coral habitat is often on seamounts which are shallower than surrounding ocean floor
+
+#value of 1 indicates that coral is present
+terra::plot(coral_habitat, 
+            col = c("grey60", "coral"), 
+            axes = FALSE, 
+            fun = function()terra::lines(terra::as.polygons(seamounts, dissolve = TRUE), col = "orangered4"))
+
+```
+
+## 3.3 Environmental zones
+
+We also create environmental zones derived from Bio-ORACLE variables. To
+keep vignette fast, we use only 3 clusters.
+
+```{r envi-zones, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+#set number of clusters to 3 to reduce runtime and memory usage
+enviro_zones <- get_enviro_zones(spatial_grid = Seychelles_grid,
+                                 show_plots   = FALSE,
+                                 num_clusters = 3)
+
+#value of 1 indicates that environmental zone is present
+terra::plot(enviro_zones, 
+            col = c("grey60", "forestgreen"),
+            main = "Environmental zones", 
+            axes = FALSE,
+            fun = function(){terra::lines(terra::vect(Seychelles_eez_proj))})
+```
+
+## 3.4 Build a feature stack
+
+We now combine all feature layers into a single `SpatRaster` object.
+This stack serves as the set of conservation features that will later be
+linked to each planning unit.
+
+```{r feature-stack, echo=TRUE, message=FALSE, warning=FALSE}
+# subset geomorphology to a few representative layers
+geomorph_subset <- geomorphology[[1:min(3, nlyr(geomorphology))]]
+
+# give each layer a clear and unique name
+names(depth_zones)      <- paste0("depth_zone_",  seq_len(nlyr(depth_zones)))      # 4 layers
+names(geomorph_subset)  <- paste0("geomorph_",    seq_len(nlyr(geomorph_subset)))  # up to 3
+names(knolls)           <- "knolls"                                                 # 1 layer
+names(seamounts)        <- "seamounts"                                              # 1 layer
+names(coral_habitat)    <- paste0("coral_",       seq_len(nlyr(coral_habitat)))    # 3 layers
+names(enviro_zones)     <- paste0("env_zone_",    seq_len(nlyr(enviro_zones)))     # n clusters
+
+# stack everything into a single SpatRaster
+Seychelles_features <- c(
+  depth_zones,
+  geomorph_subset,
+  knolls,
+  seamounts,
+  coral_habitat,
+  enviro_zones
+)
+```
+
+Before using the feature stack, we restrict it to the planning region so
+that only cells inside the Seychelles EEZ are retained.
+
+```{r convert-to-terra}
+# convert EEZ geometry to a terra vector for masking
+eez_vect <- terra::vect(Seychelles_eez_proj)
+
+# Only keep raster cells found within the EEZ
+Seychelles_features <- terra::mask(Seychelles_features, eez_vect)
+
+# check the number of cells that have the feature present in each layer
+feature_counts <- terra::global(Seychelles_features, "sum", na.rm = TRUE)
+names(feature_counts) <- "n_cells_present"
+feature_counts
+```
+
+# 4. Attach feature values to planning units
+
+To use these features in a `prioritizr` problem, we need feature values
+summarised at the planning-unit level rather than at the raster-cell
+level.
+
+## 4.1 Extract raster features to planning units
+
+Here, we overlay the planning-unit polygons on the raster feature stack
+and extract feature values for each planning unit, as minpatch only
+works with sf objects.
+
+```{r raster-to-polygon}
+# convert planning units (sf) to terra vector
+pu_vect <- terra::vect(Seychelles_pu)
+
+# extract feature values for each planning unit polygon
+# for each planning unit polygon, we look at all raster cells inside it and return the values of each feature layer
+feature_df <- terra::extract(Seychelles_features,
+                             pu_vect,
+                             ID = FALSE)
+# the result will be one row per polygon, with one column per raster layer
+
+# to check whether the rows in extracted feature data is equal to number of planning units (to see if overlay worked, they must match)
+nrow(feature_df)
+nrow(Seychelles_pu)
+
+# bind extracted feature values to planning-unit attributes
+Seychelles_sf <- dplyr::bind_cols(
+  Seychelles_pu,
+  as.data.frame(feature_df)
+)
+
+# store feature column names
+feature_cols <- names(Seychelles_features)
+```
+
+## 4.2 Convert features to binary presence–absence
+
+For this example, we treat all features as binary, indicating whether a
+feature is present or absent in each planning unit.
+
+```{r features-to-binary}
+# convert to binary (similar to Tas example)
+Seychelles_sf <- Seychelles_sf  %>% 
+  mutate(across(all_of(feature_cols), ~ if_else(.x > 0, 1, 0)))
+
+# quick check: how many PUs have values in each feature)
+Seychelles_sf %>%
+  sf::st_drop_geometry() %>%
+  dplyr::summarise(dplyr::across(dplyr::all_of(feature_cols), sum)) %>%
+  tidyr::pivot_longer(
+    cols = everything(),
+    names_to = "feature",
+    values_to = "n_pu_present"
+  )
+# this should match the raster feature stack earlier
+```
+
+# 5. Build and solve a `prioritizr` problem
+
+We now build a simple minimum-set problem using `prioritizr`, with
+equal-weight features and a uniform target of 30% for each feature.
+
+```{r build-problem}
+# build the problem using sf planning units + feature columns
+
+p_base <-
+  prioritizr::problem(
+    x              = Seychelles_sf,
+    features       = feature_cols,
+    cost_column    = "cost"
+  ) %>%
+  add_min_set_objective() %>%
+  add_relative_targets(0.30) %>% # 30% of each feature
+  add_binary_decisions() %>%
+  add_rsymphony_solver(verbose = FALSE) # change this to cbc later
+
+p_base
+```
+
+We then solve this baseline problem without any fragmentation controls
+and use it as a reference for the MinPatch experiments.
+
+```{r solve-baseline, echo=TRUE, message=FALSE, warning=FALSE}
+# solve the baseline problem
+t_base <- system.time({
+  s_base <- solve(p_base)
+})
+
+# Plot the baseline solution
+p_base_plot <- plot_prioritizr(s_base) +
+  ggtitle("Baseline (no MinPatch)")
+
+p_base_plot
+```
+
+In this baseline solution, we see that the selected planning units are
+fragmented and scattered across the planning region. There is no
+apparent compact areas, which are theoretically better when it comes to
+managing protected areas.
+
+# 6. Set up MinPatch parameters
+
+We define minimum patch sizes relative to the planning units by scaling
+the **median PU area** by `multipliers` (5×, 10×, 20×). This makes the
+thresholds easy to interpret as “roughly how many planning units per
+patch”. We also set a single **`patch_radius`** for all runs, chosen to
+represent a neighbourhood of about 10 planning units. This radius
+defines the spatial search distance used by MinPatch to identify
+neighbouring planning units when forming, expanding, or merging patches.
+
+```{r minpatch-params, echo=TRUE}
+# median planning-unit area (m² and km²)
+median_pu_area_m2 <- median(Seychelles_sf$area_m2)
+median_pu_area_km2 <- median_pu_area_m2 / 1e6
+
+# multipliers relative to the median PU area
+multipliers <- c(5, 10, 20)
+
+# minimum patch sizes in m² and km²
+patch_sizes_m2  <- multipliers * median_pu_area_m2
+patch_sizes_km2 <- patch_sizes_m2 / 1e6
+
+# patch radius: roughly a circle that covers ~10 PUs (in meters)
+patch_radius <- sqrt(median_pu_area_m2 * 10 / pi)
+
+# summary table
+minpatch_param_summary <- tibble::tibble(
+  multiplier       = multipliers,
+  min_patch_m2     = patch_sizes_m2,
+  min_patch_km2    = patch_sizes_km2,
+  median_pu_m2     = median_pu_area_m2,
+  median_pu_area_km2 = median_pu_area_km2)
+
+# summaries of the different values
+cat("\nMinPatch parameters (relative to planning units):\n")
+
+cat("- Median planning unit area:",
+    round(median_pu_area_km2, 3), "km^2\n\n")
+
+for (i in seq_along(multipliers)) {
+  cat("Multiplier:", multipliers[i], "x median PU area\n")
+  cat("  - Minimum patch size:",
+      round(patch_sizes_km2[i], 2), "km^2\n")
+  cat("  - Corresponds to ≈",
+      round(patch_sizes_km2[i] / median_pu_area_km2, 2),
+      "planning units\n\n")
+}
+
+median_pu_length <- sqrt(median_pu_area_m2)
+patch_radius_cells <- patch_radius / median_pu_length
+
+cat("Patch radius used for all runs:\n")
+cat("  -", round(patch_radius, 1), "m (≈",
+    round(patch_radius / 1000, 2), "km)\n")
+cat("  - Corresponds to ≈",
+    round(patch_radius_cells, 2),
+    "median planning-unit lengths\n")
+```
+
+**Notes:**
+
+-   When calculating patch radius, it should be divided by pi. This is
+    because we are getting the radius of the circle from the centroid of
+    the starting patch when trying to expand patches.
+
+-   Moreover, it would be better for the user to have the option to set
+    the actual size of their patch rather than inputting a multiplier.
+    This would be useful for the app.
+
+# 7. Run MinPatch for different minimum patch sizes
+
+We now run MinPatch once for each minimum patch factor using the
+different multipliers. Each run starts from the same `prioritizr`
+solution but applies different constraints on minimum patch size.
+
+```{r min-patch-sizes, echo=TRUE, message=TRUE, warning=TRUE}
+minpatch_results <- vector("list", length(patch_sizes_m2))
+minpatch_times <- numeric(length(patch_sizes_m2))
+
+for (i in seq_along(patch_sizes_m2)) {
+  
+cat("\n============================================\n")
+cat("Running MinPatch with min patch area ~",
+    round(patch_sizes_km2[i], 2), "km^2 (",
+    multipliers[i], "x median PU)\n")
+cat("============================================\n")
+  
+  # time the MinPatch run
+  t_mp <- system.time({
+     minpatch_results[[i]] <- run_minpatch(
+    prioritizr_problem   = p_base,
+    prioritizr_solution  = s_base,
+    min_patch_size       = patch_sizes_m2[i],
+    patch_radius         = patch_radius,
+    boundary_penalty     = 0,
+    remove_small_patches = TRUE,
+    add_patches          = TRUE,
+    whittle_patches      = TRUE,
+    verbose              = TRUE
+  )
+    
+  })
+ 
+  # store elapsed time (seconds)
+  minpatch_times[i] <- t_mp[["elapsed"]]
+}
+
+# name the outputs
+names(minpatch_results) <- paste0("minpatch_", multipliers, "x")
+names(minpatch_times)   <- paste0("minpatch_", multipliers, "x")
+```
+
+# 8. Interpreting MinPatch outcomes
+
+In this section, we interpret how MinPatch modifies the baseline
+solution. We compare resulting spatial patterns, patch structure, and
+trade-offs between fragmentation and cost.
+
+### 8.1 Selected planning units (baseline vs MinPatch runs)
+
+We start by showing only the selected planning units for the baseline
+and each MinPatch run.
+
+```{r minpatch-2x2, echo=TRUE, fig.height=8, fig.width=10}
+# Helper to extract the solution and ensure a `solution_1` column
+get_solution_with_solution1 <- function(x) {
+  sol <- x$solution
+  extra_cols <- setdiff(names(sol), names(x$planning_units))
+  if (!"solution_1" %in% names(sol) && length(extra_cols) >= 1) {
+    sol$solution_1 <- sol[[extra_cols[1]]]
+  }
+  sol
+}
+
+# Baseline solution
+p_base_plot2 <- plot_prioritizr(s_base) +
+  ggtitle("Baseline (no MinPatch)")
+
+library(patchwork)
+
+# MinPatch solution plots
+sol_list <- purrr::map(minpatch_results, get_solution_with_solution1)
+
+p_list <- purrr::map2(
+  sol_list,
+  multipliers,
+  ~ plot_prioritizr(.x) +
+    ggtitle(paste0("MinPatch: ", .y, "× median PU area"))
+)
+
+p_1 <- p_list[[1]]
+p_2 <- p_list[[2]]
+p_3 <- p_list[[3]]
+
+# baseline plot (rename!)
+p_base_plot <- plot_prioritizr(s_base) +
+  ggtitle("Baseline (no MinPatch)")
+
+# 2×2 layout:
+(p_base_plot | p_1) /
+(p_2        | p_3)
+
+```
+
+The baseline solution is highly fragmented, with many small and isolated
+selected planning units. As the minimum patch size increases, these
+small patches are removed or merged, leading to fewer, larger, and more
+spatially coherent patches. Overall, higher MinPatch thresholds produce
+a clearer and less fragmented spatial pattern of selected areas.
+
+### 8.2 Group summary table (all runs)
+
+Having examined the spatial solutions, we summarise all runs in a single
+table to compare outcomes across different metrics.
+
+```{r minpatch-summary, echo=TRUE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tibble)
+library(purrr)
+library(kableExtra)
+
+# helper to extract metrics from compare_solutions() output
+get_metric <- function(overall, column, metric) {
+  out <- overall[[column]][overall$Metric == metric]
+  if (length(out) == 0) NA_real_ else out
+}
+
+# ---- MinPatch parameter info ----
+median_pu_area_m2  <- median(Seychelles_sf$area_m2)
+
+patch_sizes_m2  <- multipliers * median_pu_area_m2
+patch_sizes_km2 <- patch_sizes_m2 / 1e6
+
+min_patch_lookup <- tibble::tibble(
+  multiplier    = multipliers,
+  min_patch_km2 = patch_sizes_km2
+)
+
+# ---- Runtime lookup (seconds) ----
+# baseline runtime left as NA (add t_base[["elapsed"]] if you want it)
+runtime_lookup <- tibble::tibble(
+  scenario    = c("Baseline", paste0("MinPatch ×", multipliers)),
+  runtime_sec = c(NA_real_, as.numeric(minpatch_times))
+)
+
+# ---- Baseline metrics (same "Original" across runs) ----
+overall0 <- compare_solutions(minpatch_results[[1]])$overall
+
+baseline_row <- tibble::tibble(
+  scenario                 = "Baseline",
+  multiplier               = NA_real_,
+  min_patch_size_km2       = NA_real_,
+  selected_pu              = get_metric(overall0, "Original", "Selected Planning Units"),
+  total_area_km2           = get_metric(overall0, "Original", "Total Area") / 1e6,
+  n_patches                = get_metric(overall0, "Original", "Number of Patches"),
+  valid_patches_ge_min     = get_metric(overall0, "Original", "Valid Patches (>= min size)"),
+  median_patch_km2         = get_metric(overall0, "Original", "Median Patch Size") / 1e6,
+  total_pu_cost            = get_metric(overall0, "Original", "Planning Unit Cost"),
+  boundary_cost            = get_metric(overall0, "Original", "Boundary Cost"),
+  overall_cost             = get_metric(overall0, "Original", "Total Cost")
+)
+
+# ---- MinPatch metrics ----
+minpatch_rows <- purrr::map2_dfr(minpatch_results, multipliers, ~{
+  overall <- compare_solutions(.x)$overall
+
+  tibble::tibble(
+    scenario                 = paste0("MinPatch ×", .y),
+    multiplier               = .y,
+    min_patch_size_km2       = min_patch_lookup$min_patch_km2[min_patch_lookup$multiplier == .y],
+    selected_pu              = get_metric(overall, "MinPatch", "Selected Planning Units"),
+    total_area_km2           = get_metric(overall, "MinPatch", "Total Area") / 1e6,
+    n_patches                = get_metric(overall, "MinPatch", "Number of Patches"),
+    valid_patches_ge_min     = get_metric(overall, "MinPatch", "Valid Patches (>= min size)"),
+    median_patch_km2         = get_metric(overall, "MinPatch", "Median Patch Size") / 1e6,
+    total_pu_cost            = get_metric(overall, "MinPatch", "Planning Unit Cost"),
+    boundary_cost            = get_metric(overall, "MinPatch", "Boundary Cost"),
+    overall_cost             = get_metric(overall, "MinPatch", "Total Cost")
+  )
+})
+
+# ---- Combine and format table ----
+solution_summary <- bind_rows(baseline_row, minpatch_rows) %>%
+  left_join(runtime_lookup, by = "scenario") %>%
+  mutate(
+    multiplier = if_else(is.na(multiplier), "-", as.character(multiplier)),
+    across(c(selected_pu, n_patches, valid_patches_ge_min), ~ as.integer(round(.x))),
+    across(c(min_patch_size_km2, total_area_km2, median_patch_km2), ~ round(.x, 2)),
+    across(c(total_pu_cost, boundary_cost, overall_cost), ~ round(.x, 2)),
+    runtime_sec = round(runtime_sec, 1)
+  ) %>%
+  select(
+    scenario,
+    `Multiplier`                  = multiplier,
+    `Minimum patch size (km²)`    = min_patch_size_km2,
+    `Selected PUs`                = selected_pu,
+    `Total area (km²)`            = total_area_km2,
+    `# patches`                   = n_patches,
+    `Valid patches (>= min size)` = valid_patches_ge_min,
+    `Median patch size (km²)`     = median_patch_km2,
+    `Total PU cost`               = total_pu_cost,
+    `Boundary cost`               = boundary_cost,
+    `Overall cost`                = overall_cost,
+    `Runtime (s)`                 = runtime_sec
+  )
+
+knitr::kable(solution_summary, format = "html", align = "l") |>
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+    full_width = FALSE,
+    position = "left"
+  ) |>
+  kableExtra::row_spec(0, bold = TRUE)
+
+
+```
+
+Across all runs, the number of selected planning units remains broadly
+similar, while the number of patches decreases clearly from the baseline
+to the 5× multiplier, and then increases steadily as the multiplier
+increases. This shows that MinPatch mainly changes the spatial
+configuration of the solution rather than causing a substantial increase
+or decrease in the total area selected.
+
+At higher multipliers, the solution becomes more constrained. In the 20×
+run, no patches meet the minimum patch-size requirement (i.e. there are
+no valid patches). This suggests that the algorithm may not be able to
+simultaneously satisfy the minimum patch-size constraint and the
+conservation targets without allowing patches to fall below the
+threshold, as the minimum patch size increases.
+
+We also see that only the 5× run has a median patch size equal to the
+minimum patch size. In contrast, for the 10× and 20× runs, the median
+patch size falls well below the threshold. This suggests that, at higher
+multipliers, MinPatch attempts to enforce the minimum patch-size rule
+while still achieving conservation targets, but is unable to do so
+consistently across all patches.
+
+**Notes:**
+
+-   We need to be cautious when interpreting this table because the
+    number of patches reported here does not match what is visually
+    apparent in the spatial solution maps. Patches appear to be counted
+    using a different rule, which produces much higher patch counts than
+    what the maps suggest. See the Patch-labelled maps (**Section 8.4**)
+    for a clearer view of how patches are being delineated. Because
+    patch counts differ, the median patch size and the number of valid
+    patches (≥ minimum size) should also be treated with caution.
+
+-   The Total PU cost values for the baseline and 5× runs may also be
+    incorrect, because they should equal the total area selected given
+    that planning-unit cost was defined as area (km²). If Total PU cost
+    is wrong, then the overall cost values derived from it will also be
+    affected. See notes on the individual summaries.
+
+-   The function to **compute the number of patches must be updated**.
+    The grid must be snapped first, to get the correct number of patches
+    using Rook's method. Hence, send a pull request on this.
+
+### 8.3 Change maps (Added / Removed / Retained / No change)
+
+After comparing the different runs, we now examine how planning units
+were added, removed, or retained relative to the baseline solution using
+`plot_minpatch`. Using this functionm, we create maps that provide a
+visual explanation of how MinPatch modifies the solution to enforce
+minimum patch sizes and reduce fragmentation.
+
+```{r minpatch-plots, fig.width=8, fig.height=5}
+# Create plots for each minpatch run and arrange them with patchwork
+plot_list <- purrr::map2(
+  minpatch_results,
+  multipliers,
+  ~ plot_minpatch(
+      .x,
+      title = paste0("Patch size x", .y)
+    )
+)
+patchwork::wrap_plots(
+  plotlist = plot_list,
+  guides   = "collect",
+  ncol     = 3
+) &
+  theme(legend.position = "bottom")
+
+```
+
+Across the three runs, increasing the multiplier leads to a clearer
+separation between core planning units that are retained and more
+peripheral units that are added or removed. As the minimum patch size
+increases, a larger share of the retained planning units corresponds to
+core areas that persist across runs, while changes are increasingly
+concentrated in the surrounding areas. At higher multipliers, we observe
+more turnover, with more planning units being added and removed as
+MinPatch restructures the solution to meet the patch-size constraint.
+This suggests that higher multipliers enforce stronger spatial
+consolidation by stabilising core areas while allowing greater
+reconfiguration at the edges.
+
+**Notes:**
+
+-   The plot colors are not that colour-blind friendly.
+
+### 8.4 Patch-labelled maps
+
+Since Section 8.3 shows *where* MinPatch added and removed planning
+units, we now zoom in on *how selected planning units cluster into
+patches*. In particular, we label each patch and classify it as
+**valid** (meets the minimum patch-size rule) or **invalid** (falls
+below the threshold). This view makes the spatial definition of a
+“patch” explicit and helps interpret the patch statistics in the summary
+table (Section 8.2), especially the reported number of patches and the
+number of valid patches.
+
+A key point is that patch counts depend on how we define “connected”.
+Two common neighbourhood rules are the **rook** and **queen** methods.
+Under **rook adjacency**, two planning units are considered connected
+only if they share an *edge* (north, south, east, or west). Under
+**queen adjacency**, planning units are considered connected if they
+share an edge *or a corner* (diagonal contact also counts). In gridded
+planning problems, the queen method usually produces *fewer* patches
+because diagonal contacts can link otherwise separate clusters.
+
+In this vignette, we use **rook adjacency** to delineate patches. For
+management and ecological interpretation, rook-connected patches are
+often more defensible because they reflect *contiguous area* (shared
+boundary length) rather than corner-touching units that may be connected
+only at a single point. This makes the resulting patches more compact
+and easier to interpret as coherent areas, especially in a square-grid
+setting. We therefore treat rook adjacency as the primary patch
+definition for assessing whether patches meet the minimum size
+requirement.
+
+```{r patch-labelled-maps, fig.width=8, fig.height=5}
+library(igraph)
+library(shadowtext)
+
+if (!requireNamespace("lwgeom", quietly = TRUE)) {
+  install.packages("lwgeom")
+}
+
+# Helper: compute rook-adjacency patches + classify valid/invalid by area threshold
+# return = "plot"   -> returns ggplot object (default)
+# return = "counts" -> returns a tibble with rook-based patch counts
+plot_patch_validity <- function(multiplier, return = c("plot", "counts")) {
+
+  return <- match.arg(return)
+
+  # locate run
+  i_run <- which(multipliers == multiplier)
+  stopifnot(length(i_run) == 1)
+
+  sol <- minpatch_results[[i_run]]$solution
+  stopifnot("minpatch" %in% names(sol))
+
+  # ensure consistent PU id for joins/labels
+  sol <- sol %>%
+    mutate(
+      pu_id    = row_number(),
+      selected = (minpatch == 1)
+    )
+
+  # threshold area (m²): multiplier × median PU area
+  if (!exists("median_pu_area_m2")) {
+    median_pu_area_m2 <- median(Seychelles_sf$area_m2)
+  }
+  min_patch_area_m2 <- multiplier * median_pu_area_m2
+
+  # selected units only (for patch detection)
+  sel <- sol %>% filter(selected)
+  stopifnot(nrow(sel) > 0)
+
+  # snap & validate for adjacency reliability (only for patch counting/unioning)
+  sel2 <- sel %>%
+    lwgeom::st_snap_to_grid(size = 1) %>%   # CRS units (metres)
+    sf::st_make_valid()
+
+  # rook adjacency = edge sharing only (works reliably for snapped grids)
+  nb_list <- sf::st_relate(sel2, sel2, pattern = "F***1****")
+
+  edges <- do.call(
+    rbind,
+    lapply(seq_along(nb_list), function(i) {
+      if (length(nb_list[[i]]) == 0) return(NULL)
+      cbind(from = i, to = nb_list[[i]])
+    })
+  )
+
+  g <- igraph::make_empty_graph(n = nrow(sel2), directed = FALSE)
+  if (!is.null(edges) && nrow(edges) > 0) {
+    g <- igraph::add_edges(g, as.vector(t(edges)))
+  }
+
+  comp <- igraph::components(g)
+  sel2$patch_id <- comp$membership
+
+  # patch polygons + patch size (area) + validity
+  patch_info <- sel2 %>%
+    group_by(patch_id) %>%
+    summarise(
+      n_pu       = dplyr::n(),
+      patch_area = sum(as.numeric(st_area(geometry)), na.rm = TRUE),
+      geometry   = st_union(geometry),
+      .groups    = "drop"
+    ) %>%
+    st_as_sf() %>%
+    mutate(
+      is_valid = patch_area >= min_patch_area_m2,
+      label_pt = st_point_on_surface(geometry)
+    )
+
+  # label coords
+  xy <- st_coordinates(patch_info$label_pt)
+  patch_info$x <- xy[, 1]
+  patch_info$y <- xy[, 2]
+
+  # counts
+  n_patches         <- nrow(patch_info)
+  n_valid_patches   <- sum(patch_info$is_valid)
+  n_invalid_patches <- n_patches - n_valid_patches
+
+  if (return == "counts") {
+    return(tibble::tibble(
+      scenario          = paste0("MinPatch ×", multiplier),
+      new_n_patches     = as.integer(n_patches),
+      new_valid_patches = as.integer(n_valid_patches)
+    ))
+  }
+
+  # join validity back to PUs
+  sel_class <- sel2 %>%
+    st_drop_geometry() %>%
+    select(pu_id, patch_id) %>%
+    left_join(
+      patch_info %>% st_drop_geometry() %>% select(patch_id, is_valid),
+      by = "patch_id"
+    ) %>%
+    mutate(status = ifelse(is_valid, "Valid patch", "Invalid patch"))
+
+  sol_plot <- sol %>%
+    left_join(sel_class %>% select(pu_id, status), by = "pu_id") %>%
+    mutate(
+      status = ifelse(is.na(status), "Not selected", status),
+      status = factor(status, levels = c("Not selected", "Valid patch", "Invalid patch"))
+    )
+
+  # console message
+  cat(
+    "MinPatch ", multiplier, "x: ",
+    n_patches, " patches | ",
+    n_valid_patches, " valid | ",
+    n_invalid_patches, " invalid",
+    " (threshold = ", round(min_patch_area_m2 / 1e6, 2), " km²)\n",
+    sep = ""
+  )
+
+  # plot
+  ggplot() +
+    geom_sf(
+      data = sol_plot,
+      aes(fill = status),
+      colour = "white",
+      linewidth = 0.15
+    ) +
+    shadowtext::geom_shadowtext(
+      data = patch_info,
+      aes(x = x, y = y, label = patch_id),
+      size = 4,
+      fontface = "bold",
+      colour = "black",
+      bg.colour = "white",
+      bg.r = 0.12
+    ) +
+    scale_fill_manual(
+      values = c(
+        "Not selected"  = "grey92",
+        "Valid patch"   = "#2ca25f",
+        "Invalid patch" = "red"
+      )
+    ) +
+    labs(
+      title = paste0("MinPatch: ", multiplier, "× median PU area"),
+      subtitle = paste0(
+        "Patches (snapped for adjacency): ",
+        n_patches, " total | ",
+        n_valid_patches, " valid | ",
+        n_invalid_patches, " invalid",
+        " | valid if patch area ≥ ",
+        multiplier, "× median PU area"
+      ),
+      fill = NULL
+    ) +
+    theme_minimal()
+}
+
+# plot each multiplier
+for (m in c(5, 10, 20)) {
+  print(plot_patch_validity(m))
+}
+
+```
+
+The counts of valid and invalid patches reported earlier should be
+interpreted with caution. The patch-labelled maps show between 18 and 27
+spatially distinct patches across the multipliers, which matches what is
+visually apparent and provides a clearer representation of patch
+structure.
+
+As the minimum patch size increases, the proportion of valid patches
+decreases, as stricter thresholds make it harder for smaller clusters to
+meet the minimum size. As a result, more patches are classified as
+invalid even though they remain spatially coherent.
+
+**Notes:**
+
+-   Address how the function computes valid and invalid patches.
+    MinPatch should probably document (or enforce) that the
+    planning-unit geometries need to be topologically aligned (snapped
+    to grid). However, snapping the grid at the very start results in
+    evenly patchy baseline solution (does not look natural anymore). The
+    selected planning units are equally spaced apart from each other
+    like a chess board.
+
+-   We could optionally add a safeguard step (e.g., st_set_precision() /
+    snapping) inside initialize_minpatch_data() or before
+    calculate_patch_stats().
+
+Given this, we show an updated group summary table showing the old and
+the new (correct) number of patches.
+
+```{r minpatch-updated, echo=TRUE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tibble)
+library(purrr)
+library(kableExtra)
+
+# helper to grab one metric from the compare_solutions()$overall table
+get_metric <- function(overall, column, metric) {
+  out <- overall[[column]][overall$Metric == metric]
+  if (length(out) == 0) NA_real_ else out
+}
+
+# minPatch parameter info
+median_pu_area_m2  <- median(Seychelles_sf$area_m2)
+
+patch_sizes_m2  <- multipliers * median_pu_area_m2
+patch_sizes_km2 <- patch_sizes_m2 / 1e6
+
+min_patch_lookup <- tibble::tibble(
+  multiplier    = multipliers,
+  min_patch_km2 = patch_sizes_km2
+)
+
+# runtime lookup (seconds)
+runtime_lookup <- tibble::tibble(
+  scenario    = c("Baseline", paste0("MinPatch ×", multipliers)),
+  runtime_sec = c(NA_real_, as.numeric(minpatch_times))
+)
+
+# rook-based patch counts (same logic as patch-labelled maps)
+rook_patch_table <- purrr::map_dfr(
+  multipliers,
+  ~ plot_patch_validity(.x, return = "counts")
+) %>%
+  mutate(
+    `New # patches`                   = new_n_patches,
+    `New valid patches (>= min size)` = new_valid_patches
+  ) %>%
+  select(scenario, `New # patches`, `New valid patches (>= min size)`)
+
+# Baseline metrics (same "Original" across runs)
+overall0 <- compare_solutions(minpatch_results[[1]])$overall
+
+baseline_row <- tibble::tibble(
+  scenario                 = "Baseline",
+  multiplier               = NA_real_,
+  min_patch_size_km2       = NA_real_,
+  selected_pu              = get_metric(overall0, "Original", "Selected Planning Units"),
+  total_area_km2           = get_metric(overall0, "Original", "Total Area") / 1e6,
+  n_patches                = get_metric(overall0, "Original", "Number of Patches"),
+  valid_patches_ge_min     = get_metric(overall0, "Original", "Valid Patches (>= min size)"),
+  median_patch_km2         = get_metric(overall0, "Original", "Median Patch Size") / 1e6,
+  total_pu_cost            = get_metric(overall0, "Original", "Planning Unit Cost"),
+  boundary_cost            = get_metric(overall0, "Original", "Boundary Cost"),
+  overall_cost             = get_metric(overall0, "Original", "Total Cost")
+)
+
+# MinPatch metrics
+minpatch_rows <- purrr::map2_dfr(minpatch_results, multipliers, ~{
+  overall <- compare_solutions(.x)$overall
+
+  tibble::tibble(
+    scenario                 = paste0("MinPatch ×", .y),
+    multiplier               = .y,
+    min_patch_size_km2       = min_patch_lookup$min_patch_km2[min_patch_lookup$multiplier == .y],
+    selected_pu              = get_metric(overall, "MinPatch", "Selected Planning Units"),
+    total_area_km2           = get_metric(overall, "MinPatch", "Total Area") / 1e6,
+    n_patches                = get_metric(overall, "MinPatch", "Number of Patches"),
+    valid_patches_ge_min     = get_metric(overall, "MinPatch", "Valid Patches (>= min size)"),
+    median_patch_km2         = get_metric(overall, "MinPatch", "Median Patch Size") / 1e6,
+    total_pu_cost            = get_metric(overall, "MinPatch", "Planning Unit Cost"),
+    boundary_cost            = get_metric(overall, "MinPatch", "Boundary Cost"),
+    overall_cost             = get_metric(overall, "MinPatch", "Total Cost")
+  )
+})
+
+# Combine + add new patch columns beside old ones
+solution_summary_updated <- dplyr::bind_rows(baseline_row, minpatch_rows) %>%
+  left_join(rook_patch_table, by = "scenario") %>%
+  left_join(runtime_lookup, by = "scenario") %>%
+  mutate(
+    multiplier = dplyr::if_else(is.na(multiplier), "-", as.character(multiplier)),
+    dplyr::across(
+      c(selected_pu, n_patches, valid_patches_ge_min, `New # patches`, `New valid patches (>= min size)`),
+      ~ ifelse(is.na(.x), NA_integer_, as.integer(round(.x)))
+    ),
+    dplyr::across(c(min_patch_size_km2, total_area_km2, median_patch_km2), ~ round(.x, 2)),
+    dplyr::across(c(total_pu_cost, boundary_cost, overall_cost), ~ round(.x, 2)),
+    runtime_sec = round(runtime_sec, 1)
+  ) %>%
+  dplyr::select(
+    scenario,
+    `Multiplier`                       = multiplier,
+    `Minimum patch size (km²)`         = min_patch_size_km2,
+    `Selected PUs`                     = selected_pu,
+    `Total area (km²)`                 = total_area_km2,
+    `# patches`                        = n_patches,
+    `New # patches`                    = `New # patches`,
+    `Valid patches (>= min size)`      = valid_patches_ge_min,
+    `New valid patches (>= min size)`  = `New valid patches (>= min size)`,
+    `Median patch size (km²)`          = median_patch_km2,
+    `Total PU cost`                    = total_pu_cost,
+    `Boundary cost`                    = boundary_cost,
+    `Overall cost`                     = overall_cost,
+    `Runtime (s)`                      = runtime_sec
+  )
+
+knitr::kable(solution_summary_updated, format = "html", align = "l") |>
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+    full_width = FALSE,
+    position = "left"
+  ) |>
+  kableExtra::row_spec(0, bold = TRUE)
+
+```
+
+### 8.5 Individual summaries (per run)
+
+Here, we show all the individual summaries for all the runs. These
+provide a detailed breakdown and comparison of the metrics of each
+minimum patch run with the baseline solution, as well as other things
+such as feature representation.
+
+```{r minpatch-all-runs, echo=TRUE, message=FALSE, warning=FALSE}
+for (i in seq_along(minpatch_results)) {
+
+  result <- minpatch_results[[i]]
+  factor_val <- multipliers[i]
+
+  cat("\n\n## Scenario: MinPatch with min patch size = ",
+      factor_val, " × median PU area\n\n", sep = "")
+
+  # MinPatch summary (if it prints text)
+  cat("**MinPatch processing summary**\n\n")
+  print_minpatch_summary(result)
+
+  comparison <- compare_solutions(result)
+
+  cat("\n**Overall solution comparison**\n\n")
+  knitr::kable(comparison$overall)
+
+  cat("\n**Feature-level area comparison**\n\n")
+  knitr::kable(comparison$features)
+
+  cat("\n**Feature change summary**\n\n")
+  knitr::kable(comparison$summary)
+}
+```
+
+**Notes:**
+
+-   The calculation for valid and invalid patches should then again be
+    rechecked.
+
+-   How is the planning unit cost calculated for the baseline? And why
+    does it differ in every summary table (i.e., table for each
+    multiplier)?
+
+-   Add units to Total Area (km2 or m2?)
+
+# 9. Run different boundary penalties
+
+The boundary penalty controls how strongly MinPatch favours spatially
+compact patches during the whittling stage. At this step, MinPatch
+attempts to remove planning units from the edges of patches while
+maintaining conservation targets. Whether a unit can be removed depends
+on the trade-off between its planning-unit cost and the change in
+boundary cost that would result from its removal.
+
+The boundary penalty scales this trade-off by assigning a cost to
+fragmentation: higher values discourage the creation of additional patch
+edges and therefore promote more compact solutions. In the Seychelles
+example, we explore a small range of boundary penalties to illustrate
+how sensitive the whittling process is to boundary costs under a marine
+grid with relatively uniform planning-unit areas.
+
+```{r minpatch-boundarypenalties}
+# calculate reasonable parameters based on planning unit characteristics
+median_area <- median(Seychelles_sf$area_m2)
+min_patch_size <- median_area * 5
+patch_radius <- sqrt(median_area * 10/pi)
+
+t3 <- system.time({
+ result3 <- run_minpatch(
+  prioritizr_problem = p_base,
+  prioritizr_solution = s_base,
+  min_patch_size = min_patch_size,
+  patch_radius = patch_radius,
+  boundary_penalty = 0,
+  remove_small_patches = TRUE,
+  add_patches = TRUE,
+  whittle_patches = TRUE,
+  verbose = TRUE
+) 
+})
+cat("result3 runtime (sec):", t3[["elapsed"]], "\n")
+
+t4 <- system.time({
+  result4 <- run_minpatch(
+  prioritizr_problem = p_base,
+  prioritizr_solution = s_base,
+  min_patch_size = min_patch_size,
+  patch_radius = patch_radius,
+  boundary_penalty = 1e-5,
+  remove_small_patches = TRUE,
+  add_patches = TRUE,
+  whittle_patches = TRUE,
+  verbose = TRUE
+)
+})
+cat("result4 runtime (sec):", t4[["elapsed"]], "\n")
+
+t5 <- system.time({
+  result5 <- run_minpatch(
+  prioritizr_problem = p_base,
+  prioritizr_solution = s_base,
+  min_patch_size = min_patch_size,
+  patch_radius = patch_radius,
+  boundary_penalty = 1e-10, 
+  remove_small_patches = TRUE,
+  add_patches = TRUE,
+  whittle_patches = TRUE,
+  verbose = TRUE
+)
+})
+cat("result5 runtime (sec):", t5[["elapsed"]], "\n")
+
+```
+
+# 10. Interpreting MinPatch with boundary penalties outcomes
+
+## 10.1 Change maps (Added / Removed / Retained / No change)
+
+Here, we visualise the MinPatch solutions for different boundary penalty
+values.
+
+```{r boundary-change-maps}
+patchwork::wrap_plots(plot_minpatch(result3, title = "Boundary Penalty: 0"),
+                      plot_minpatch(result4, title = "Boundary Penalty: 1e-5"),
+                      plot_minpatch(result5, title = "Boundary Penalty: 1e-10"),
+                      guides = "collect",
+                      ncol = 3) &
+  theme(legend.position = "bottom")
+```
+
+The resulting plots are all identical.
+
+## 10.2 Selected planning units (baseline vs MinPatch runs)
+
+We then check the resulting spatial solutions, but only focusing on the
+selected planning units.
+
+```{r boundary-plot, fig.width = 10, fig.height = 8}
+# Helper to extract the solution and ensure a `solution_1` column
+get_solution_with_solution1 <- function(x) {
+  sol <- x$solution
+  extra_cols <- setdiff(names(sol), names(x$planning_units))
+  if (!"solution_1" %in% names(sol) && length(extra_cols) >= 1) {
+    sol$solution_1 <- sol[[extra_cols[1]]]
+  }
+  sol
+}
+
+# Collect the boundary-penalty runs
+
+# list of boundary penalties 
+boundary_penalties <- c(0, 1e-5, 1e-10)
+
+# corresponding MinPatch results
+boundary_results <- list(result3, result4, result5)
+
+# extract solution objects with a solution_1 column
+sol_list <- purrr::map(boundary_results, get_solution_with_solution1)
+
+# Baseline solution plot (keep problem object p_base separate!)
+p_base_plot <- plot_prioritizr(s_base) +
+  ggtitle("Baseline (no MinPatch)")
+
+# minPatch solutions for different boundary penalties
+p_list <- purrr::map2(
+  sol_list,
+  boundary_penalties,
+  ~ plot_prioritizr(.x) +
+    ggtitle(paste0("MinPatch: boundary penalty = ", .y))
+)
+
+# assuming three boundary-penalty runs
+p_1 <- p_list[[1]]
+p_2 <- p_list[[2]]
+p_3 <- p_list[[3]]
+
+# 2×2 layout: baseline + 3 MinPatch variants
+(p_base_plot | p_1) /
+(p_2        | p_3)
+
+```
+
+The resulting plots are again all identical.
+
+## 10.3 Group summary table (all runs)
+
+We summarise and compare all the runs using a table.
+
+```{r minpatch-grouptable, echo=TRUE}
+# helper to grab one metric from the compare_solutions()$overall table
+get_metric <- function(overall, column, metric) {
+  out <- overall[[column]][overall$Metric == metric]
+  if (length(out) == 0) NA_real_ else out  # safer: return NA if not found
+}
+
+# MinPatch results for different boundary penalties
+boundary_penalties <- c(0, 1e-5, 1e-10)
+
+minpatch_results_bp <- list(
+  result3,
+  result4,
+  result5
+)
+
+# runtimes taken from your system.time() calls
+minpatch_runtimes <- list(
+  t3[["elapsed"]],
+  t4[["elapsed"]],
+  t5[["elapsed"]]
+)
+
+# baseline metrics from the first comparison (same "Original" across runs)
+overall0 <- compare_solutions(minpatch_results_bp[[1]])$overall
+
+baseline_row <- tibble::tibble(
+  scenario            = "baseline",
+  boundary_penalty    = NA_real_,
+  selected_pu         = get_metric(overall0, "Original", "Selected Planning Units"),
+  total_area          = get_metric(overall0, "Original", "Total Area"),
+  n_patches           = get_metric(overall0, "Original", "Number of Patches"),
+  valid_patches       = get_metric(overall0, "Original", "Valid Patches (>= min size)"),
+  median_patch_size   = get_metric(overall0, "Original", "Median Patch Size"),
+  planning_unit_cost  = get_metric(overall0, "Original", "Planning Unit Cost"),
+  boundary_cost       = get_metric(overall0, "Original", "Boundary Cost"),
+  total_cost          = get_metric(overall0, "Original", "Total Cost"),
+  runtime_sec         = t_base[["elapsed"]]   # baseline runtime from your code
+)
+
+# metrics for each MinPatch run (different boundary penalties)
+minpatch_rows <- purrr::pmap_dfr(
+  list(
+    minpatch_results_bp,
+    as.list(boundary_penalties),
+    minpatch_runtimes
+  ),
+  function(res, bp, rt) {
+    overall <- compare_solutions(res)$overall
+    
+    tibble::tibble(
+      scenario            = paste0("minpatch_bp", bp),
+      boundary_penalty    = bp,
+      selected_pu         = get_metric(overall, "MinPatch", "Selected Planning Units"),
+      total_area          = get_metric(overall, "MinPatch", "Total Area"),
+      n_patches           = get_metric(overall, "MinPatch", "Number of Patches"),
+      valid_patches       = get_metric(overall, "MinPatch", "Valid Patches (>= min size)"),
+      median_patch_size   = get_metric(overall, "MinPatch", "Median Patch Size"),
+      planning_unit_cost  = get_metric(overall, "MinPatch", "Planning Unit Cost"),
+      boundary_cost       = get_metric(overall, "MinPatch", "Boundary Cost"),
+      total_cost          = get_metric(overall, "MinPatch", "Total Cost"),
+      runtime_sec         = rt   # runtime from t3/t4/t5
+    )
+  }
+)
+
+# combine baseline + all MinPatch runs in one table
+solution_summary <- dplyr::bind_rows(baseline_row, minpatch_rows)
+solution_summary
+```
+
+The table shows that increasing the boundary penalty does not alter any
+of the reported metrics for this example.
+
+## 10.4 Individual summaries (per run)
+
+We show the individual summaries for every run in detail.
+
+```{r boundary-summaries, echo=TRUE, message=FALSE, warning=FALSE}
+library(knitr)
+
+# MinPatch results for different boundary penalties
+boundary_penalties <- c(0, 1e-5, 1e-10)
+
+minpatch_results_bp <- list(
+  result3,
+  result4,
+  result5
+)
+
+# Runtimes taken from system.time() calls
+minpatch_runtimes <- c(
+  t3[["elapsed"]],
+  t4[["elapsed"]],
+  t5[["elapsed"]]
+)
+
+# Loop over all MinPatch results (different boundary penalties)
+for (i in seq_along(minpatch_results_bp)) {
+
+  result      <- minpatch_results_bp[[i]]
+  bp          <- boundary_penalties[i]
+  runtime_sec <- minpatch_runtimes[i]
+
+  # ---- Scenario header ----
+  cat(
+    "\n\n## Scenario: MinPatch with boundary penalty = ",
+    format(bp, scientific = TRUE),
+    "\n\n",
+    sep = ""
+  )
+
+  # ---- Runtime ----
+  if (!is.na(runtime_sec)) {
+    cat(
+      "**Runtime:** ",
+      sprintf("%.2f", runtime_sec),
+      " seconds\n\n",
+      sep = ""
+    )
+  }
+
+  # ---- MinPatch processing summary ----
+  cat("### MinPatch processing summary\n\n")
+  print_minpatch_summary(result)
+
+  # ---- Compare solutions ----
+  comparison <- compare_solutions(result)
+
+  # ---- Overall comparison ----
+  cat("\n### Overall solution comparison\n\n")
+  knitr::kable(
+    comparison$overall,
+    caption = paste0(
+      "Comparison between the original and MinPatch-adjusted solutions (boundary penalty = ",
+      format(bp, scientific = TRUE),
+      ")"
+    )
+  )
+
+  # ---- Feature-level comparison ----
+  cat("\n### Feature-level area comparison\n\n")
+  knitr::kable(
+    comparison$features,
+    caption = paste0(
+      "Feature-level area and proportional changes after MinPatch (boundary penalty = ",
+      format(bp, scientific = TRUE),
+      ")"
+    )
+  )
+
+  # ---- Feature change summary ----
+  cat("\n### Feature change summary\n\n")
+  knitr::kable(
+    comparison$summary,
+    caption = paste0(
+      "Summary of improved, reduced, and unchanged features (boundary penalty = ",
+      format(bp, scientific = TRUE),
+      ")"
+    )
+  )
+}
+```
+
+Similarly, the values across the individual summaries are the same.
+
+**Notes:**
+
+-   The boundary penalty does not work within MinPatch, looking at the
+    all the metrics in the tables, as well as the resulting spatial
+    plots.
+
+-   To raise an issue on the MinPatch repository that the boundary
+    penalty is not working.
+
+-   To get involved in writing the package (create a branch and see if I
+    can fix the issue).

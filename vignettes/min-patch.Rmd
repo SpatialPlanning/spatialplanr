@@ -1,0 +1,122 @@
+---
+title: "min-patch-testing"
+author: "Kris Esturas"
+date: "2025-12-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Step 01: Setting up 
+
+```{r cars, echo = FALSE}
+library(minpatch)
+library(prioritizr)
+library(prioritizrdata)
+library(terra)
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(stars)
+```
+
+## Step 02: Reproduce the vignette exactly
+
+```{r pressure, echo=FALSE}
+## 1. Load Tasmania planning units and features ----
+
+tas_pu <- get_tas_pu() %>%
+  mutate(cost = cost * 10000)
+
+tas_features <- get_tas_features() %>%
+  st_as_stars() %>%
+  st_as_sf()
+
+tas <- st_interpolate_aw(
+  tas_features, tas_pu,
+  extensive = FALSE,
+  keep_NA = FALSE,
+  na.rm = FALSE
+) %>%
+  st_join(tas_pu, join = st_equals)
+
+features <- tas %>%
+  st_drop_geometry() %>%
+  dplyr::select(-id, -cost, -locked_in, -locked_out) %>%
+  names()
+
+## 2. Build and solve prioritizr problem ----
+
+p <- problem(tas, features = features, cost_column = "cost") %>%
+  add_min_set_objective() %>%
+  add_relative_targets(0.30) %>%  # 30% of each feature
+  add_binary_decisions() %>%
+  add_default_solver(verbose = FALSE)
+
+s <- solve(p)
+
+plot_prioritizr(s)  # should look like the vignette map
+
+```
+
+```{r}
+## 3. Choose patch size and radius (as in vignette) ----
+
+median_area <- median(st_area(tas))
+
+min_patch_size <- median_area * 5            # 5 × median PU area
+patch_radius  <- sqrt(median_area * 10)      # radius ≈ 10 PUs
+
+cat("MinPatch parameters:\n")
+cat("- Minimum patch size:", round(min_patch_size, 3), "sq m\n")
+cat("- Patch radius:", round(patch_radius, 3), "m\n")
+cat("- This means patches must be at least",
+    round(min_patch_size / median_area, 3),
+    "times the median PU size\n")
+
+## 4. Run MinPatch ----
+
+result <- run_minpatch(
+  prioritizr_problem  = p,
+  prioritizr_solution = s,
+  min_patch_size      = min_patch_size,
+  patch_radius        = patch_radius,
+  remove_small_patches = TRUE,
+  add_patches          = TRUE,
+  whittle_patches      = TRUE,
+  verbose              = TRUE
+)
+
+plot_minpatch(result, title = "MinPatch Results")
+
+print_minpatch_summary(result)
+
+comparison <- compare_solutions(result)
+cat("=== Overall Solution Comparison ===\n")
+print(comparison$overall)
+
+```
+
+## Step 02: Basic checks
+### Inspecting results
+names(result)
+str(result, max.level = 1)
+
+result$patch_stats
+result$cost_summary
+names(result$minpatch_data)
+
+### Check all valid patches respect min size
+# 
+patch_stats <- result$patch_stats  # if this exists; adjust if named differently
+head(patch_stats)
+names(patch_stats)
+
+# Suppose columns are: patch_id, area, is_valid (you'll confirm with head())
+min_valid_area <- min(patch_stats$area[patch_stats$is_valid])
+min_valid_area
+as.numeric(min_valid_area / min_patch_size)
+
+

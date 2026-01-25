@@ -1,0 +1,633 @@
+---
+title: "Reducing Fragmentation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reducing Fragmentation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+  )
+```
+
+## Introduction
+
+In many spatial planning problems, we are not only interested in meeting conservation targets at minimum cost, but also in **how fragmented** the selected areas are. Fragmented solutions can be difficult to manage, may fail to support viable populations, and are often harder to communicate to stakeholders.
+
+This vignette explores different ways to **reduce fragmentation** in a typical prioritizr / spatialplanr workflow, using the Tasmania planning unit dataset as a case study. We will compare four approaches:
+
+**1. Manual boundary penalties in *prioritizr***
+
+**2. Automatic calibration of boundary penalties using `calibrate_cohon_penalty()`**
+
+**3. Minimum patch size rules** using the *minpatch* package
+
+**4. Boundary penalties inside MinPatch** during the whittling stage
+
+Throughout, we will compare these approaches in terms of:
+
+-   **Cost** and total selected area
+
+-   **Fragmentation metrics** (total boundary length, number of patches, patch size)
+
+-   **Runtime**
+
+Our guiding question is:
+
+> **Given the same conservation problem, how do different fragmentation approaches change the cost, pattern, and runtime of our solutions?**
+
+## Data and baseline problem
+
+In this vignette, we use the Tasmania planning unit and feature data from the **prioritizr** package. These data represent a real-world conservation planning problem and are also used in other *prioritizr* examples, which makes it easier to compare workflows.
+
+```{r load-packages, message=FALSE, warning=FALSE}
+library(spatialplanr)
+library(prioritizr)
+library(prioritizrdata)
+library(minpatch)
+
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(ggrepel)
+library(tibble)
+library(tidyr)
+library(patchwork)
+
+# install helper if needed
+#if (!requireNamespace("remotes", quietly = TRUE)) {
+#  install.packages("remotes")
+#}
+
+# install rcbc from GitHub
+#remotes::install_github("dirkschumacher/rcbc")
+#library(rcbc)
+```
+
+### Load the Tasmania data
+
+```{r load-tasmania, fig.width=8, fig.height=6}
+# load data
+tas_pu <- get_tas_pu()  
+ 
+# At present minpatch works with sf objects. Here we convert the data to sf.
+tas_features <- get_tas_features() %>% 
+  stars::st_as_stars() %>% 
+  sf::st_as_sf()
+
+tas <- sf::st_interpolate_aw(tas_features, tas_pu, extensive = FALSE, keep_NA = FALSE, na.rm = FALSE) %>% 
+  st_join(tas_pu, join = st_equals)
+
+summary(tas$cost)
+
+features = tas %>% 
+  sf::st_drop_geometry() %>% 
+  dplyr::select(-all_of(c("id", "cost", "locked_in", "locked_out"))) %>% 
+  names()
+
+# Convert data to binary again
+tas <- tas %>% 
+  mutate(across(all_of(features), ~ if_else(.x > 0, 1, 0)))
+
+
+#To ease runtime: Crop the study area to a manageable size 
+
+bbox <- sf::st_bbox(tas)
+
+frac <- 0.50  # use to adjust the scope of the planning region
+
+bbox_small <- bbox
+bbox_small["xmax"] <- bbox["xmin"] + frac * (bbox["xmax"] - bbox["xmin"])
+bbox_small["ymax"] <- bbox["ymin"] + frac * (bbox["ymax"] - bbox["ymin"])
+
+tas_small <- sf::st_crop(tas, bbox_small)
+
+tas <- tas_small  
+
+#nrow(tas)
+# plot planning units
+ggplot(tas) + 
+  geom_sf() +
+  theme_minimal() +
+  labs(
+    x = NULL, y = NULL)
+```
+
+For this vignette, we will:
+
+-   treat the `cost` column in `tas_pu` as the planning unit cost, and
+-   aim to represent 30% of each feature's distribution
+
+Notes:
+-   running the whole dataset at 100% causes Cohon calibration to be severely long
+-   it is worth lookin into it again (at 100%) using a more powerful machine 
+
+### Build a baseline prioritizr problem
+
+We first define a **baseline problem** with no explicit fragmentation control:
+
+-   **Objective**: minimum set (minimise total cost)
+-   **Targets**: 30% relative targets for all features
+-   **Decisions**: binary (each planning unit is either selected or not)
+-   **Solver**: default solver with a 10% optimality gap
+
+```{r base-problem}
+
+p <- problem(tas, features = features, cost_column = "cost") %>%
+  add_min_set_objective() %>%
+  add_relative_targets(0.30) %>%  # 30% of each feature
+  add_binary_decisions() %>%
+  add_cbc_solver(verbose = TRUE)
+
+print(p)
+
+```
+
+### Solve the baseline problem
+
+```{r}
+set.seed(1) # for reproducibility
+
+base_time <- system.time({
+base_solution <- solve(p)
+})
+
+base_time
+```
+
+### Plot the baseline solution
+
+```{r base-solution, fig.width=8, fig.height=6}
+plot_prioritizr(base_solution)
+```
+
+In the next sections, we will use this baseline solution to compute fragmentation metrics (e.g., number and size of patches, total boundary length), and then compare it against solutions obtained using boundary penalties and MinPatch.
+
+## Helper: fragmentation metrics
+
+To compare different fragmentation controls, we will use a small helper function to compute summary metrics for each solution. This lets us build a single table of results across all methods.
+
+```{r metrics-helper}
+summarise_solution <- function(label,
+                              problem,        # still kept for consistency, but not used now
+                              solution_sf,
+                              solve_time_sec,
+                              min_patch_size = NULL,   # e.g. from MinPatch (m²)
+                              boundary_penalty = 0) {  # penalty used in optimisation
+
+  # 1) check & subset selected PUs
+  if (!"solution_1" %in% names(solution_sf)) {
+    stop("summarise_solution(): column 'solution_1' not found in solution_sf")
+  }
+
+  sel <- solution_sf[solution_sf$solution_1 == 1, ]
+  n_selected <- nrow(sel)
+
+  # if nothing is selected, return mostly zeros/NA
+  if (n_selected == 0) {
+    return(tibble(
+      method             = label,
+      n_selected         = 0L,
+      total_area_km2     = 0,
+      n_patches          = 0L,
+      valid_patches      = NA_integer_,
+      median_patch_km2   = NA_real_,
+      pu_cost_total      = 0,
+      pu_cost_mean       = NA_real_,
+      boundary_length_km = 0,
+      boundary_cost      = 0,
+      total_cost         = 0,
+      solver_time_sec    = solve_time_sec
+    ))
+  }
+
+  # 2) area + patch metrics 
+
+  # area of each selected PU (m²)
+  pu_areas_m2    <- as.numeric(sf::st_area(sel))
+  total_area_km2 <- sum(pu_areas_m2) / 1e6
+
+  # patches = contiguous blobs of selected PUs
+  patches <- sel |>
+    sf::st_union() |>
+    sf::st_cast("POLYGON")
+
+  patch_areas_m2   <- as.numeric(sf::st_area(patches))
+  n_patches        <- length(patch_areas_m2)
+  median_patch_km2 <- stats::median(patch_areas_m2) / 1e6
+
+  # valid patches if a min patch size is provided
+  if (!is.null(min_patch_size)) {
+    min_patch_size_m2 <- as.numeric(min_patch_size)
+    valid_patches <- sum(patch_areas_m2 >= min_patch_size_m2)
+  } else {
+    valid_patches <- NA_integer_
+  }
+
+  # boundary length (outer boundary of patches, in km)
+  patch_boundaries   <- sf::st_cast(sf::st_boundary(patches), "MULTILINESTRING")
+  boundary_length_km <- sum(as.numeric(sf::st_length(patch_boundaries))) / 1000
+
+  # 3) cost metrics ---------------------------------------
+
+  if (!"cost" %in% names(solution_sf)) {
+    stop("summarise_solution(): column 'cost' not found in solution_sf")
+  }
+
+  pu_cost_total <- sum(sel$cost, na.rm = TRUE)
+  pu_cost_mean  <- mean(sel$cost, na.rm = TRUE)
+
+  # boundary cost only matters if a penalty was used
+  boundary_cost <- boundary_length_km * boundary_penalty
+  total_cost    <- pu_cost_total + boundary_cost
+
+  tibble(
+    method             = label,
+    n_selected         = n_selected,
+    total_area_km2     = total_area_km2,
+    n_patches          = n_patches,
+    valid_patches      = valid_patches,
+    median_patch_km2   = median_patch_km2,
+    pu_cost_total      = pu_cost_total,
+    pu_cost_mean       = pu_cost_mean,
+    boundary_length_km = boundary_length_km,
+    boundary_cost      = boundary_cost,
+    total_cost         = total_cost,
+    solver_time_sec    = solve_time_sec
+  )
+}
+
+# baseline metrics (no min patch size, no boundary penalty)
+baseline_metrics <- summarise_solution(
+  label            = "baseline",
+  problem          = p,
+  solution_sf      = base_solution,
+  solve_time_sec   = base_time[["elapsed"]],
+  min_patch_size   = NULL,
+  boundary_penalty = 0
+)
+
+baseline_metrics
+
+
+```
+
+------------------------------------------------------------------------
+
+## Approach 1: Manual boundary penalties in prioritizr
+
+### Overview
+
+The baseline solution ignores fragmentation when optimising: the solver only minimises total cost while meeting feature targets. A common way to encourage **more compact** solutions is to add a **boundary penalty** during optimisation.
+
+Here we compare two manually chosen boundary penalties:
+
+-   a **low** penalty, which should gently favour more compact patches, and\
+-   a **high** penalty, which should strongly discourage ragged, fragmented solutions.
+
+The downside is that this approach is inherently trial-and-error: it is difficult to predict, from the penalty value alone, how large patches will be or how much cost will increase. Higher penalties can also increase solver runtime, sometimes substantially.
+
+### Run and visualise manual boundary penalties
+
+```{r manual-bp-solve, message = FALSE}
+# low boundary penalty
+low_boundary_penalty = 0.00001
+p_bp_low <- p |>
+  add_boundary_penalties(penalty = low_boundary_penalty)
+
+bp_low_time <- system.time({
+  bp_low_solution <- solve(p_bp_low)
+})
+
+# high boundary penalty
+high_boundary_penalty = 0.0001
+p_bp_high <- p |>
+  add_boundary_penalties(penalty = high_boundary_penalty)
+
+bp_high_time <- system.time({
+  bp_high_solution <- solve(p_bp_high)
+})
+
+bp_low_time
+bp_high_time
+```
+
+Visusalise the solutions with low and high boundary penalties
+
+```{r manual-bp-plot-low, fig.width=8, fig.height=6}
+plot_prioritizr(bp_low_solution)
+```
+
+```{r manual-bp-plot-high, fig.width=8, fig.height=6}
+plot_prioritizr(bp_high_solution)
+```
+
+### Metrics and interpretation
+
+```{r manual-bp-metrics}
+bp_low_metrics <- summarise_solution(
+  label = "manual_bp_low",
+  problem = p_bp_low,
+  solution_sf = bp_low_solution,
+  solve_time_sec = bp_low_time[["elapsed"]],
+  boundary_penalty = low_boundary_penalty
+
+)
+
+bp_high_metrics <- summarise_solution(
+  label = "manual_bp_high",
+  problem = p_bp_high,
+  solution_sf = bp_high_solution,
+  solve_time_sec = bp_high_time[["elapsed"]],
+  boundary_penalty = high_boundary_penalty
+)
+
+manual_bp_metrics <- dplyr::bind_rows(
+  baseline_metrics,
+  bp_low_metrics,
+  bp_high_metrics
+)
+
+manual_bp_metrics
+```
+
+We can see that as we set a higher manual boundary, the solve time and total cost increases.
+
+## Approach 2: Automatic calibration with Cohon’s method
+
+### Overview
+
+Choosing boundary penalties by hand can be ad hoc. The function `calibrate_cohon_penalty()` in the *prioritizr* package implements a Cohon-style trade-off calibration. It: 1. Solves the problem for a very chape but fragmented solution 2. Solves the problem for a very compact but expensive solution; and 3. Uses these two anchor solutions to estimate a boundary penalty that balances cost and fragmentation.
+
+### Calibrate and solve
+
+```{r cohon-calibration, message = FALSE}
+# add a dummy boundary penalty: calibrate_cohon_penalty() will overwrite it
+p_bp_cohon <- p |>
+  add_boundary_penalties(penalty = 0.0001)
+
+cohon_time <- system.time({
+  cohon_penalty <- calibrate_cohon_penalty(
+    p_bp_cohon,
+    approx  = TRUE,     # approximate mode for speed
+    verbose = TRUE
+  )
+})
+
+cohon_penalty
+cohon_time
+```
+
+```{r cohon-solve}
+p_bp_cohon_final <- p |>
+  add_boundary_penalties(penalty = cohon_penalty)
+
+bp_cohon_time <- system.time({
+  bp_cohon_solution <- solve(p_bp_cohon_final, force = TRUE)
+})
+
+bp_cohon_time
+```
+
+### Visual comparison
+
+```{r plot cohon-calibrated, fig.width=8, fig.height=6}
+plot_prioritizr(bp_cohon_solution)
+
+```
+
+### Metrics and comparison with manual penalties
+
+```{r cohon-metrics}
+cohon_metrics <- summarise_solution(
+  label = "cohon_calibrated",
+  problem = p_bp_cohon_final,
+  solution_sf = bp_cohon_solution,
+  solve_time_sec = cohon_time[["elapsed"]] + bp_cohon_time[["elapsed"]],
+  min_patch_size   = NULL,
+  boundary_penalty = as.numeric(cohon_penalty)  # 👈 use the calibrated value here
+)
+
+# bind everything so far for later comparison
+fragmentation_metrics <- dplyr::bind_rows(
+  baseline_metrics,
+  bp_low_metrics,
+  bp_high_metrics,
+  cohon_metrics
+)
+
+fragmentation_metrics
+```
+
+## Approach 3: MinPatch – minimum patch size only
+
+### Overview
+
+Boundary penalties influence fragmentation **during** optimisation. In contrast, the *minpatch* package reduces fragmentation **after** optimisation by enforcing a **minimum patch size** on an existing solution.
+
+Here we start from the **baseline solution** (no boundary penalty) and apply *minpatch* so that every patch is at least a given size. This approach is useful when you already have a rough idea of how large you want each patch to be.
+
+### Set MinPatch parameters
+
+```{r minpatch-params}
+# median planning-unit area
+median_area <- stats::median(sf::st_area(tas))
+
+# set minimum patch size to 5x the median planning-unit area
+min_patch_size <- median_area * 5
+
+# set patch radius to roughly encompass 10 planning units
+patch_radius <- sqrt(as.numeric(median_area) * 10)
+
+cat("MinPatch parameters:\n")
+cat("- Minimum patch size:", round(min_patch_size, 3), "square meters\n")
+cat("- Patch radius:", round(patch_radius, 3), "meters\n")
+cat("- This means patches must be at least",
+    round(min_patch_size / median_area, 3),
+    "times the median planning unit size\n")
+```
+
+### Run MinPatch on the baseline solution
+
+```{r minpatch-baseline, message = FALSE}
+# time MinPatch processing
+minpatch_time_3 <- system.time({
+  mp3_result <- run_minpatch(
+    prioritizr_problem   = p,
+    prioritizr_solution  = base_solution,             # baseline prioritizr solution
+    min_patch_size       = min_patch_size,
+    patch_radius         = patch_radius,
+    boundary_penalty     = 0,             # no boundary penalty inside MinPatch
+    remove_small_patches = TRUE,
+    add_patches          = TRUE,
+    whittle_patches      = TRUE,
+    verbose              = TRUE
+  )
+})
+
+minpatch_time_3
+```
+
+### Visualise and summarise MinPatch (patch size only)
+
+```{r plot Min-patch, fig.width=8, fig.height=6}
+plot_minpatch(mp3_result, title = "MinPatch Results")
+mp3_solution <- mp3_result$solution
+mp3_solution <- mp3_solution |>
+  dplyr::rename(solution_1 = minpatch)
+
+plot_prioritizr(mp3_solution)
+```
+
+```{r minpatch-metrics-3}
+mp3_metrics <- summarise_solution(
+  label            = "minpatch_min_size",
+  problem          = p,
+  solution_sf      = mp3_solution,          # output from minpatch
+  solve_time_sec   = minpatch_time_3[["elapsed"]],
+  min_patch_size   = min_patch_size,           
+  boundary_penalty = 0                         # no boundary penalty used
+)
+
+mp3_metrics
+
+fragmentation_metrics <- dplyr::bind_rows(
+  fragmentation_metrics, # change to fragmentation_metrics once Cohon works
+  mp3_metrics
+)
+
+fragmentation_metrics
+```
+
+We can see from the table that the runtime and the total cost is significantly higher than the manual boundary approach. However, the number of contiguous patches is less, making the solution more compact.
+
+## Approach 4: MinPatch – minimum patch size with boundary penalty
+
+### Overview
+
+MinPatch can also use a **boundary penalty** in its final whittling stage. This does not change the minimum patch size requirement, but it can influence **which edge units are removed or retained**, potentially leading to smoother patch shapes.
+
+Here we repeat Approach 3, but add a small positive boundary penalty inside MinPatch.
+
+### Run and visualise MinPatch with boundary penalty
+
+```{r minpatch-baseline-4, message = FALSE}
+minpatch_time_4 <- system.time({
+  mp4_result <- run_minpatch(
+    prioritizr_problem   = p,
+    prioritizr_solution  = base_solution,           # same baseline prioritizr solution
+    min_patch_size       = min_patch_size,
+    patch_radius         = patch_radius,
+    boundary_penalty     = 0.0001,       # small positive penalty for ragged edges
+    remove_small_patches = TRUE,
+    add_patches          = TRUE,
+    whittle_patches      = TRUE,
+    verbose              = TRUE
+  )
+})
+
+minpatch_time_4
+
+# (so summarise_solution() can reuse its logic)
+mp4_solution <- tas |>
+  dplyr::mutate(solution_1 = mp4_result$solution$minpatch)
+
+```
+
+```{r minpatch-map-compare, fig.width=8, fig.height=6}
+plot_minpatch(mp4_result, title = "MinPatch Results")
+
+mp4_solution <- mp4_result$solution
+mp4_solution <- mp4_solution |>
+  dplyr::rename(solution_1 = minpatch)
+
+plot_prioritizr(mp4_solution)
+```
+
+### Metrics and adding to the summary table
+
+```{r minpatch-metrics-4}
+mp4_metrics <- summarise_solution(
+  label = "minpatch_min_size_bp",
+  problem = p,
+  solution_sf = mp4_solution,
+  solve_time_sec = minpatch_time_4[["elapsed"]],
+  min_patch_size = min_patch_size,
+  boundary_penalty = 1
+)
+
+mp4_metrics
+
+fragmentation_metrics <- dplyr::bind_rows(
+  fragmentation_metrics,
+  mp4_metrics
+)
+
+fragmentation_metrics
+```
+
+------------------------------------------------------------------------
+
+## Summary comparison
+
+We can now compare all approaches side by side using the metrics we defined earlier: total cost, total boundary length, number and size of patches, number of features, targets met, and runtime.
+
+```{r summary-table}
+fragmentation_metrics |>
+  dplyr::arrange(boundary_length_km) |>
+  knitr::kable(
+    digits = 2,
+    caption = "Summary of fragmentation metrics across all approaches."
+  )
+```
+
+### Side-by-side map comparison
+
+To compare the spatial patterns directly, we can arrange all solutions in a single panel using **patchwork**:
+
+```{r all-maps-patchwork, fig.width = 15, fig.height = 10}
+# make sure each call returns a ggplot object
+p_base   <- plot_prioritizr(base_solution)       + ggtitle("Baseline")
+p_low    <- plot_prioritizr(bp_low_solution)     + ggtitle("Manual BP - Low")
+p_high   <- plot_prioritizr(bp_high_solution)    + ggtitle("Manual BP - High")
+p_cohon  <- plot_prioritizr(bp_cohon_solution)   + ggtitle("Cohon-calibrated BP")
+p_mp3    <- plot_prioritizr(mp3_solution)   + ggtitle("MinPatch")
+p_mp4    <- plot_prioritizr(mp4_solution)   + ggtitle("MinPatch + BP")
+
+# arrange in a 2 x 3 grid
+(p_base | p_low | p_high) /
+(p_cohon | p_mp3 | p_mp4)
+
+```
+
+### Cost–fragmentation trade-off
+
+In this plot, points further left have more compact solutions (short boundaries), and points further down are cheaper. The different approaches occupy different parts of this trade-off space, which helps to clarify when manual penalties, automatic calibration, or MinPatch post-processing might be most useful in a practical workflow.
+
+```{r final-tradeoff-plot, fig.height = 6, fig.width = 8}
+ggplot(fragmentation_metrics,
+       aes(x = boundary_length_km, y = total_cost,
+           colour = method, label = method)) +
+  geom_point() +
+  ggrepel::geom_text_repel(show.legend = FALSE) +
+  theme_minimal() +
+  labs(
+    x = "Total boundary length (km)",
+    y = "Total cost (PU cost + boundary cost)",
+    title = "Cost–fragmentation trade-off across all fragmentation controls"
+  )
+
+```
+
+### Table summary
+
+| Approach | Method | Pros | Cons |
+|------------------|-----------------------------------|------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| 1 | Manual boundary penalties (*prioritizr*) | Simple; low runtime; easy to implement | Trial-and-error; arbitrary penalty choice; solution patchiness highly sensitive to penalty |
+| 2 | Calibrated boundary penalties (`calibrate_cohon_penalty()`) | Systematic trade-off between cost and compactness; reduced subjectivity | High runtime; computationally expensive |
+| 3 | Minimum patch size rules (*minpatch*) | Explicit control over patch size; more contiguous solutions; moderate runtime | Depends on chosen minimum patch size; may be less cost-optimal |
+| 4 | Boundary penalties within MinPatch | Possibly more precise than Approach 3 | Little to no effect; solutions similar to Approach 3 |

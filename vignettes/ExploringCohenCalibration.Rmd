@@ -1,69 +1,112 @@
 ---
-title: "Exploring Cohen's calibration"
+title: "Exploring Cohon's method of calibrating boundary penalties"
 author: "Kris Esturas"
 date: "2025-12-01"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
 ```
 
-## Introduction
+# 1. Introduction
 
-Boundary penalties are a commonly used in spatial conservation planning to **reduce fragmentation**. In *prioritzr*, boundary penalties encourage solutions that form compact clusters of planning units, rather than scattered selections. Compact solutions are often easier to manage and may better support ecological procceses, but they typically come at a higher cost.
+Boundary penalties are a commonly used in spatial conservation planning
+to **reduce fragmentation**. In *prioritzr*, boundary penalties
+encourage solutions that form compact clusters of planning units, rather
+than scattered selections. Compact solutions are often easier to manage
+and may better support ecological procceses, but they typically come at
+a higher cost.
 
-A practical difficulty is that the appropriate magnitude of the boundary penalty can be arbitrary. If the penalty is too small, solutions remain fragmented. If it is too large, solutions can become overly compact and very expensive. In many applications, boundary penalties may be therefore chosen in an ad hoc way, with limited guidance on whether the resulting trade-off between cost and compactness is reasonable.
+A practical difficulty is that the appropriate magnitude of the boundary
+penalty can be **arbitrary**. If the penalty is too small, solutions
+remain fragmented. If it is too large, solutions can become overly
+compact and very expensive. In many applications, boundary penalties may
+be therefore chosen in an ad hoc way, with limited guidance on whether
+the resulting trade-off between cost and compactness is reasonable.
 
-The function `calibrate_cohon_penalty()` in *prioritizr* provides a systematic way to address this problem. It implements a **Cohen-style calibration** that identifies a boundary penalty intended to balance cost and compactness, based on two extreme solutions:
+The function `calibrate_cohon_penalty()` in *prioritizr* provides a
+systematic way to address this problem. It implements **Cohon's method
+of calibration** that identifies a boundary penalty intended to balance
+cost and compactness, based on two extreme solutions (See Section 2: A
+brief note on Cohon-style calibration).
 
-In this vignette, we use the Tasmania example data to ask three simple
-questions:
+In this vignette, we use the Tasmania example dataset to explore how
+this calibration behaves under simple, controlled changes to problem
+structure. Specifically, we ask:
 
-**1. How does the Cohen-calibrated boundary penalty change when we change the conservation targets?**
+1.  How does the calibrated boundary penalty change when we **change the
+    conservation target?**
+2.  Are those target–penalty relationships **consistent when feature
+    complexity is reduced** (and in reverse order)?
+3.  How does the calibrated boundary penalty change when we **change the
+    number of features?**
+4.  Is that feature–penalty relationship **robust to feature
+    composition** (and in reverse order)**?**
+5.  What are the **speed implications** of Cohon-style calibration?
 
-**2. How does it change when we change the number of features in the problem?**
+The aim is not to identify a single "correct" penalty, but to understand
+how sensitive the calibration is to problem structure, and what this
+implies for decision-support tools such as *spatialplanr* and
+*shinyplanr*.
 
-**3. What are the speed implications?**
+# 2. A brief note on Cohon-style calibration
 
-The aim is not to identify a single "correct" penalty, but to understand how sensitive the calibration is to problem structure, and what this implies for tools such as *spatialplanr* and *shinyplanr*.
-
-## A brief note on Cohen-style calibration
 Very briefly, `calibrate_cohon_penalty()`:
 
-1. Solves an “**ignore boundary**” problem (penalty ≈ 0) to find a very cheap but fragmented solution.
+1.  Solves an “**ignore boundary**” problem (penalty ≈ 0) to find a very
+    cheap but fragmented solution.
 
-2. Solves a “**boundary-only**” problem (very large penalty) to find a very compact but expensive solution.
+2.  Solves a “**boundary-only**” problem (very large penalty) to find a
+    very compact but otherwise expensive solution.
 
-3. Uses these two “anchor” solutions (costs and boundary lengths) to
-compute a **boundary penalty** that trades off cost and boundary
-length in a more balanced way.
+3.  Uses these two “anchor” solutions (costs and boundary lengths) to
+    compute a **boundary penalty** that trades off cost and boundary
+    length in a more balanced way.
 
-4. Returns this penalty so we can re-solve the problem with a **single calibrated value.**
+4.  Returns this penalty so we can re-solve the problem with a **single
+    calibrated value.**
 
-The calibrated penalty therefore depends on how fragmented the cheap solution is and how expensive the compact solution needs to be. Any change to the problem—such as altering targets or reducing the number of features—can affect these anchor solutions and, in turn, the calibrated penalty.
+The calibrated penalty therefore depends on how fragmented the cheap
+solution is and how expensive the compact solution needs to be. Thus, we
+will explore how altering targets or reducing the number of features
+affect these anchor solutions and, in turn, the calibrated penalty.
 
-## Data and baseline set-up
+# 3. Data and baseline set-up
+
 We use the Tasmania planning unit and feature data from
-**prioritizrdata**. These data represent a real-world conservation
-planning problem and are used in other *prioritizr* examples.To keep the vignette reasonably fast, we crop the study area to a
-smaller subregion.
+*prioritizrdata*. These data represent a realistic spatial conservation
+planning problem and are used in other *prioritizr* examples. To keep
+the vignette reasonably fast, we crop the study area to a smaller
+subregion.
 
 ```{r load-packages, echo = FALSE}
 library(prioritizr)
 library(prioritizrdata)
 library(spatialplanr)
-
 library(dplyr)
 library(sf)
 library(ggplot2)
 library(ggrepel)
 library(tibble)
+library(patchwork)
 ```
 
-### Load and prepare the Tasmania data
-The code below loads the planning units and features, interpolates feature data onto planning units, converts features to presence-absence, and crops the study areas. Features that are absent everywhere in the cropped region are removed to avoid unneccary computation.
-```{r planning-region, echo = TRUE}
+## 3.1 Load and prepare the Tasmania data
+
+The code below loads the planning units and features, interpolates
+feature data onto planning units, converts features to presence-absence,
+and crops the study areas. Features that are absent everywhere in the
+cropped region are removed to avoid unnecessary computation.
+
+```{r planning-region, echo = TRUE, fig.width = 5, fig.height = 7}
 # planning units
 tas_pu <- get_tas_pu() %>%
 mutate(cost = cost)
@@ -112,29 +155,38 @@ feature_totals <- tas %>%
 
 zero_features <- names(feature_totals)[feature_totals[1, ] == 0]
 
-# remove zero features from tas
 tas <- tas %>%
   dplyr::select(-all_of(zero_features))
 
-# update all_features vector
 all_features <- setdiff(all_features, zero_features)
 
 
-# plot
+# plot planning units
 ggplot(tas) + 
   geom_sf() +
   theme_minimal() +
   labs(
-    title = "Tasmania example (cropped study area)", 
+    title = "Tasmania dataset (50% of the study area)", 
     x = NULL, y = NULL)
 
 ```
 
-## Helper functions
-To keep the main analysis readable, two helper functions are defined below. The first summarises solution characteristics, while the second builds, calibrates, and solves a *prioritizr* problem for a given scenario.
+**Note.** As this example uses only a subset of the planning area for
+computational efficiency, absolute results may therefore differ for the
+full region or the other subset of the planning area; thus, merit
+further experimentation.
 
-### Fragmentation and cost metrics
-The function below extracts a set of simple, interpretable metrics from each solution. These include the number of selected planning units, total selected area, patch structure, costs, boundary length, and solver runtime. Together, these metrics provide a compact summary of both spatial structure and efficiency.
+# 4. Helper functions
+
+To keep the analysis readable, helper functions are used to summarise
+solution characteristics and to standardise how problems are built,
+calibrated, and solved across scenarios.
+
+## 4.1 Fragmentation and cost metrics
+
+Each solution is summarised using a small set of interpretable metrics,
+including selected area, patch structure, boundary length, cost, and
+solver runtime.
 
 ```{r helper-function}
 summarise_solution <- function(label,
@@ -219,87 +271,122 @@ total_cost         = total_cost,
 solver_time_sec    = solve_time_sec
 )
 }
-
 ```
 
-### Building and calibrating problems
-Next, we define a small helper to:
-1. build a *prioritizr* problem for a given **target** and a chosen set of **features**,
-2. add a temporary boundary penalty,
-3. run `calibrate_cohon_penalty()` to find a calibrated boundary penalty,
-4. solve the problem with the calibrated penalty, and
-5. return a tidy row with the penalty, timings, and solution metrics.
+## 4.2 Building and calibrating problems
+
+Next, we define a small helper to: 1. build a *prioritizr* problem for a
+given **target** and a chosen set of **features**, 2. add a temporary
+boundary penalty, 3. run `calibrate_cohon_penalty()` to find a
+calibrated boundary penalty, 4. solve the problem with the calibrated
+penalty, and 5. return a tidy row with the penalty, timings, and
+solution metrics.
+
 ```{r build-problem}
-run_cohon_experiment <- function(label,
-target,
-feature_names) {
+run_cohon_experiment <- function(label, target, feature_names) {
 
-# build the base problem
-prob <- problem(
-x           = tas,
-features    = feature_names,
-cost_column = "cost"
-) |>
-add_min_set_objective() |>
-add_relative_targets(target) |>
-add_binary_decisions() |>
-add_cbc_solver(verbose = TRUE)
+  # ---- helper: silence CBC + any output during solver-heavy calls ----
+quietly_all <- function(expr) {
+  out <- tempfile(fileext = ".out.txt")
+  msg <- tempfile(fileext = ".msg.txt")
+  on.exit({ unlink(out); unlink(msg) }, add = TRUE)
 
-# add a dummy boundary penalty
-prob_bp <- prob |>
-add_boundary_penalties(penalty = 0.0001, edge_factor = 1)
+  con_out <- file(out, open = "wt")
+  sink(con_out, type = "output")
+  on.exit({ sink(type = "output"); close(con_out) }, add = TRUE)
 
-# calibrate using Cohon's method
-calib_time <- system.time({
-cohon_penalty <- calibrate_cohon_penalty(
-prob_bp,
-approx  = TRUE,   # approximate mode for speed
-verbose = TRUE
-)
-})
+  con_msg <- file(msg, open = "wt")
+  sink(con_msg, type = "message")
+  on.exit({ sink(type = "message"); close(con_msg) }, add = TRUE)
 
-# solve the problem with the calibrated penalty
-prob_final <- prob |>
-add_boundary_penalties(penalty = cohon_penalty, edge_factor = 1)
+  # IMPORTANT: return the value of expr
+  force(expr)
+}
 
-solve_time <- system.time({
-solution <- solve(prob_final,
-                  force = TRUE)
-})
+  # build the base problem
+  prob <- problem(
+    x           = tas,
+    features    = feature_names,
+    cost_column = "cost"
+  ) |>
+    add_min_set_objective() |>
+    add_relative_targets(target) |>
+    add_binary_decisions() |>
+    add_cbc_solver(
+      verbose = FALSE,
+      threads = 1
+    )
 
-# summarise the solution
-metrics <- summarise_solution(
-label            = label,
-solution_sf      = solution,
-solve_time_sec   = solve_time[["elapsed"]],
-min_patch_size   = NULL,
-boundary_penalty = as.numeric(cohon_penalty)
-)
+  # add a dummy boundary penalty
+  prob_bp <- prob |>
+    add_boundary_penalties(penalty = 0.0001, edge_factor = 1)
 
-metrics |>
-mutate(
-scenario         = label,
-n_features       = length(feature_names),
-target           = target,
-cohon_penalty    = as.numeric(cohon_penalty),
-calib_time_sec   = calib_time[["elapsed"]],
-total_time_sec   = calib_time[["elapsed"]] + solve_time[["elapsed"]]
-)
+  # calibrate using Cohon's method (keep this FALSE)
+  calib_time <- system.time({
+    cohon_penalty <- quietly_all(
+      calibrate_cohon_penalty(
+        prob_bp,
+        approx  = TRUE,
+        verbose = FALSE
+      )
+    )
+  })
+  
+  # sanity check: must be a single finite numeric value
+cohon_penalty <- as.numeric(cohon_penalty)
+
+if (length(cohon_penalty) != 1 || !is.finite(cohon_penalty)) {
+  stop("calibrate_cohon_penalty() did not return a single finite numeric penalty.")
+}
+
+  # solve the problem with the calibrated penalty
+  prob_final <- prob |>
+    add_boundary_penalties(penalty = cohon_penalty, edge_factor = 1)
+
+  solve_time <- system.time({
+    solution <- quietly_all(
+      solve(prob_final, force = TRUE)
+    )
+  })
+
+  # summarise the solution
+  metrics <- summarise_solution(
+    label            = label,
+    solution_sf      = solution,
+    solve_time_sec   = solve_time[["elapsed"]],
+    min_patch_size   = NULL,
+    boundary_penalty = as.numeric(cohon_penalty)
+  )
+
+  metrics |>
+    mutate(
+      scenario       = label,
+      n_features     = length(feature_names),
+      target         = target,
+      cohon_penalty  = as.numeric(cohon_penalty),
+      calib_time_sec = calib_time[["elapsed"]],
+      total_time_sec = calib_time[["elapsed"]] + solve_time[["elapsed"]]
+    )
 }
 ```
 
-## How does the Cohon penalty change with target level?
-First, we hold the **set of features constant** and only change the **target**. Here we use all features and compare targets with incremental increases of 5% from 0 to 50%.
+# 5. How does the Cohon penalty change with target level?
 
-```{r cohen-targets, echo = TRUE}
+First, we hold the **set of features constant** and only change the
+**target**. Here we use all features and compare targets with
+incremental increases of 5% from 0 to 50%.
+
+```{r cohen-targets, message=TRUE, include=FALSE, results='hide'}
 # 5% steps from 5% to 50%
 targets <- seq(0.05, 0.50, by = 0.05)
-targets
 
 cohon_target_results <- purrr::map_dfr(
   targets,
   ~ {
-    message("\nRunning target = ", .x * 100, "%")
+    cat("\n========================================\n")
+    cat("SECTION 5 | Running target =", .x * 100, "%\n")
+    cat("========================================\n")
+
     run_cohon_experiment(
       label         = paste0("target_", .x * 100),
       target        = .x,
@@ -307,26 +394,43 @@ cohon_target_results <- purrr::map_dfr(
     )
   }
 )
-
-cohon_target_results
 ```
 
-The table and figures below focus on the calibrated penalty, runtime, and overall cost structure. Together, they show how increasing targets influence both the calibration outcome and computational effort.
+The table and figures below focus on the calibrated penalty, runtime,
+and overall cost structure. Together, they show how increasing targets
+influence both the calibration outcome and computational effort.
 
-```{r}
+### Table
+
+```{r cohon-table-results}
 cohon_target_results |>
 select(
 scenario, n_features, target,
 cohon_penalty,
 calib_time_sec, solver_time_sec, total_time_sec,
-boundary_length_km, pu_cost_total, total_cost
+boundary_length_km, boundary_cost, pu_cost_total, total_cost
 ) |>
 arrange(target) |>
 knitr::kable(
-digits  = 2,
+digits  = 5,
 caption = "Cohon-calibrated boundary penalties for different targets (all features)."
 )
+```
 
+**Observations**:
+
+From the table, we can see that:
+
+-   Total_solve time varies across targets, with higher values at
+    intermediate targets
+
+-   total_cost generally increases steadily as the target increases
+
+-   boundary_length_km generally increases with target
+
+### Plot 1
+
+```{r cohon-target-plot 1}
 ggplot(cohon_target_results,
 aes(x = target * 100, y = cohon_penalty)) +
 geom_line() +
@@ -337,7 +441,16 @@ x = "Target (% of each feature)",
 y = "Calibrated boundary penalty",
 title = "How does the Cohon penalty change with target level?"
 )
+```
 
+**Observations:**
+
+Calibrated Cohon penalties generally increase with conservation target
+and plateau at higher targets.
+
+### Plot 2
+
+```{r cohon-target-plot 2}
 ggplot(cohon_target_results,
 aes(x = target * 100, y = total_time_sec)) +
 geom_line() +
@@ -348,50 +461,84 @@ x = "Target (% of each feature)",
 y = "Calibration + solve time (s)",
 title = "Runtime for Cohon calibration at different targets"
 )
-
 ```
 
-Overall, these results illustrate how increasing conservation ambition can influence both the magnitude of the calibrated boundary penalty and the time required to obtain it.
+**Observations:**
 
-## How do the results change when we vary both targets and the subset of features used?
-The previous section varies targets while keeping the feature set fixed (at 100%). To examine how sensitive Cohon's calibration is to reduced number of features, we repeat the target experiment while using random feature subsets. 
+Calibration runtime peaks at intermediate targets and declines at higher
+targets.
 
-For each target level, we draw subsets containing 25%, 50%, 75%, and 100% of the available features.
+# 6. Are target-penalty relationships consistent when feature complexity is reduced?
 
-```{r targets-features}
-set.seed(123) 
+The previous section varied conservation targets while holding the
+feature set fixed (100% of features). Here, we assess the sensitivity of
+Cohon-style calibration to feature set size by repeating the target
+experiment across predefined feature proportions (**25%, 50%, 75%, and
+100%**), with features randomly sampled within each proportion.
 
-# targets
-targets <- seq(0.05, 0.50, by = 0.05)
+To assess whether the observed patterns are robust to execution order,
+we repeat the analysis using both forward *(Section 6.1)* and reverse
+target sequences *(Section 6.2)*. In our experiment, we will fix the
+same subset of features for the increasing target levels.
+
+## 6.1 Forward order (25% → 100%)
+
+```{r targets-features, results='hide'}
+set.seed(123)
 
 # feature subset proportions to test
-feature_props_targets <- c(0.25, 0.50, 0.75, 1.00)  
+targets <- seq(0.05, 0.50, by = 0.05)
+feature_props_targets <- c(0.25, 0.50, 0.75, 1.00)
 target_label <- function(t) paste0("target_", round(t * 100))
-
 n_all <- length(all_features)
 
-# run experiment
+# FIXED feature subsets per proportion (reused across all targets)
+feature_subsets_tbl <- purrr::map_dfr(
+  feature_props_targets,
+  ~{
+    prop_f <- .x
+    n_sub  <- max(1, floor(prop_f * n_all))
+
+    # seed depends ONLY on feature proportion
+    seed_f <- 200000 + as.integer(round(prop_f * 100))
+    set.seed(seed_f)
+
+    tibble::tibble(
+      feature_prop = prop_f,
+      n_features_requested = n_sub,
+      seed = seed_f,
+      feature_names = list(sample(all_features, size = n_sub))
+    )
+  }
+)
+
+# run experiment across targets, reusing the same subsets
 cohon_target_results_multi <- purrr::map_dfr(
   targets,
   ~{
     t_i <- .x
 
+    cat("\n========================================\n")
+    cat("COHON CALIBRATION | TARGET =", t_i * 100, "%\n")
+    cat("========================================\n")
+
     purrr::map_dfr(
-      feature_props_targets,
+      seq_len(nrow(feature_subsets_tbl)),
       ~{
-        prop_f <- .x
-        n_sub  <- max(1, floor(prop_f * n_all))
+        row_i <- feature_subsets_tbl[.x, ]
+        prop_f <- row_i$feature_prop
+        n_sub  <- row_i$n_features_requested
+        seed_f <- row_i$seed
+        feature_subset <- row_i$feature_names[[1]]
 
-        # reproducible subset for each (target, feature_prop)
-        seed_tf <- 200000 + (as.integer(round(t_i * 1000)) * 100) + as.integer(round(prop_f * 100))
-        set.seed(seed_tf)
-
-        feature_subset <- sample(all_features, size = n_sub)
-
-        message(sprintf(
-          "\nRunning target = %.0f%% | features = %.0f%% (%d of %d)",
-          t_i * 100, prop_f * 100, n_sub, n_all
-        ))
+        cat("\n----------------------------------------\n")
+        cat(
+          sprintf(
+            "Features: %.0f%% (%d of %d) | Seed: %d\n",
+            prop_f * 100, n_sub, n_all, seed_f
+          )
+        )
+        cat("----------------------------------------\n")
 
         run_cohon_experiment(
           label         = paste0(target_label(t_i), "_feat_", n_sub, "_of_", n_all),
@@ -401,15 +548,20 @@ cohon_target_results_multi <- purrr::map_dfr(
           dplyr::mutate(
             feature_prop = prop_f,
             n_features_requested = n_sub,
-            seed = seed_tf
+            seed = seed_f
           )
       }
     )
   }
 )
+
 ```
 
-The summary compares penalties and runtimes across target levels while accounting for the feature subset size.
+### Table
+
+We summarise the calibrated penalties and associated metrics across
+targets and feature subset sizes.
+
 ```{r}
 cohon_target_results_multi |>
   dplyr::select(
@@ -417,7 +569,7 @@ cohon_target_results_multi |>
     feature_prop, n_features_requested, seed,
     cohon_penalty,
     calib_time_sec, solver_time_sec, total_time_sec,
-    boundary_length_km, pu_cost_total, total_cost
+    boundary_length_km, boundary_cost, pu_cost_total, total_cost
   ) |>
   dplyr::arrange(target, n_features_requested) |>
   knitr::kable(
@@ -426,10 +578,14 @@ cohon_target_results_multi |>
   )
 ```
 
-The first plot shows how the calibrated penalty varies with targets for each feature proporiton. The second plot shows the combined runtime (calibration+solve)
+### Plot 1
+
+The first plot shows how the calibrated penalty varies with targets for
+each feature proporiton.
+
 ```{r}
 # Plot 1
-ggplot(
+plot1_targets<- ggplot(
   cohon_target_results_multi,
   aes(
     x = target * 100,
@@ -447,9 +603,25 @@ ggplot(
     colour = "Feature proportion",
     title = "Cohon penalty vs target level (25/50/75/100% feature subsets)"
   )
+plot1_targets
+```
 
+**Observations.**
+
+Calibrated boundary penalties **generally increase** with conservation
+target across all feature proportions, although penalty magnitudes
+differ among feature set sizes, with larger feature sets typically
+associated with higher values. Despite these differences, the overall
+shape of the penalty–target relationship is similar across feature
+proportions, with some variability evident at intermediate targets.
+
+### Plot 2
+
+The second plot shows the combined runtime (calibration+solve).
+
+```{r}
 # Plot 2
-ggplot(
+plot2_targets <- ggplot(
   cohon_target_results_multi,
   aes(
     x = target * 100,
@@ -465,16 +637,208 @@ ggplot(
     x = "Target (% of each feature)",
     y = "Calibration + solve time (s)",
     colour = "Feature proportion",
-    title = "Runtime vs target level (25/50/75/100% feature subsets)"
+    title = "Figure 3. Runtime vs target level (25/50/75/100% feature subsets)"
+  )
+plot2_targets
+```
+
+**Observations:**
+
+Runtime generally increases with the number of features included, with
+larger feature sets (75–100%) taking longer to solve than smaller
+subsets. Across all feature proportions, runtimes tend to be higher at
+lower to intermediate targets and decrease at higher target levels.
+Considerable variability is evident at intermediate targets, indicating
+that runtime is sensitive to both target level and feature set size
+rather than following a smooth or monotonic trend.
+
+**Notes:** Because the same feature subset is held fixed across all
+target levels, we cannot assess whether similar patterns would emerge
+under alternative feature subsets with different spatial configurations.
+
+## 6.2 Reverse order (100% → 25%)
+
+We are now interested whether the same patterns emerge if we run the
+code in reverse order.
+
+```{r targets-features-rev, results='hide'}
+targets <- seq(0.05, 0.50, by = 0.05)
+targets_rev <- rev(targets)
+feature_props_targets <- c(0.25, 0.50, 0.75, 1.00)
+feature_props_targets_rev <- rev(feature_props_targets)
+target_label <- function(t) paste0("target_", round(t * 100))
+n_all <- length(all_features)
+
+# feature subsets per proportion (reused across all targets)
+feature_subsets_tbl <- purrr::map_dfr(
+  feature_props_targets,
+  ~{
+    prop_f <- .x
+    n_sub  <- max(1, floor(prop_f * n_all))
+
+    # seed depends ONLY on feature proportion
+    seed_f <- 200000 + as.integer(round(prop_f * 100))
+    set.seed(seed_f)
+
+    tibble::tibble(
+      feature_prop = prop_f,
+      n_features_requested = n_sub,
+      seed = seed_f,
+      feature_names = list(sample(all_features, size = n_sub))
+    )
+  }
+)
+
+cohon_target_results_multi_rev <- purrr::map_dfr(
+  targets_rev,
+  ~{
+    t_i <- .x
+
+    cat("\n========================================\n")
+    cat("COHON CALIBRATION [REVERSE] | TARGET =", t_i * 100, "%\n")
+    cat("========================================\n")
+
+    purrr::map_dfr(
+      feature_props_targets_rev,
+      ~{
+        prop_f <- .x
+
+        # pull the *same* subset used in the forward run for this prop
+        row_i <- dplyr::filter(feature_subsets_tbl, feature_prop == prop_f)
+        stopifnot(nrow(row_i) == 1)
+
+        n_sub <- row_i$n_features_requested[[1]]
+        seed_f <- row_i$seed[[1]]
+        feature_subset <- row_i$feature_names[[1]]
+
+        cat("\n----------------------------------------\n")
+        cat(sprintf(
+          "[REVERSE] Features: %.0f%% (%d of %d) | Seed: %d\n",
+          prop_f * 100, n_sub, n_all, seed_f
+        ))
+        cat("----------------------------------------\n")
+
+        run_cohon_experiment(
+          label         = paste0(target_label(t_i),
+                                 "_feat_", n_sub,
+                                 "_of_", n_all,
+                                 "_rev"),
+          target        = t_i,
+          feature_names = feature_subset
+        ) |>
+          dplyr::mutate(
+            feature_prop = prop_f,
+            n_features_requested = n_sub,
+            seed = seed_f,
+            order = "reverse"
+          )
+      }
+    )
+  }
+)
+```
+
+### Table
+
+We summarise the calibrated penalties and associated metrics across
+targets and feature subset sizes.
+
+```{r}
+cohon_target_results_multi_rev |>
+  dplyr::select(
+    order,
+    scenario, n_features, target,
+    feature_prop, n_features_requested, seed,
+    cohon_penalty,
+    calib_time_sec, solver_time_sec, total_time_sec,
+    boundary_length_km, boundary_cost, pu_cost_total, total_cost
+  ) |>
+  dplyr::arrange(target, n_features_requested) |>
+  knitr::kable(
+    digits  = 2,
+    caption = "Cohon-calibrated penalties across target levels (reverse order only)."
   )
 ```
 
-## How does the Cohon penalty change with the number of features?
-Next, we fix the **target** at 30% and vary the **number of features.** 
+### Plot 1
 
-For each feature proportion (20% to 100% in 10% increments), we run multiple replicates (20 replicates) using different random feature subsets.The subsets are chosen at random but with a fixed seed so they are reproducible.
+Here, we plot the reverse plot together with the forward plot side by
+side to compare if similar trends emerge for calibrated penalties with
+increasing targets for different feature proportions.
 
-```{r cohen-features, echo = TRUE}
+```{r}
+# Plot 1 — penalty vs target (reverse)
+plot1_targets_reverse <- ggplot(
+  cohon_target_results_multi_rev,
+  aes(
+    x = target * 100,
+    y = cohon_penalty,
+    colour = factor(feature_prop),
+    group  = factor(feature_prop)
+  )
+) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    x = "Target (% of each feature)",
+    y = "Calibrated boundary penalty",
+    colour = "Feature proportion",
+    title = "Figure 4. Cohon penalty vs target level (25/50/75/100% feature subsets, reverse order)"
+  )
+plot1_targets | plot1_targets_reverse
+
+```
+
+**Observations**
+
+-   The resulting plots are identical.
+
+### Plot 2
+
+Here, we plot the reverse and forwards plots showing the runtimes.
+
+```{r}
+plot2_targets_reverse <- ggplot(
+  cohon_target_results_multi_rev,
+  aes(
+    x = target * 100,
+    y = total_time_sec,
+    colour = factor(feature_prop),
+    group  = factor(feature_prop)
+  )
+) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  labs(
+    x = "Target (% of each feature)",
+    y = "Calibration + solve time (s)",
+    colour = "Feature proportion",
+    title = "Figure 5. Runtime vs target level (25/50/75/100% feature subsets, reverse order)"
+  )
+plot2_targets | plot2_targets_reverse
+```
+
+**Observations:**
+
+-   The runtime plots are not identical. However, we can see that
+    generally the same patterns emerge. Solvetimes increase from small
+    to intermediate target levels and then dramatically decrease and
+    stabilise as the target levels become even higher.
+
+# 7. How does the Cohon penalty change with the number of features?
+
+Next, we fix the **target** at 30% and vary the **number of features.**
+
+For each feature proportion (20% to 100% in 10% increments), we run
+multiple replicates (20 replicates) using different random feature
+subsets. The subsets are chosen at random but with a fixed seed so they
+are reproducible.
+
+## 7.1 Forward order (25% → 100%)
+
+```{r cohen-features, echo = TRUE, results='hide'}
 set.seed(123) 
 
 n_all <- length(all_features)
@@ -483,62 +847,69 @@ n_all <- length(all_features)
 feature_props <- seq(0.20, 1.00, by = 0.10)
 
 target_fixed <- 0.30
-
 n_reps <- 20  # number of replicates
 
 cohon_feature_results <- purrr::map_dfr(
   feature_props,
   ~{
     prop_i <- .x
+    n_sub  <- max(1, floor(prop_i * n_all))
 
-    # number of features for this proportion
-    n_sub <- max(1, floor(prop_i * n_all))
+    cat("\n========================================\n")
+    cat("COHON CALIBRATION | FEATURE SENSITIVITY\n")
+    cat(sprintf(
+      "Features: %.0f%% (%d of %d) | Target = %.0f%%\n",
+      prop_i * 100, n_sub, n_all, target_fixed * 100
+    ))
+    cat("========================================\n")
 
     purrr::map_dfr(
       seq_len(n_reps),
       ~{
         rep_id <- .x
 
-  
-        seed_rep <- 10000 + (n_sub * 100) + rep_id  
+        seed_rep <- 10000 + (n_sub * 100) + rep_id
         set.seed(seed_rep)
 
-        # sample subset of features
         feature_ix     <- sample(n_all, size = n_sub)
         feature_subset <- all_features[feature_ix]
 
-        # progress message
-        message(sprintf(
-          "\nRunning %.0f%% of features (%d of %d) | run %d/%d | target = %.0f%%",
-          prop_i * 100, n_sub, n_all, rep_id, n_reps, target_fixed * 100
+        cat("\n----------------------------------------\n")
+        cat(sprintf(
+          "Run %d / %d | Seed: %d\n",
+          rep_id, n_reps, seed_rep
         ))
+        cat("----------------------------------------\n")
 
-        # run experiment
         run_cohon_experiment(
           label         = paste0("features_", n_sub, "_of_", n_all, "_run_", rep_id),
           target        = target_fixed,
           feature_names = feature_subset
         ) |>
-          mutate(
+          dplyr::mutate(
             feature_prop         = prop_i,
             n_features_requested = n_sub,
-            run                 = rep_id,
-            seed                = seed_rep
+            run                  = rep_id,
+            seed                 = seed_rep
           )
       }
     )
   }
 )
-
 ```
 
-```{r} 
+### Table
+
+We summarise the calibrated penalties and associated metrics across
+targets and feature subset sizes.
+
+```{r}
 cohon_feature_results |>
   select(
     scenario, n_features, target,
     cohon_penalty,
     calib_time_sec, solver_time_sec, total_time_sec,
-    boundary_length_km, pu_cost_total, total_cost,
+    boundary_length_km, boundary_cost, pu_cost_total, total_cost,
     feature_prop, run, seed
   ) |>
   arrange(n_features, run) |>
@@ -551,9 +922,14 @@ cohon_feature_results |>
   )
 ```
 
-```{r} 
+### Plot 1
+
+The first plot shows how the calibrated boundary penalty changes as the
+number of features increase, while looking at different random subsets.
+
+```{r}
 # Plot
-ggplot(
+plot1_features <- ggplot(
   cohon_feature_results,
   aes(
     x = n_features,
@@ -571,9 +947,24 @@ ggplot(
     colour = "Run",
     title = "How does the Cohon penalty change with the number of features? (random subsets)"
   )
+plot1_features
+```
 
+**Observations**:
+
+-   There is not a strict general pattern for the relationship between
+    the calibrated boundary penalty and increasing number of features.
+    However, it can be said that there is slight **general increase**
+    with the calibrated penalty as the number of features increase.
+
+### Plot 2
+
+The plot here shows the relationship between runtimes and increasing
+number of features.
+
+```{r}
 # Plot
-ggplot(
+plot2_features <- ggplot(
   cohon_feature_results,
   aes(
     x = n_features,
@@ -592,12 +983,39 @@ ggplot(
     colour = "Run",
     title = "Runtime for Cohon calibration at different feature counts (random subsets)"
   )
+plot2_features
 ```
 
-# How does the Cohon penalty change with the number of features? (In reverse order)
-To check whether evaluation order affects results, we repeat the same experiment but iterate through feature proportions in reverse order (100% down to 20%). In principle, results should be consistent given identical random seeds. 
+**Observations:**
 
-```{r}
+-   Due to the outlier, which shows a very long runtime, it is difficult
+    to look at the overall pattern. Nonetheless, it can be said that the
+    calibration time genreally increases with an increase in the number
+    of features.
+
+**Notes:**
+
+-   The runtime might be affected by the computational capacity of the
+    computer as well as the use of other apps while the code was
+    running.
+
+-   It is important to note that the feature draw used for a given run
+    (for example, Run 1 with 5 of 24 features) is independent of the
+    draw used for the same run at a different feature size (for example,
+    Run 1 with 7 of 24 features). The random seed differs across feature
+    sizes, meaning that feature subsets are not nested and do not build
+    on one another. As a result, it may be useful in future work to
+    explore a nested design in which feature subsets at larger sizes are
+    constructed by adding features to already existing smaller subsets.
+
+## 7.2 Reverse order (100% → 25%)
+
+To check whether evaluation order affects results, we repeat the same
+experiment but iterate through feature proportions in reverse order
+(100% down to 20%). In principle, results should be consistent given
+identical random seeds.
+
+```{r reverse, results='hide'}
 set.seed(123) 
 
 n_all <- length(all_features)
@@ -612,46 +1030,58 @@ cohon_feature_results_rev <- purrr::map_dfr(
   feature_props,
   ~{
     prop_i <- .x
+    n_sub  <- max(1, floor(prop_i * n_all))
 
-    # number of features for this proportion
-    n_sub <- max(1, floor(prop_i * n_all))
+    cat("\n========================================\n")
+    cat("COHON CALIBRATION [REVERSE] | FEATURE SENSITIVITY\n")
+    cat(sprintf(
+      "Number of features: %d/%d (%.0f%%) | Target = %.0f%%\n",
+      n_sub, n_all, prop_i * 100, target_fixed * 100
+    ))
+    cat("========================================\n")
 
     purrr::map_dfr(
-      seq_len(n_reps),
+      rev(seq_len(n_reps)),   # 20, 19, ..., 1
       ~{
         rep_id <- .x
 
-        # Reproducible-but-different random subset per (n_sub, rep)
+        # same seed logic as forward (if forward used this formula too)
         seed_rep <- 10000 + (n_sub * 100) + rep_id
         set.seed(seed_rep)
 
-        # sample subset of features
         feature_ix     <- sample(n_all, size = n_sub)
         feature_subset <- all_features[feature_ix]
 
-        message(sprintf(
-          "\n[REVERSE] Running %.0f%% of features (%d of %d) | run %d/%d | target = %.0f%%",
-          prop_i * 100, n_sub, n_all, rep_id, n_reps, target_fixed * 100
+        cat("\n----------------------------------------\n")
+        cat(sprintf(
+          "Run %d/%d | Seed: %d\n",
+          rep_id, n_reps, seed_rep
         ))
+        cat("----------------------------------------\n")
 
         run_cohon_experiment(
           label         = paste0("features_", n_sub, "_of_", n_all, "_run_", rep_id, "_rev"),
           target        = target_fixed,
           feature_names = feature_subset
         ) |>
-          mutate(
+          dplyr::mutate(
             feature_prop         = prop_i,
             n_features_requested = n_sub,
-            run                 = rep_id,
-            seed                = seed_rep,
-            order               = "reverse"
+            run                  = rep_id,
+            seed                 = seed_rep,
+            order                = "reverse"
           )
       }
     )
   }
 )
+
 ```
 
+### Table
+
+We summarise the calibrated penalties and associated metrics across
+targets and feature subset sizes.
 
 ```{r}
 cohon_feature_results_rev |>
@@ -672,9 +1102,15 @@ cohon_feature_results_rev |>
   )
 ```
 
+### Plot 1
+
+Here, we plot both reverse and forward orders side by side to show
+whether we obtain the same trend for the relationship between calibrated
+boundary penalty and the increasing number of features.
+
 ```{r}
 # Plot
-ggplot(
+plot1_features_reverse <- ggplot(
   cohon_feature_results_rev,
   aes(
     x = n_features,
@@ -693,8 +1129,22 @@ ggplot(
     title = "Reverse order: Cohon penalty vs number of features (random subsets)"
   )
 
+plot1_features | plot1_features_reverse
+```
+
+**Observations:**
+
+-   Identical plots are obtained.
+
+### Plot 2
+
+Here, we plot both reverse and forward orders side by side to show
+whether we obtain the same trend for the relationship between the
+runtimes and the increasing number of features.
+
+```{r}
 # Plot
-ggplot(
+plot2_features_reverse<-ggplot(
   cohon_feature_results_rev,
   aes(
     x = n_features,
@@ -712,6 +1162,25 @@ ggplot(
     colour = "Run",
     title = "Reverse order: runtime vs number of features (random subsets)"
   )
-
+plot2_features | plot2_features_reverse
 ```
 
+**Observations:**
+
+-   The reverse-order results show a clearer trend, with no pronounced
+    outliers. Calibration time generally increases with the number of
+    features at intermediate feature set sizes and then decreases as
+    additional features are included. By contrast, the pattern observed
+    under the forward order may reflect a computational artefact rather
+    than a systematic response of the calibration process.9. Speed
+    implications
+
+# 8. Take home messages
+
+1.  Calibrated boundary penalties can change with conservation targets.
+
+2.  Penalties are sensitive to feature richness and composition because
+    calibration responds to spatial structure.
+
+3.  Calibration introduces computational overhead that should be
+    considered in applied planning workflows.
