@@ -15,19 +15,19 @@ splnr_get_distCoast(dat_sf, custom_coast = NULL, res = "medium")
 
 - dat_sf:
 
-  `[sf]`  
+  `[sf]`\
   An `sf` object containing polygon or point features representing the
   Planning Units. Must have a valid CRS.
 
 - custom_coast:
 
-  `[sf]`  
+  `[sf]`\
   An optional `sf` object representing a custom coastline. If `NULL`
   (the default), the coastline is downloaded from `rnaturalearth`.
 
 - res:
 
-  `[character(1)]`  
+  `[character(1)]`\
   The resolution of the `rnaturalearth` coastline to use. Options are
   `"small"`, `"medium"` (default), or `"large"`. This parameter is
   ignored if `custom_coast` is provided.
