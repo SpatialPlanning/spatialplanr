@@ -5,10 +5,10 @@
 The `gfwr` package provides convenient functions to pull GFW data
 directly into R into usable formats. It contains three main functions,
 including :
-[`get_vessel_info()`](https://globalfishingwatch.github.io/gfwr/reference/get_vessel_info.html),
-[`get_event()`](https://globalfishingwatch.github.io/gfwr/reference/get_event.html)
+[`get_vessel_info()`](https://globalfishingwatch.github.io/gfwr/reference/gfw_renamed.html),
+[`get_event()`](https://globalfishingwatch.github.io/gfwr/reference/gfw_renamed.html)
 and
-[`get_raster()`](https://globalfishingwatch.github.io/gfwr/reference/get_raster.html).
+[`get_raster()`](https://globalfishingwatch.github.io/gfwr/reference/gfw_renamed.html).
 The two first being devoted to retrieving information and features on
 one ore several specific vessels. The last is of particular interest to
 us because it allows us to gather information from global fishing watch
@@ -25,14 +25,14 @@ fishing.
 
 #### AIS Caveats and limitations
 
-The AIS coverage of vessels has several limitations such as:  
+The AIS coverage of vessels has several limitations such as:\
 1. The number of vessels that are captured (AIS provides approximately
-70’000 of the 2.8 million identified fishing vessels).  
+70’000 of the 2.8 million identified fishing vessels).\
 2. The size of the vessels (52-85% for vessels larger than 24 meters
-against 1% for vessels under 12 meters).  
+against 1% for vessels under 12 meters).\
 *Good to know: IMO mandates AIS for most vessels larger than 36
-meters.*  
-3. AIS interference with each other in areas of high vessel density.  
+meters.*\
+3. AIS interference with each other in areas of high vessel density.\
 4. Some terrestrial satellites only receive messages near shore.
 
 ### Installation
@@ -50,13 +50,13 @@ library(spatialplanr)
 
 ### API
 
-To access GFW APIs, you need to :  
-1. register for a GFW account [here](http://bit.ly/447cRG9).  
+To access GFW APIs, you need to :\
+1. register for a GFW account [here](http://bit.ly/447cRG9).\
 2. Request API key
 [here](https://globalfishingwatch.org/our-apis/tokens).
 
 Once you have your token, add it to your .Renviron file (by executing
-the chunk below), by writing (GFW_TOKEN = “YOUR_TOKEN”) in the file.  
+the chunk below), by writing (GFW_TOKEN = “YOUR_TOKEN”) in the file.\
 *(You could be asked to restart R for changes to take effect.)*
 
 ``` r
@@ -82,9 +82,9 @@ different resolution), the `Vessel IDs`, `Flag`, `Geartype` and
 `Apparent fishing Hours` which are basically the amount of fishing hours
 of each vessel per grid cell (`geometry`).
 
-Data can be provided through :  
-- `DAILY`, `MONTHLY` and `YEARLY` temporal resolutions.  
-- `LOW` (0.1 deg) and `HIGH` (0.01 deg) spatial resolutions.  
+Data can be provided through :\
+- `DAILY`, `MONTHLY` and `YEARLY` temporal resolutions.\
+- `LOW` (0.1 deg) and `HIGH` (0.01 deg) spatial resolutions.\
 - `VESSEL_ID`, `FLAG`, `GEARTYPE`, `FLAGANDGEARTYPE`.
 
 ``` r
@@ -121,9 +121,9 @@ data_sf_combined <- splnr_get_gfw(region = "Australia",
 
 ### Visualization
 
-To display the data, we load :  
+To display the data, we load :\
 - The coastline from `rnaturalearth` package and modify it to get an sf
-object, and we constrain it to the boundaries of the given data.  
+object, and we constrain it to the boundaries of the given data.\
 - EEZ Polygons from `oceandatr` package
 
 ``` r
@@ -156,7 +156,7 @@ eezs <- spatialgridr::get_boundary(name = "Australia", type = "eez", country_typ
 #### Year-on-year comparison
 
 We may need to compare different timeframes, such as seasons, to see if
-there are any patterns.  
+there are any patterns.\
 **Note :** As more vessels have adopted AIS (mainly in economically
 developed countries) since the deployment of these technologies, the
 rise in activities must be seen in the context of this increase and not
@@ -209,7 +209,7 @@ details on AIS operation and limitations
 #### Hierarchy of vessels gear types :
 
 ![Fishing Classification
-Hierarchy](https://globalfishingwatch.org/wp-content/uploads/figure6_fishing_classification_hierarchy-1.jpg)  
+Hierarchy](https://globalfishingwatch.org/wp-content/uploads/figure6_fishing_classification_hierarchy-1.jpg)\
 
 *Source :
 <https://globalfishingwatch.org/datasets-and-code-vessel-identity/>*

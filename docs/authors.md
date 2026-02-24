@@ -12,14 +12,14 @@
 Source:
 [`DESCRIPTION`](https://github.com/SpatialPlanning/spatialplanr/blob/HEAD/DESCRIPTION)
 
-Everett J, Neubert S (2025). *spatialplanr: Help files for prioritzr
+Everett J, Neubert S (2026). *spatialplanr: Help files for prioritzr
 Spatial Planning projects*. R package version 0.7.0,
 <https://github.com/SpatialPlanning/spatialplanr>.
 
     @Manual{,
       title = {spatialplanr: Help files for prioritzr Spatial Planning projects},
       author = {Jason D. Everett and Sandra Neubert},
-      year = {2025},
+      year = {2026},
       note = {R package version 0.7.0},
       url = {https://github.com/SpatialPlanning/spatialplanr},
     }

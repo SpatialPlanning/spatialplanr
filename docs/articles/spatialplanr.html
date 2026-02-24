@@ -129,7 +129,7 @@ represents the land mass that should be removed (inverse = FALSE)</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggPU</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot.html">splnr_plot</a></span><span class="op">(</span>df <span class="op">=</span> <span class="va">PUs</span><span class="op">)</span> <span class="op">+</span></span>
 <span>   <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="co"># Plot Planning Units</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" alt="" width="864"></p>
 <p>If we want to add additional properties to our map, for example
 landmass or the boundary, we can use <code><a href="../reference/splnr_gg_add.html">splnr_gg_add()</a></code>.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -138,7 +138,7 @@ landmass or the boundary, we can use <code><a href="../reference/splnr_gg_add.ht
 <span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="st">"Default"</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" alt="" width="864"></p>
 <p>We can also use a customised <code>ggplpot</code> theme that can be
 passed as a list to <code><a href="../reference/splnr_gg_add.html">splnr_gg_add()</a></code> and that can then be
 used for all plots. For example:</p>
@@ -160,7 +160,7 @@ used for all plots. For example:</p>
 <span>      Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 <div class="section level3">
 <h3 id="get-the-features">Get the features<a class="anchor" aria-label="anchor" href="#get-the-features"></a>
@@ -218,7 +218,7 @@ turtles:</p>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="864"></p>
 <p>The suitable habitat for Green sea turtles as predicted by Aquamaps
 is restricted to few cells close to the coast. If we now compare this
 with the predicted suitable habitat for Humpback whales, we can see that
@@ -233,7 +233,7 @@ they are fairly ubiquitous across the whole Coral Sea.</p>
 <span>    PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="864"></p>
 <p>In our example, this was the only reason why we classified species as
 either representative if their suitable habitat is wide-ranging within
 the study region or important if they are restricted to a few number of
@@ -251,7 +251,7 @@ within a Planning Unit of the study region.</p>
 <span>     PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 </div>
 <div class="section level3">
@@ -281,7 +281,7 @@ units are assigned an equal cost of 1.</p>
 <span>      PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" alt="" width="864"></p>
 <div class="section level6">
 <h6 id="other-features">Other features<a class="anchor" aria-label="anchor" href="#other-features"></a>
 </h6>
@@ -374,7 +374,7 @@ targets <em>+</em> Visualization of importance scores</p>
 <span>     PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-26-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-26-1.png" class="r-plt" alt="" width="864"></p>
 <p>This plot shows the optimal solution for the planning region that
 meets the selected targets for the chosen features for the smallest area
 possible. The categorical map displays, which of the planning units were
@@ -392,7 +392,7 @@ areas:</p>
 <span>    PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-27-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-27-1.png" class="r-plt" alt="" width="864"></p>
 <p><strong>Note:</strong> In our example, cost is equal for all planning
 units.</p>
 </div>
@@ -418,7 +418,7 @@ planning region.</p>
 <span>                                   categoryFeatureCol <span class="op">=</span> <span class="st">"nameCommon"</span>,</span>
 <span>                                   nr <span class="op">=</span> <span class="fl">1</span>, showTarget <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-28-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-28-1.png" class="r-plt" alt="" width="864"></p>
 <p>For a circular bar plot, one additional step of data preparation
 needs to be done.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
@@ -470,7 +470,7 @@ Rarity Weighted Richness.</p>
 <span><span class="co">#&gt; Calculating Rarity Weighted Richness.</span></span>
 <span></span>
 <span><span class="op">(</span><span class="va">ggScores</span> <span class="op">&lt;-</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span><span class="va">ggFerrier</span> <span class="op">+</span> <span class="va">ggRWR</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" alt="" width="864"></p>
 <p>In our example, both scores label similar -coastal- planning units as
 most important for the spatial plan.</p>
 </div>
@@ -499,7 +499,7 @@ with the following characteristics: * Status = c(“Designated”,
 <span>     PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" alt="" width="864"></p>
 <p>We will also include targets based on IUCN categories to prioritise
 species with an IUCN status of:</p>
 <ul>
@@ -557,7 +557,7 @@ start by running <code><a href="https://docs.ropensci.org/rredlist/reference/rl_
 <span>      PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-35-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-35-1.png" class="r-plt" alt="" width="864"></p>
 <p>But we locked-in areas that were already existing Marine Protected
 Areas (MPAs). If we want to show the overlap between the selected
 Planning Units and the current MPAs, we can add this to the
@@ -570,7 +570,7 @@ Planning Units and the current MPAs, we can add this to the
 <span>     colorLockIn <span class="op">=</span> <span class="st">"lightgrey"</span>, alphaLockIn <span class="op">=</span> <span class="fl">0.2</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-36-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-36-1.png" class="r-plt" alt="" width="864"></p>
 <p>If we instead only want to see the contours of the locked-in areas we
 can set <code>typeLockIn = "Contours"</code> in
 <code><a href="../reference/splnr_gg_add.html">splnr_gg_add()</a></code>.</p>
@@ -582,7 +582,7 @@ can set <code>typeLockIn = "Contours"</code> in
 <span>     colorLockIn <span class="op">=</span> <span class="st">"lightgrey"</span>, alphaLockIn <span class="op">=</span> <span class="fl">0.2</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-37-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-37-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 <div class="section level4">
 <h4 id="visualize-comparison">Visualize comparison<a class="anchor" aria-label="anchor" href="#visualize-comparison"></a>
@@ -593,7 +593,7 @@ can set <code>typeLockIn = "Contours"</code> in
 <span>     PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" alt="" width="864"></p>
 <p>This plot shows how the first solution (without current MPAs) differs
 from the second solution (including current MPAs. The categorical map
 displays, which of the planning units were selected in solution 2 but
@@ -607,7 +607,7 @@ selected in both solutions (grey).</p>
 <span><span class="op">(</span><span class="va">ggCorr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_corrMat.html">splnr_plot_corrMat</a></span><span class="op">(</span><span class="va">CorrMat</span>,</span>
 <span>                              AxisLabels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Solution 1"</span>, <span class="st">"Solution 2"</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-39-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-39-1.png" class="r-plt" alt="" width="864"></p>
 <p>The correlation matrix shows the similarity as the Cohen’s Kappa
 correlation between solution 1 and solution 2.</p>
 </div>
@@ -637,7 +637,7 @@ example of this is by using the portfolio</p>
 <span>      PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatialplanr_files/figure-html/unnamed-chunk-40-1.png" class="r-plt" width="864"></p>
+<p><img src="spatialplanr_files/figure-html/unnamed-chunk-40-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 </div>
 </div>
