@@ -59,7 +59,7 @@
 #' # Assuming 'dat_PUs' is an existing sf object of planning units in your package.
 #'
 #' # Example: Get MPAs for Australia and intersect with planning units.
-#' dat_mpas <- splnr_get_MPAs(PlanUnits = dat_PUs, Countries = "Australia")
+#' dat_mpas <- splnr_get_MPAs(PlanUnits = dat_PUs, Countries = "Australia", force = TRUE)
 #'
 #' # Example: Get MPAs for multiple countries with specific status and categories.
 #' dat_mpas_specific <- splnr_get_MPAs(
@@ -114,11 +114,14 @@ splnr_get_MPAs <- function(PlanUnits,
   # TODO Add a check for wdpar package
 
 
-  # Set a chromote timeout option to prevent issues with web scraping for WDPA data.
+  # Set chromote timeout option to prevent issues with web scraping for WDPA data.
   options(chromote.timeout = 120)
 
   # Fetch WDPA data for the specified countries and then process it.
-  wdpa_data <- Countries %>%
+  # Note: Chromote may produce benign "Unhandled promise error: Browser.close" messages
+  # that can be safely ignored (see wdpar documentation and
+  # https://github.com/rstudio/chromote/pull/111)
+  wdpa_data <- suppressWarnings(Countries %>%
     # Use purrr::map to fetch WDPA data for each country in the 'Countries' vector.
     # 'wait = TRUE' ensures sequential downloads, and 'download_dir' specifies where to cache the data.
     purrr::map(wdpar::wdpa_fetch,
@@ -127,8 +130,8 @@ splnr_get_MPAs <- function(PlanUnits,
                ...) %>%
     # Bind all fetched data frames into a single data frame.
     dplyr::bind_rows() %>%
-    # Filter for marine protected areas only (where MARINE attribute is greater than 0).
-    dplyr::filter(.data$MARINE > 0) %>%
+    # Filter for marine and coastal protected areas only
+    dplyr::filter(.data$REALM %in% c("Coastal", "Marine")) %>%
     # Filter by the specified IUCN Protected Area Management Categories.
     dplyr::filter(.data$IUCN_CAT %in% Category) %>%
     # Filter by the specified Designation Types.
@@ -144,7 +147,7 @@ splnr_get_MPAs <- function(PlanUnits,
     # Select only the 'geometry' column, discarding other attributes after dissolving.
     dplyr::select("geometry") %>%
     # Add a new column 'wdpa' and set its value to 1, indicating it's a WDPA area.
-    dplyr::mutate(wdpa = 1)
+    dplyr::mutate(wdpa = 1))
 
   # Intersect the cleaned WDPA data with the provided planning units using spatialgridr::get_data_in_grid.
   # This function identifies which planning units overlap with the WDPA areas.
