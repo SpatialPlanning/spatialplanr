@@ -10,8 +10,8 @@ splnr_plot_climKernelDensity(
   climate_names = "metric",
   type = "Normal",
   colorMap = "C",
-  legendTitle = expression(" °C y"^"-1" * ""),
-  xAxisLab = expression("Climate warming ( °C y"^"-1" * ")")
+  legendTitle = expression(" <U+00B0>C y"^"-1" * ""),
+  xAxisLab = expression("Climate warming ( <U+00B0>C y"^"-1" * ")")
 )
 }
 \arguments{

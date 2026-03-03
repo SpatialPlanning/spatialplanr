@@ -69,7 +69,7 @@ library(patchwork)
 
 ### Load the Tasmania data
 
-```{r load-tasmania}
+```{r load-tasmania, echo=FALSE, message=FALSE, warning=FALSE}
 # Load data
 tas_pu <- get_tas_pu()  
  
@@ -80,7 +80,6 @@ tas_features <- get_tas_features() %>%
 
 tas <- sf::st_interpolate_aw(tas_features, tas_pu, extensive = FALSE, keep_NA = FALSE, na.rm = FALSE) %>% 
   st_join(tas_pu, join = st_equals)
-summary(tas$cost)
 
 features = tas %>% 
   sf::st_drop_geometry() %>% 
@@ -91,7 +90,6 @@ features = tas %>%
 tas <- tas %>% 
   mutate(across(all_of(features), ~ if_else(.x > 0, 1, 0)))
 
-
 # To ease runtime: Crop the study area to a manageable size 
 bbox <- sf::st_bbox(tas)
 frac <- 0.50  # use to adjust the scope of the planning region
@@ -101,16 +99,11 @@ bbox_small["xmax"] <- bbox["xmin"] + frac * (bbox["xmax"] - bbox["xmin"])
 bbox_small["ymax"] <- bbox["ymin"] + frac * (bbox["ymax"] - bbox["ymin"])
 tas_small <- sf::st_crop(tas, bbox_small)
 tas <- tas_small  
-
-# Plot planning units
-ggplot(tas) + 
-  geom_sf() +
-  theme_minimal() +
-  labs(
-    x = NULL, y = NULL)
 ```
 
-```{r plot-tas-data, fig.width=8, fig.height=6, out.width="100%"}
+Running Cohon calibration on the full dataset (100%) is slow, so it would be worth re-running at 100% on a more powerful machine. Here, we visualise the planning region.
+
+```{r plot-tas-data, fig.width=14, fig.height=11, out.width="100%"}
 # Plot
 p_tas <- suppressMessages({
   spatialplanr::splnr_plot(
@@ -127,15 +120,6 @@ p_tas <- suppressMessages({
 })
 p_tas
 ```
-
-For this vignette, we will:
-
--   treat the `cost` column in `tas_pu` as the planning unit cost, and
--   aim to represent 30% of each feature's distribution
-
-**Notes:**
-
--   Running Cohon calibration on the full dataset (100%) is prohibitively slow, so it would be worth re-running at 100% on a more powerful machine.
 
 ### Build a baseline prioritizr problem
 
@@ -157,7 +141,7 @@ p
 
 ### Solve the baseline problem
 
-```{r solve-baseline}
+```{r solve-baseline, include=FALSE}
 set.seed(1) # for reproducibility
 
 base_time <- system.time({
@@ -168,8 +152,24 @@ base_time
 
 ### Plot the baseline solution
 
-```{r base-solution, fig.width=8, fig.height=6, out.width="100%"}
-plot_prioritizr(base_solution)
+```{r base-solution, echo=FALSE, fig.width=14, fig.height=11, message=FALSE, warning=FALSE, out.width="100%"}
+# Plot
+ggSoln <- spatialplanr::splnr_plot(
+  df           = base_solution,
+  colNames     = "solution_1",
+  plotTitle    = "Baseline Solution",
+  legendTitle  = "Selected",
+  legendLabels = c("No", "Yes")
+) +
+  spatialplanr::splnr_gg_add(
+    PUs         = tas,
+    Bndry       = tas,
+    cropOverlay = tas,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+
+ggSoln
 ```
 
 In the next sections, we will use this baseline solution as a reference point and compare it with solutions produced by approaches that address fragmentation.
@@ -278,7 +278,7 @@ baseline_metrics <- summarise_solution(
   boundary_penalty = 0
 )
 
-baseline_metrics
+print(baseline_metrics)
 ```
 
 ------------------------------------------------------------------------
@@ -298,7 +298,7 @@ The downside is that this approach is inherently trial-and-error: it is difficul
 
 ### Run and visualise manual boundary penalties
 
-```{r manual-bp-solve, message = FALSE}
+```{r manual-bp-solve, message=FALSE, include=FALSE}
 # low boundary penalty
 low_boundary_penalty = 0.00001
 p_bp_low <- p %>%
@@ -323,12 +323,44 @@ bp_high_time
 
 Visusalise the solutions with low and high boundary penalties
 
-```{r manual-bp-plot-low, fig.width=8, fig.height=6, out.width="100%"}
-plot_prioritizr(bp_low_solution)
+```{r manual-bp-plot-low, fig.height=11, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+# Plot
+ggSoln_bp_low <- spatialplanr::splnr_plot(
+  df           = bp_low_solution,
+  colNames     = "solution_1",
+  plotTitle    = "Manual boundary penalty - Low",
+  legendTitle  = "Selected",
+  legendLabels = c("No", "Yes")
+) +
+  spatialplanr::splnr_gg_add(
+    PUs         = tas,
+    Bndry       = tas,
+    cropOverlay = tas,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+
+ggSoln_bp_low
 ```
 
-```{r manual-bp-plot-high, fig.width=8, fig.height=6, out.width="100%"}
-plot_prioritizr(bp_high_solution)
+```{r manual-bp-plot-high, fig.height=11, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+# Plot
+ggSoln_bp_high <- spatialplanr::splnr_plot(
+  df           = bp_high_solution,
+  colNames     = "solution_1",
+  plotTitle    = "Manual boundary penalty - High",
+  legendTitle  = "Selected",
+  legendLabels = c("No", "Yes")
+) +
+  spatialplanr::splnr_gg_add(
+    PUs         = tas,
+    Bndry       = tas,
+    cropOverlay = tas,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+
+ggSoln_bp_high
 ```
 
 ### Metrics and interpretation
@@ -340,7 +372,6 @@ bp_low_metrics <- summarise_solution(
   solution_sf = bp_low_solution,
   solve_time_sec = bp_low_time[["elapsed"]],
   boundary_penalty = low_boundary_penalty
-
 )
 
 bp_high_metrics <- summarise_solution(
@@ -369,8 +400,8 @@ Choosing boundary penalties by hand can be ad hoc. The function `calibrate_cohon
 
 ### Calibrate and solve
 
-```{r cohon-calibration, message = FALSE}
-# add a dummy boundary penalty: calibrate_cohon_penalty() will overwrite it
+```{r cohon-calibration, message=FALSE, include=FALSE}
+# Add a dummy boundary penalty: calibrate_cohon_penalty() will overwrite it
 p_bp_cohon <- p %>%
   add_boundary_penalties(penalty = 0.0001)
 
@@ -386,7 +417,7 @@ cohon_penalty
 cohon_time
 ```
 
-```{r cohon-solve}
+```{r cohon-solve, include=FALSE}
 p_bp_cohon_final <- p %>%
   add_boundary_penalties(penalty = cohon_penalty)
 
@@ -399,8 +430,26 @@ bp_cohon_time
 
 ### Visual comparison
 
-```{r plot cohon-calibrated, fig.width=8, fig.height=6, out.width="100%"}
-plot_prioritizr(bp_cohon_solution)
+```{r plot cohon-calibrated, fig.height=11, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+#plot_prioritizr(bp_cohon_solution)
+
+# Plot
+ggSoln_cohon_solution <- spatialplanr::splnr_plot(
+  df           = bp_cohon_solution,
+  colNames     = "solution_1",
+  plotTitle    = "Cohon-calibrated",
+  legendTitle  = "Selected",
+  legendLabels = c("No", "Yes")
+) +
+  spatialplanr::splnr_gg_add(
+    PUs         = tas,
+    Bndry       = tas,
+    cropOverlay = tas,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+
+ggSoln_cohon_solution
 ```
 
 ### Metrics and comparison with manual penalties
@@ -412,10 +461,10 @@ cohon_metrics <- summarise_solution(
   solution_sf = bp_cohon_solution,
   solve_time_sec = cohon_time[["elapsed"]] + bp_cohon_time[["elapsed"]],
   min_patch_size   = NULL,
-  boundary_penalty = as.numeric(cohon_penalty)  # 👈 use the calibrated value here
+  boundary_penalty = as.numeric(cohon_penalty)  
 )
 
-# bind everything so far for later comparison
+# Bind everything so far for later comparison
 fragmentation_metrics <- dplyr::bind_rows(
   baseline_metrics,
   bp_low_metrics,
@@ -425,6 +474,8 @@ fragmentation_metrics <- dplyr::bind_rows(
 
 fragmentation_metrics
 ```
+
+From the table, we can see that the boundary length is much shorter, however the runtime became considerably longer in comparison to the manual approaches.
 
 ## Approach 3: MinPatch – minimum patch size only
 
@@ -456,7 +507,7 @@ cat("- This means patches must be at least",
 
 ### Run MinPatch on the baseline solution
 
-```{r minpatch-baseline, message = FALSE}
+```{r minpatch-baseline, message=FALSE, include=FALSE}
 # time MinPatch processing
 minpatch_time_3 <- system.time({
   mp3_result <- run_minpatch(
@@ -474,15 +525,34 @@ minpatch_time_3 <- system.time({
 minpatch_time_3
 ```
 
-### Visualise and summarise MinPatch (patch size only)
+### Visualise and summarise MinPatch
 
-```{r plot Min-patch, fig.width=8, fig.height=6, out.width="100%"}
+```{r plot Min-patch, fig.height=11, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
 plot_minpatch(mp3_result, title = "MinPatch Results")
+```
+
+```{r plot-Min-patch2, fig.height=11, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
 mp3_solution <- mp3_result$solution
 mp3_solution <- mp3_solution  %>%
   dplyr::rename(solution_1 = minpatch)
 
-plot_prioritizr(mp3_solution)
+# Plot
+ggSoln_minpatch <- spatialplanr::splnr_plot(
+  df           = mp3_solution,
+  colNames     = "solution_1",
+  plotTitle    = "MinPatch",
+  legendTitle  = "Selected",
+  legendLabels = c("No", "Yes")
+) +
+  spatialplanr::splnr_gg_add(
+    PUs         = tas,
+    Bndry       = tas,
+    cropOverlay = tas,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+
+ggSoln_minpatch
 ```
 
 ```{r minpatch-metrics-3}
@@ -495,17 +565,15 @@ mp3_metrics <- summarise_solution(
   boundary_penalty = 0                         # no boundary penalty used
 )
 
-mp3_metrics
-
-fragmentation_metrics <- dplyr::bind_rows(
+fragmentation_metrics2 <- dplyr::bind_rows(
   fragmentation_metrics, # change to fragmentation_metrics once Cohon works
   mp3_metrics
 )
 
-fragmentation_metrics
+fragmentation_metrics2
 ```
 
-We can see from the table that the runtime and the total cost is significantly higher than the manual boundary approach. However, the number of contiguous patches is less, making the solution more compact.
+We can see from the table that the runtime and the total cost is higher than the manual boundary approach, but far lesser than the Cohon-calibrated approach. Moreover, the number of contiguous patches is less, making the solution more compact.
 
 ## Approach 4: MinPatch – minimum patch size with boundary penalty
 
@@ -517,7 +585,7 @@ Here we repeat Approach 3, but add a small positive boundary penalty inside MinP
 
 ### Run and visualise MinPatch with boundary penalty
 
-```{r minpatch-baseline-4, message = FALSE}
+```{r minpatch-baseline-4, message=FALSE, warning=FALSE, include=FALSE}
 minpatch_time_4 <- system.time({
   mp4_result <- run_minpatch(
     prioritizr_problem   = p,
@@ -531,22 +599,33 @@ minpatch_time_4 <- system.time({
     verbose              = TRUE
   )
 })
-
-minpatch_time_4
-
 # (so summarise_solution() can reuse its logic)
 mp4_solution <- tas %>%
   dplyr::mutate(solution_1 = mp4_result$solution$minpatch)
 ```
 
-```{r minpatch-map-compare, fig.width=8, fig.height=6, out.width="100%"}
-plot_minpatch(mp4_result, title = "MinPatch Results")
-
+```{r minpatch-map-compare, fig.height=11, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
 mp4_solution <- mp4_result$solution
 mp4_solution <- mp4_solution %>%
   dplyr::rename(solution_1 = minpatch)
 
-plot_prioritizr(mp4_solution)
+# Plot
+ggSoln_minpatch_bp <- spatialplanr::splnr_plot(
+  df           = mp4_solution,
+  colNames     = "solution_1",
+  plotTitle    = "MinPatch with Boundary penalty",
+  legendTitle  = "Selected",
+  legendLabels = c("No", "Yes")
+) +
+  spatialplanr::splnr_gg_add(
+    PUs         = tas,
+    Bndry       = tas,
+    cropOverlay = tas,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+
+ggSoln_minpatch_bp
 ```
 
 ### Metrics and adding to the summary table
@@ -561,24 +640,24 @@ mp4_metrics <- summarise_solution(
   boundary_penalty = 1
 )
 
-mp4_metrics
-
-fragmentation_metrics <- dplyr::bind_rows(
-  fragmentation_metrics,
+fragmentation_metrics3 <- dplyr::bind_rows(
+  fragmentation_metrics2,
   mp4_metrics
 )
 
-fragmentation_metrics
+fragmentation_metrics3
 ```
 
 ------------------------------------------------------------------------
+
+Despite adding a boundary penalty, we obtain the same results as the approach that just used Minpatch alone. This is because the minpatch package here has not yet been updated with the corrected function. This approach can thus only be compared accordinlgy once the package has been updated and we obtain the correct results.
 
 ## Summary comparison
 
 We can now compare all approaches side by side using the metrics we defined earlier: total cost, total boundary length, number and size of patches, number of features, targets met, and runtime.
 
 ```{r summary-table}
-fragmentation_metrics %>%
+fragmentation_metrics2 %>%
   dplyr::arrange(boundary_length_km) %>%
   knitr::kable(
     digits = 2,
@@ -590,14 +669,13 @@ fragmentation_metrics %>%
 
 To compare the spatial patterns directly, we can arrange all solutions in a single panel using **patchwork**:
 
-```{r all-maps-patchwork, fig.width = 15, fig.height = 10, out.width="100%"}
-# make sure each call returns a ggplot object
-p_base   <- plot_prioritizr(base_solution)       + ggtitle("Baseline")
-p_low    <- plot_prioritizr(bp_low_solution)     + ggtitle("Manual BP - Low")
-p_high   <- plot_prioritizr(bp_high_solution)    + ggtitle("Manual BP - High")
-p_cohon  <- plot_prioritizr(bp_cohon_solution)   + ggtitle("Cohon-calibrated BP")
-p_mp3    <- plot_prioritizr(mp3_solution)   + ggtitle("MinPatch")
-p_mp4    <- plot_prioritizr(mp4_solution)   + ggtitle("MinPatch + BP")
+```{r all-maps-patchwork, fig.width = 20, fig.height = 20, out.width="100%"}
+p_base   <- ggSoln
+p_low    <- ggSoln_bp_low
+p_high   <- ggSoln_bp_high
+p_cohon  <- ggSoln_cohon_solution
+p_mp3    <- ggSoln_minpatch
+p_mp4    <- ggSoln_minpatch_bp
 
 # arrange in a 2 x 3 grid
 (p_base | p_low | p_high) /
@@ -625,7 +703,7 @@ ggplot(fragmentation_metrics,
 ### Table summary
 
 | Approach | Method | Pros | Cons |
-|-------------|-------------|-------------|----------------------------------|
+|----|----|----|----|
 | 1 | Manual boundary penalties (*prioritizr*) | Simple; low runtime; easy to implement | Trial-and-error; arbitrary penalty choice; solution patchiness highly sensitive to penalty |
 | 2 | Calibrated boundary penalties (`calibrate_cohon_penalty()`) | Systematic trade-off between cost and compactness; reduced subjectivity | High runtime; computationally expensive |
 | 3 | Minimum patch size rules (*minpatch*) | Explicit control over patch size; more contiguous solutions; moderate runtime | Depends on chosen minimum patch size; may be less cost-optimal |
