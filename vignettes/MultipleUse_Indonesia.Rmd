@@ -1,0 +1,1665 @@
+---
+title: "Example of Spatial Planning with Zones: Indonesia"
+author: "Kris Esturas"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Example of Spatial Planning with Zones: Indonesia}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, warning=FALSE, message=FALSE}
+# Put ALL vignette artifacts in one place
+build_dir <- file.path("_build")
+dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
+
+# knitr figures
+dir.create(file.path(build_dir, "figs"), recursive = TRUE, showWarnings = FALSE)
+knitr::opts_chunk$set(fig.path = paste0(file.path(build_dir, "figs"), "/"))
+
+# terra / GDAL temp rasters
+dir.create(file.path(build_dir, "tmp"), recursive = TRUE, showWarnings = FALSE)
+terra::terraOptions(tempdir = file.path(build_dir, "tmp"))
+
+knitr::opts_chunk$set(
+  fig.path   = "_build/figs/",
+  cache      = FALSE,
+  warning    = FALSE,
+  message    = FALSE,
+  fig.width  = 8,
+  fig.height = 4
+)
+
+# Make vignette offline-ready
+DO_DOWNLOADS <- TRUE
+```
+
+## R Markdown
+
+```{r load-libraries, message=FALSE, warning=FALSE}
+library(oceandatr)
+library(spatialgridr)
+library(prioritizr)
+library(sf)
+library(dplyr)
+library(stringr)
+library(wdpar)
+library(gfwr)
+library(ggplot2)
+library(rnaturalearth)
+library(spatialplanr)
+library(tidyr)
+library(patchwork)
+```
+
+## Overview
+
+Marine zoning is not only about drawing protected areas. In places like Indonesia, it also means managing overlap between biodiversity, existing protected areas, fisheries, and other ocean uses that support the economy and livelihoods. This vignette shows a simple example of building a multiple-use zoning plan for the region, where balancing protection and use has to be made clear.
+
+The workflow is built step by step. We start with a simple baseline prioritisation, then add zoning rules and constraints one at a time so it is clear what each one changes. This vignette is a simplified demonstration using accessible datasets, such as bathymetric features and fishing intensity from key packages (e.g. `oceandatr`), alongside hypothetical areas for other ocean uses. It does not include detailed coral habitats or fish distributions, and it does not capture the full range of real-world activities and conflicts in Indonesia.
+
+We first prepare the key spatial inputs used for prioritisation:
+
+-   **Planning region (AOI):** an eastern Indonesia planning boundary, chosen to keep the analysis manageable given Indonesia’s size
+
+-   **Planning units:** a regular hexagonal grid where the zones will be allocated
+
+-   **Conservation features:** presence/absence layers representing habitats and environments
+
+-   **Fishing areas:** Global Fishing Watch effort as a proxy for areas of high fishing importance
+
+-   **Existing protected areas:** World Data for Protected Areas (WDPA) polygons used to lock in current marine protected areas (MPAs)
+
+We then build the multiple-use zoning plan in stages:
+
+-   **Baseline prioritisation:** single-zone minimum set problem using area cost
+
+-   **Lock-in protected areas:** force existing MPAs into the solution
+
+-   **Two zones (Core + Use):** add a *Core zone* for biodiversity protection and a *Use zone*, biased toward high-fishing areas
+
+-   **Three zones (Core + Use + Terrace):** add a habitat-focused zone for *Terrraces* as an example of protecting ecologically important habitats
+
+-   **Four zones (+ DSM):** add a hypothetical *deep-sea mining exploration zone* with allocation rules
+
+-   **Five zones (+ Aqua):** add hypothetical *aquaculture candidate areas* and a minimum aquaculture allocation
+
+-   **Core zones with boundary penalty**: add a boundary penalty to encourage a more compact core zone
+
+# 1) Planning region (AOI)
+
+We define the planning region (AOI) as *eastern Indonesia* by retrieving the national boundary and clipping it to the eastern half.
+
+```{r get-boundary, message=FALSE, warning=FALSE}
+# Get boundary for Indonesia (WGS84)
+aoi_full <- get_boundary(name = "Indonesia") %>%
+  sf::st_as_sf() %>%
+  sf::st_make_valid() %>%
+  sf::st_transform(4326)
+
+# Set eastern half bbox (split at midpoint longitude)
+bb   <- sf::st_bbox(aoi_full)
+xmid <- (bb["xmin"] + bb["xmax"]) / 2
+bb_east <- bb; bb_east["xmin"] <- xmid
+
+# Clip polygon + AOI
+clip_poly <- sf::st_as_sfc(bb_east)
+sf::st_crs(clip_poly) <- sf::st_crs(aoi_full)
+
+aoi <- sf::st_intersection(sf::st_union(aoi_full), clip_poly) %>%
+  sf::st_make_valid()
+```
+
+We then plot the planning region.
+
+```{r plot-AOI, fig.height=9, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+# Create sf object for plotting 
+aoi_sf <- sf::st_sf(geometry = aoi)
+
+# Plot AOI
+p_aoi <- splnr_plot(df = aoi_sf, plotTitle = "AOI – Eastern Indonesia") +
+  splnr_gg_add(overlay = aoi_sf,
+               colorOverlay = "black",
+               ggtheme = "Default") +
+  ggplot2::geom_sf(data = aoi_sf, fill = "lightblue", colour= NA)
+p_aoi
+```
+
+# 2) Projection + planning grid
+
+We use an equal-area projection and build *20 km planning units* so the demo runs quickly.
+
+```{r planning-grid, fig.height=9, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+# Set projected CRS for equal-area gridding (meters)
+proj_str <- "+proj=cea +lon_0=120 +lat_ts=-5 +datum=WGS84 +units=m +no_defs"
+pu_res_m <- 25000
+
+# Generate PU grid within AOI
+grid_rast <- spatialgridr::get_grid(
+  boundary   = aoi_sf,
+  crs        = proj_str,
+  resolution = pu_res_m,
+  output = "sf_hex")
+
+# Plot grid
+grid_aoi <- splnr_plot(df = grid_rast, 
+                       plotTitle = "Planning grid (squares)") +
+    splnr_gg_add(Bndry = grid_rast,
+                 colorBndry = "black",
+                 ggtheme = "Default")
+grid_aoi
+```
+
+# 3) Conservation features
+
+We then fetch a standard set of conservation features for the planning grid using `oceandatr::get_features()`. These are binary presence/absence layers that represent *broad marine habitats and environments* (for example, depth zones and seafloor features).
+
+```{r get-features, eval=DO_DOWNLOADS, message=FALSE, warning=FALSE}
+# Fetch features (robust + cache-first)
+feat_dir  <- file.path("_build", "rds")
+dir.create(feat_dir, showWarnings = FALSE, recursive = TRUE)
+feat_file <- file.path(feat_dir, "feature_set.rds")
+
+if (file.exists(feat_file)) {
+  feature_set <- readRDS(feat_file)
+
+} else {
+  # Robust downloads (helps NOAA HTTPS)
+  options(timeout = 600)
+  try(options(download.file.method = "libcurl"), silent = TRUE)
+
+  tmp <- capture.output({
+    feature_set <- oceandatr::get_features(spatial_grid = grid_rast) %>%
+      oceandatr::remove_empty_layers()
+  })
+
+  saveRDS(feature_set, feat_file)
+}
+
+# Clean feature names
+names(feature_set) <- gsub("_", " ", names(feature_set)) %>%
+  stringr::str_to_sentence()
+```
+
+To show the distribution of the feature data, we first plot one example feature. Here, we use *Terraces* as the example, which we later use in *Section 6.4* as a simple proxy for an ecologically important habitat.
+
+```{r fig.height=9, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+# Set the active geometry column
+sf::st_geometry(feature_set) <- "Geometry"
+
+# Keep example feature (Terraces) 
+feat_one <- feature_set %>%
+  dplyr::select(Terraces, Geometry) %>%
+  sf::st_as_sf()
+
+# Plot Terraces 
+p_terraces <- splnr_plot(
+  df = feat_one,
+  colNames = "Terraces",
+  legendTitle = "Terraces",
+  legendLabels = c("Absent", "Present"),
+  plotTitle = "Terraces") +
+  splnr_gg_add(
+    Bndry = feat_one,
+    colorBndry = "black",
+    ggtheme = "Default")
+p_terraces
+```
+
+We then show a few representative features (sampled from the feature set) to illustrate the types of layers included.
+
+```{r fig.height=9, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+# Pick representative features (every 5th feature column)
+geom_col <- attr(feature_set, "sf_column")
+if (is.null(geom_col)) geom_col <- "Geometry" 
+feat_cols <- setdiff(names(feature_set), geom_col)
+rep_feats <- feat_cols[seq(1, length(feat_cols), by = 5)]
+
+# Build boundary outline
+bndry_sf <- sf::st_as_sf(sf::st_union(feature_set[[geom_col]]))
+
+# Plot selected features with shared legend
+p_rep <- lapply(rep_feats, function(f) {
+  splnr_plot(
+    df = feature_set,
+    colNames = f,
+    legendTitle = "Presence",
+    legendLabels = c("Absent", "Present"),
+    plotTitle = f
+  ) +
+    splnr_gg_add(
+      Bndry = bndry_sf,
+      colorBndry = "black",
+      ggtheme = "Default"
+    ) +
+    ggplot2::theme(legend.position = "none")
+})
+
+if (length(p_rep) > 0) {
+  p_rep[[1]] <- p_rep[[1]] + ggplot2::theme(legend.position = "bottom")
+}
+
+# Collage
+rep_collage <- patchwork::wrap_plots(p_rep, ncol = 3) +
+  patchwork::plot_layout(guides = "collect") &
+  ggplot2::theme(legend.position = "bottom")
+rep_collage
+```
+
+# 4A) Fishing areas (Global Fishing Watch)
+
+We use apparent fishing hours (an AIS-based proxy from Global Fishing Watch) to represent where fishing activity is highest. The idea is simple: areas with more fishing activity are more likely to be relied on by fishers, so they matter when making zoning decisions.
+
+In later sections, we use this layer to steer the *Use zone* toward high-fishing areas.
+```{r intensity, fig.height=9, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+# Fetch fishing effort
+# Grid as sf
+grid_sf <- sf::st_as_sf(grid_rast) %>%
+  dplyr::mutate(cell_id = dplyr::row_number()) %>%
+  sf::st_make_valid()
+
+# Fetch GFW points (Indonesia EEZ)
+tmp <- capture.output({
+  gfw_pts <- spatialplanr::splnr_get_gfw(
+    region        = "Indonesia",
+    region_source = "EEZ",
+    start_date    = "2022-01-01",
+    end_date      = "2022-12-31",
+    temp_res      = "YEARLY",
+    spat_res      = "LOW",
+    cCRS          = "EPSG:4326",
+    compress      = TRUE
+  )
+})
+
+# Clip points to AOI (right-side AOI)
+gfw_pts <- gfw_pts %>%
+  sf::st_make_valid() %>%
+  sf::st_transform(sf::st_crs(aoi_sf)) %>%
+  sf::st_filter(aoi_sf, .predicate = sf::st_intersects)
+
+# Sum ApparentFishingHrs to grid cells
+gfw_pts <- sf::st_transform(gfw_pts, sf::st_crs(grid_sf))
+eff_col <- "ApparentFishingHrs"
+
+gfw_sum <- sf::st_join(
+  grid_sf["cell_id"],
+  gfw_pts,
+  join = sf::st_intersects,
+  left = FALSE
+) %>%
+  sf::st_drop_geometry() %>%
+  dplyr::group_by(cell_id) %>%
+  dplyr::summarise(
+    fishing_effort = sum(.data[[eff_col]], na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Final grid with fishing_effort (NA -> 0)
+fishing_effort2 <- grid_sf %>%
+  dplyr::left_join(gfw_sum, by = "cell_id") %>%
+  dplyr::mutate(fishing_effort = tidyr::replace_na(fishing_effort, 0))
+```
+
+We then plot the fishing effort across the planning region.
+
+```{r fig.height=9, fig.width=14, message=FALSE, warning=FALSE, out.width="100%"}
+# Plot
+p_gfw <- splnr_plot(
+  df        = fishing_effort2,
+  plotTitle = "Fishing effort"
+) +
+  ggplot2::geom_sf(
+    data = fishing_effort2,
+    ggplot2::aes(fill = fishing_effort),
+    colour = NA
+  ) +
+  ggplot2::scale_fill_viridis_c(
+    name     = "Annual fishing effort\n(AIS proxy)",
+    breaks   = scales::pretty_breaks(n = 4),
+    na.value = "transparent"
+  ) +
+  splnr_gg_add(
+    PUs      = grid_sf,
+    colorPUs = "grey80",
+    ggtheme  = "Default"
+  ) +
+  ggplot2::guides(fill = ggplot2::guide_colorbar(
+    barwidth       = grid::unit(8, "cm"),
+    barheight      = grid::unit(0.5, "cm"),
+    title.position = "left",
+    label.position = "bottom"
+  )) +
+  ggplot2::theme(
+    legend.key.width  = grid::unit(8, "cm"),
+    legend.key.height = grid::unit(0.5, "cm"),
+    legend.spacing.x  = grid::unit(0.3, "cm")
+  )
+
+p_gfw
+```
+
+# 4B) Existing protected areas (WDPA)
+
+We next download and prepare protected areas from WDPA for the planning region using `splnr_get_MPAs`. Using this function, the user can indicate which categories of protected areas they want to include, but for vignette, we will include all categories for simplicity.
+
+We intersect these MPAs with our planning units and apply a 50% threshold to classify planning units as protected (1) or not protected (0). This protected-area layer is later used as a *lock-in* constraint so existing protected areas remain in the Core zone.
+
+```{r wdpa-binary-layer, message=FALSE, warning=FALSE}
+# Download WDPA and use 0.5 binary threshold
+grid_wdpa <- spatialplanr::splnr_get_MPAs(
+  PlanUnits = grid_sf,
+  Countries = "IDN",
+  Status    = c("Designated", "Established", "Inscribed", "Proposed", "Adopted"),
+  Desig     = c("National", "Regional", "International", "Not Applicable"),
+  Category  = c("Ia", "Ib", "II", "III", "IV", "V", "VI",
+                "Not Reported", "Not Applicable", "Not Assigned")
+) %>%
+  dplyr::mutate(
+    wdpa50 = dplyr::if_else(!is.na(data) & data >= 0.5, 1L, 0L)
+  ) %>%
+  dplyr::select(-data)  # optional: drop raw `data` column
+
+# 3) AOI boundary aligned to grid (for plotting)
+aoi_plot <- aoi_sf %>%
+  sf::st_make_valid() %>%
+  sf::st_transform(sf::st_crs(grid_wdpa))
+```
+
+We plot the MPAs on the planning region to visualise them.
+
+```{r wdpa-plot, fig.height=9, fig.width=14, message=FALSE, warning=FALSE, out.width="100%" }
+# 4) Plot WDPA mask on grid
+p_wdpa50 <- splnr_plot(
+  df           = grid_wdpa,
+  colNames     = "wdpa50",
+  plotTitle    = "Protected areas (WDPA)",
+  legendTitle  = "",
+  legendLabels = c("0", "1")
+) +
+  splnr_gg_add(
+    Bndry      = aoi_plot,
+    colorBndry = "black",
+    ggtheme    = "Default"
+  )
+p_wdpa50
+```
+
+# 5) Build planning units table
+
+Now we compile the planning units table (pus) by combining the grid with feature layers, fishing effort, and the existing MPAs.
+
+```{r pu_sf_compile, message=FALSE, warning=FALSE}
+# Build planning units table
+pus <- sf::st_as_sf(grid_rast) %>%
+  sf::st_make_valid() %>%
+  dplyr::mutate(pu_id = dplyr::row_number())
+
+# Prepare WDPA binary
+wdpa_bin <- grid_wdpa %>%
+  sf::st_drop_geometry() %>%
+  dplyr::rename(pa50 = wdpa50) %>%
+  dplyr::mutate(pu_id = dplyr::row_number()) %>%
+  dplyr::select(pu_id, pa50)
+
+# Attach fishing effort + feature attributes + WDPA binary
+pus_attr <- pus %>%
+  sf::st_drop_geometry() %>%
+  dplyr::left_join(
+    fishing_effort2 %>%
+      sf::st_drop_geometry() %>%
+      dplyr::mutate(pu_id = dplyr::row_number()) %>%
+      dplyr::select(pu_id, fishing_effort),
+    by = "pu_id"
+  ) %>%
+  dplyr::left_join(
+    feature_set %>%
+      sf::st_drop_geometry() %>%
+      dplyr::mutate(pu_id = dplyr::row_number()),
+    by = "pu_id"
+  ) %>%
+  dplyr::left_join(
+    grid_wdpa %>%
+      sf::st_drop_geometry() %>%
+      dplyr::mutate(pu_id = dplyr::row_number()) %>%
+      dplyr::transmute(pu_id, pa50 = wdpa50),
+    by = "pu_id"
+  ) %>%
+  dplyr::mutate(
+    fishing_effort = dplyr::if_else(is.na(fishing_effort), 0, fishing_effort),
+    pa50           = dplyr::if_else(is.na(pa50), 0L, pa50)
+  )
+# Reattach geometry
+pus <- sf::st_sf(pus_attr, geometry = sf::st_geometry(pus), crs = sf::st_crs(pus))
+str(pus)
+```
+
+# 6) Spatial Prioritisation
+
+In this section, we move from data preparation to spatial planning. We start with a baseline prioritisation, then add one planning rule at a time so it is clear what each rule changes in the solution.
+
+## 6.1 Baseline prioritisation
+
+We begin with a standard minimum set prioritisation. The aim is to meet a fixed representation target for every feature while selecting as little total area as possible.
+
+### What is included in this baseline?
+
+-   **Features:** all `oceandatr` feature layers
+
+-   **Cost:** area of the planning unit (`Cost_area`)
+
+-   **Target:** 30% representation for each feature
+
+-   **Decision type:** binary selection (selected / not selected)
+
+At this stage, the spatial plan does not include zoning, fishing-based inputs, or lock-in constraints.
+
+#### A. Prepare feature columns and area-cost
+
+```{r normal_prioritisation_prep, message=FALSE, warning=FALSE}
+# Identify feature columns (binary 0/1)
+feature_names <- setdiff(names(pus),
+                         c("pu_id", "fishing_effort", "pa_prop", "pa50", "geometry"))
+
+# Area cost (km^2)
+pus <- pus %>%
+  dplyr::mutate(Cost_area = as.numeric(sf::st_area(pus)) / 1e6)
+```
+
+#### B. Formulate and solve problem
+
+```{r normal_prioritisation_area, message=TRUE, warning=FALSE}
+# Set targets
+target <- rep(0.30, length(feature_names))
+
+# Build problem
+p_area <- prioritizr::problem(
+  x = pus,
+  features = feature_names,
+  cost_column = "Cost_area"
+) %>%
+  prioritizr::add_min_set_objective() %>%
+  prioritizr::add_relative_targets(target) %>%
+  prioritizr::add_binary_decisions() %>%
+  prioritizr::add_default_solver(verbose = FALSE)
+p_area
+
+# Solve problem
+s_area <- p_area %>% prioritizr::solve.ConservationProblem()
+```
+
+#### C. Plot solution (Baseline)
+
+```{r baseline_plot_spatialplanr, fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+# Landmass cropped to AOI bbox 
+landmass <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+  st_transform(st_crs(aoi_sf))
+landmass_aoi <- landmass %>%
+  st_crop(st_bbox(aoi_sf))
+
+# Plot
+ggSoln <- splnr_plot(
+  df          = s_area,
+  colNames    = "solution_1",
+  plotTitle   = "Baseline Solution",
+  legendTitle = "Selected",
+  legendLabels = c("No", "Yes")
+) +
+  splnr_gg_add(
+    PUs        = pus,
+    Bndry      = aoi_sf,
+    overlay    = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme    = "Default"
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+ggSoln
+```
+
+#### D. Check whether targets are met
+
+```{r baseline-representation-summary}
+# Representation summary
+s_area_tbl <- s_area %>%
+  dplyr::select(dplyr::starts_with("solution_")) %>%
+  sf::st_drop_geometry() %>%
+  tibble::as_tibble()
+
+rep_area <- prioritizr::eval_feature_representation_summary(p_area, s_area_tbl)
+rep_area
+```
+
+Looking at the table, the `relative_held` column confirms that all features achieved at least 30% representation.
+
+## 6.2 Lock-in protected areas
+
+In this section, we keep the baseline setup the same, but add one key management rule: *existing protected areas must remain selected.*
+
+### What is added in this step?
+
+-   **New rule:** planning units with `pa50 == 1` are locked into the solution
+
+#### A. Prepare lock-in planning units
+
+```{r baseline_with_lockin_pa50_fix, message=FALSE, warning=FALSE, fig.width=14, fig.height=9, out.width="100%"}
+# lock-in indices (pu_id)
+locked_in <- as.integer(pus$pu_id[pus$pa50 == 1])
+locked_in <- locked_in[!is.na(locked_in)]
+```
+
+#### B. Formulate and solve problem
+
+```{r area_lockin}
+# Build problem
+p_area_lockin <- p_area %>%
+  prioritizr::add_locked_in_constraints(locked_in)
+p_area_lockin
+
+# Solve problem
+s_area_lockin <- p_area_lockin %>%
+  prioritizr::solve.ConservationProblem()
+```
+
+#### C. Plot solution (Lock-in MPAs)
+
+```{r plot-lockin, fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+# Plot
+ggSoln_pa <- splnr_plot(
+  df           = s_area_lockin,
+  colNames     = "solution_1",
+  plotTitle    = "Lock-in Existing MPAs",
+  legendTitle  = "Selected",
+  legendLabels = c("No", "Yes")
+) +
+  splnr_gg_add(
+    PUs         = pus,
+    Bndry       = aoi_sf,
+    overlay     = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme     = "Default"
+  ) +
+  # Map border to a legend key
+  ggplot2::geom_sf(
+    data = pus %>% dplyr::filter(pa50 == 1),
+    ggplot2::aes(colour = "Existing MPAs"),
+    fill = NA,
+    linewidth = 0.25,
+    show.legend = TRUE
+  ) +
+  ggplot2::scale_colour_manual(
+    name   = "",
+    values = c("Existing MPAs" = "black")
+  ) +
+  ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(fill = NA))) +
+  ggplot2::theme(legend.position = "bottom")
+
+ggSoln_pa
+```
+
+In the plot, we see that the existing MPAs are part of the solution, as shown by the selected areas with a black outline.
+
+#### **D. Check whether targets are met**
+
+```{r representation-lockin}
+# Representation summary
+s_lock_tbl <- s_area_lockin %>%
+  dplyr::select(dplyr::starts_with("solution_")) %>%
+  sf::st_drop_geometry() %>%
+  tibble::as_tibble()
+
+rep_lockin <- prioritizr::eval_feature_representation_summary(p_area_lockin, s_lock_tbl)
+rep_lockin
+```
+
+## **6.3 Create two zones (Core and Use)**
+
+We now move from a single “selected / not selected” solution to a simple *two-zone plan*. The aim is to separate areas mainly for biodiversity protection from areas where use is expected, here represented by fishing. Since we now have two zones, we need to decide what each zone is for and set targets and costs accordingly, so we can allocate space for use while still meeting our protection targets.
+
+### Zoning idea in this step
+
+-   The **Core** zone is the biodiversity-focused zone, where we place our conservation targets (30% representation for every feature).
+
+-   The **Use** zone is the human-use zone, where we set feature targets to 0% and instead steer the solution toward high-fishing areas using a fishing-based cost and simple allocation constraints.
+
+This is the first step where planning units are explicitly assigned to different management roles.
+
+### What is added in this step?
+
+-   **Two-zone structure:** We introduce a simple two-zone plan with a `core` zone and `use` zone.
+
+-   **Zone targets:** We put the biodiversity targets as follows.
+
+    -   **Core:** The 30% representation for every feature (`target = 0.3`) must be held within this zone.
+
+    -   **Use:** We set the targets for this zone to zero (`target = 0`) so that it is not responsible for meeting feature targets.
+
+-   **Zone-specific costs:**
+
+    -   **Core:** We keep Core costs as area (`Cost_core = Cost_area`).
+
+    -   **Use:** For this zone, we make high-fishing areas chepaer so the Use zone is pulled toward them (`Cost_use = 1 - fish_scaled`).
+
+-   **Lock-in:** We force existing protected areas into Core `(pa50 = 1)` .
+
+-   **Linear constraints**:
+
+    -   **Use:** We add two simple rules for the Use zone.
+
+        -   First, it must take up at least a small amount of space (at least *1% of planning units*; `use_share = 0.01`)
+
+        -   Second, those Use zone units should acturally cover the main fishing areas, so we require the Use zone to capture most of the fishing effort that would be possible if we picked the best fishing cells (*90% of that "best-case"* total; `bias_strength = 0.90`)
+
+**What stays the same:** We still use a minimum set objective, and the overall conservation target remains 30% per feature (now assigned to the Core zone).
+
+#### A. Set up zoning specifications
+
+```{r set-up-zoning, message=FALSE, warning=FALSE}
+# 1) Costs (zone-specific)
+N <- nrow(pus)
+
+fish_vec <- pus$fishing_effort                     
+max_fish <- max(fish_vec, na.rm = TRUE)            
+
+fish_scaled <- if (is.finite(max_fish) && max_fish > 0) {
+  fish_vec / max_fish                 
+} else {
+  rep(0, N) 
+}
+
+pus <- pus %>%
+  dplyr::mutate(
+    fish_scaled = fish_scaled,                     
+    Cost_core   = Cost_area,                       
+    Cost_use    = 1 - fish_scaled)
+
+# 2) Zones object
+z2 <- prioritizr::zones(
+  "core" = feature_names,
+  "use"  = feature_names
+)
+
+# 3) Targets (feature x zone)
+targets <- matrix(0, nrow = length(feature_names), ncol = 2)
+rownames(targets) <- feature_names
+colnames(targets) <- c("core", "use")
+
+targets[, "core"] <- 0.30
+targets[, "use"]  <- 0.00 
+
+# 4) Lock-in existing protected areas into Core
+lock_core <- pus %>%
+  sf::st_drop_geometry() %>%
+  dplyr::transmute(
+    zone   = "core",
+    pu     = pu_id,
+    status = pa50
+  ) %>%
+  dplyr::filter(status == 1L)
+
+# 5) Linear constraints (Use zone)
+
+# A) Minimum Use-zone size (>= 1% of planning units)
+use_share <- 0.01
+k_use <- ceiling(use_share * N)   # minimum number of PUs that must be assigned to Use
+
+rhs_use   <- k_use
+sense_use <- ">="
+
+A_use <- cbind(
+  core = rep(0, N),
+  use  = rep(1, N)
+)
+
+# B) Fishing capture (>= 90% of best possible for k_use)
+fish_vec <- pus$fishing_effort
+
+# "Best possible" fishing capture if we picked the top k_use fishing PUs
+fish_sorted <- sort(fish_vec, decreasing = TRUE, na.last = TRUE)
+fish_best_possible <- sum(fish_sorted[seq_len(min(k_use, length(fish_sorted)))], na.rm = TRUE)
+
+bias_strength <- 0.90  # require 90% of that best-case fishing capture
+rhs_fish   <- fish_best_possible * bias_strength
+sense_fish <- ">="
+
+
+A_fish <- cbind(
+  core = rep(0, N),
+  use  = fish_vec)
+```
+
+#### B. Build and solve prioritisation
+
+```{r prioritisation-two-zone}
+# Build problem
+p_z2 <- prioritizr::problem(
+  x           = pus,
+  features    = z2,
+  cost_column = c("Cost_core", "Cost_use")
+) %>%
+  add_min_set_objective() %>%
+  add_manual_locked_constraints(lock_core) %>%
+  add_relative_targets(targets) %>%
+  add_linear_constraints(rhs_use,  sense_use,  A_use) %>%   # force 5% use
+  add_linear_constraints(rhs_fish, sense_fish, A_fish) %>%  # force high fishing in use
+  add_binary_decisions() %>%
+  add_default_solver(verbose = FALSE)
+p_z2
+
+# Solve problem
+s_z2 <- prioritizr::solve.ConservationProblem(p_z2)
+```
+
+#### C. Plot solution (Two-zone Plan)
+
+```{r plot_zones_solution, fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+gg_z2 <- splnr_plot_solution(
+  s_z2,
+  zones = TRUE,
+  plotTitle    = "Solution (Two-zone plan)",
+  colorVals    = c("#c6dbef", "#3182bd", "orange"),
+  legendLabels = c("Not selected", "Core", "Use")
+) +
+  splnr_gg_add(
+    PUs         = pus,
+    Bndry       = aoi_sf,
+    overlay     = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme     = "Default"
+  ) +
+  # Existing MPAs (border) + legend key
+  ggplot2::geom_sf(
+    data = pus %>% dplyr::filter(pa50 == 1),
+    ggplot2::aes(colour = "Existing MPAs"),
+    fill = NA,
+    linewidth = 0.25,
+    show.legend = TRUE
+  ) +
+  ggplot2::scale_colour_manual(
+    name   = "",
+    values = c("Existing MPAs" = "black")
+  ) +
+  ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(fill = NA))) +
+  ggplot2::theme(legend.position = "right")
+gg_z2
+```
+
+#### D. Check whether targets are met
+
+```{r two-zone summary}
+# Representation Summary
+sol_cols <- grep("^solution", names(s_z2), value = TRUE)
+if (length(sol_cols) < 2) stop("Expected 2+ solution columns in s_z2. Check names(s_z2).")
+
+s_z_tbl <- s_z2 %>%
+  dplyr::select(dplyr::all_of(sol_cols)) %>%
+  sf::st_drop_geometry() %>%
+  tibble::as_tibble()
+
+# evaluate representation for the zoning problem
+rep_core_use <- prioritizr::eval_feature_representation_summary(p_z2, s_z_tbl)
+
+rep_core_use
+```
+
+In the table, we can see that the Core zone meets the 30% target for each feature (`relative_held` ≈ 0.30). The Use zone has targets set to zero, so most features sit at 0.00, with occasional non-zero values where Use-selected cells overlap with feature distributions. Looking at the spatial solution, the Use zone also lines up with the high-fishing areas shown earlier in *Section 4A*.
+
+## **6.4 Create three zones (Core, Use, Terrace)**
+
+Now that we already have a basic split between *Core* (protection) and *Use* (fishing), we add a third zone to represent a more specific ecological priority. In real planning, this could be a habitat type, a spawning or nursery area, a foraging hotspot, or any other place that needs its own rules rather than being treated the same as the general Core zone. Here, we use *Terraces* as a simple example because they are more spatially clumped than many of the other features, which makes them a useful stand-in for an ecologically important habitat that might benefit from a dedicated zone.
+
+### Zoning idea in this step
+
+-   The **Terrace** zone serves as a habitat-focused zone where we prioritise terrace areas by *protecting 50% of the Terraces* feature and setting targets for all other features to zero.
+
+### What is added in this step?
+
+-   **Three-zone structure:** We introduce a third zone `terrace`.
+
+-   **Zone targets:** We assign targets as follows:
+
+    -   **Terrace:** We require 50% representation of the Terraces feature to be held within this zone (`target = 0.5`). While for all the other feature, we set the targets in this zone to zero (`target = 0`).
+
+-   **Zone-specific costs:**
+
+    -   **Terrace:** We add a specific cost column (`Cost_terrace = Cost_area`).
+
+**What stays the same:** All other specifications are kept the same as in the previous section.
+
+#### A. Set up zoning specifications
+
+```{r three-zone-setup}
+# 1) Costs
+pus <- pus %>%
+  dplyr::mutate(
+    Cost_terrace = Cost_area
+  )
+
+# 2) Zones object
+z3 <- prioritizr::zones(
+  "core"    = feature_names,
+  "use"     = feature_names,
+  "terrace" = feature_names
+)
+
+# 3) Targets (features x zones)
+targets3 <- matrix(0, nrow = length(feature_names), ncol = 3)
+colnames(targets3) <- c("core", "use", "terrace")
+rownames(targets3) <- feature_names
+
+targets3[, "core"] <- 0.30
+targets3["Terraces", "terrace"] <- 0.50  # 50% of terraces distribution
+
+# 4) Linear constraints (rebuild for 3 zones; terrace unconstrained)
+# Rebuild 3-zone constraint matrices (terrace unconstrained)
+N <- nrow(pus)
+
+A_use3 <- cbind(
+  core    = rep(0, N),
+  use     = rep(1, N),
+  terrace = rep(0, N)
+)
+
+A_fish3 <- cbind(
+  core    = rep(0, N),
+  use     = pus$fishing_effort,
+  terrace = rep(0, N)
+)
+
+```
+
+#### B. Build and solve prioritisation problem
+
+```{r prioritisation-threezone}
+# Build problem
+p_z3 <- prioritizr::problem(
+  x           = pus,
+  features    = z3,
+  cost_column = c("Cost_core", "Cost_use", "Cost_terrace")
+) %>%
+  prioritizr::add_min_set_objective() %>%
+  prioritizr::add_manual_locked_constraints(lock_core) %>%
+  prioritizr::add_relative_targets(targets3) %>%
+  prioritizr::add_linear_constraints(rhs_use,  sense_use,  A_use3) %>%
+  prioritizr::add_linear_constraints(rhs_fish, sense_fish, A_fish3) %>%
+  prioritizr::add_binary_decisions() %>%
+  prioritizr::add_default_solver(verbose = FALSE)
+p_z3
+
+# Solve problem
+s_z3 <- prioritizr::solve.ConservationProblem(p_z3)
+```
+
+#### C. Plot solution (Three-zone plan)
+
+```{r fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+# Plot
+gg_z3 <- splnr_plot_solution(
+  s_z3,
+  zones = TRUE,
+  colorVals = c("#c6dbef", "#3182bd", "orange", "forestgreen"),
+  legendLabels = c("Not selected", "Core", "Use", "Terrace")
+) +
+  splnr_gg_add(
+    PUs         = pus,
+    Bndry       = aoi_sf,
+    overlay     = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme     = "Default"
+  ) +
+  # Existing MPAs (outline + legend)
+  ggplot2::geom_sf(
+    data = pus %>% dplyr::filter(pa50 == 1),
+    ggplot2::aes(colour = "Existing MPAs"),
+    fill = NA,
+    linewidth = 0.25,
+    show.legend = TRUE
+  ) +
+  ggplot2::scale_colour_manual(
+    name   = "",
+    values = c("Existing MPAs" = "black")
+  ) +
+  ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(fill = NA))) +
+  ggplot2::labs(fill = "Zones") +
+  ggplot2::theme(legend.position = "right")
+gg_z3
+```
+
+#### D. Check whether targets are met
+
+```{r representation-three-zones}
+# Representation summary
+sol_cols <- names(s_z3) %>%
+  stringr::str_subset("^solution")
+
+s_tbl <- s_z3 %>%
+  dplyr::select(dplyr::all_of(sol_cols)) %>%
+  sf::st_drop_geometry() %>%
+  tibble::as_tibble()
+
+rep_summary <- s_tbl %>%
+  prioritizr::eval_feature_representation_summary(p_z3, .)
+rep_summary
+```
+
+We can see in the table that the Terrace zone holds the Terraces feature (Feature 22) at 50% (`relative_held` = 0.50), while all other features are near 0%
+
+## 6.5 Add a deep-sea mining (DSM) exploration zone
+
+Now that we have zones for protection (Core), use (Use), and a habitat priority (Terrace), we add a fourth zone to represent a sector-specific *exploration / extraction* interest. In real planning, these could be proposed areas for activities such as deep-sea mining, oil and gas, offshore wind, or other industrial uses. These areas often overlap with conservation priorities, and planning decisions usually involve clear rules about where extraction can occur and what must remain protected. Here, we use a *hypothetical DSM proposed areas* to show how an exploration zone can be added with simple zoning rules.
+
+### Zoning idea in this step
+
+-   The **DSM zone** represents the part of the proposed DSM areas (`DSM_explore`) that the solution allocates to deep-sea mining exploration. We first mark which planning units fall inside the proposed DSM areas, and only those units are allowed to be assigned to the DSM zone. We then add simple area rules that keep a minimum amount of the proposed DSM area in the Core zone, while allowing the rest to be allocated to DSM zone.
+
+### What is added in this step
+
+-   **Four-zone structure:** We introduce a fourth zone, `dsm`, alongside `core`, `use`, and `terrace`.
+
+-   **Zone targets:**
+
+    -   **DSM**: We set the biodiversity targets in this zone to zero (`target = 0`), so the DSM zone is not responsible for meeting future targets.
+
+-   **Zone-specific costs:**
+
+    -   **DSM**: We add a specific cost column that makes DSM assignment cheap inside the proposed areas and expensive outside (`Cost_dsm = 0.1` inside expoloration areas, `10` outside)
+
+-   **Linear constraints:**
+
+    -   **DSM**: We add simple allocation rules for the DSM proposed areas
+
+        -   All DSM proposed areas must be assigned to either Core or DSM (`100% of DSM_explore`).
+
+        -   At least *6000 km²* of the DSM proposed areas must remain in Core (`core_min_km2 = 6000`).
+
+        -   At most *10000 km²* of the DSM proposed areas can remain in Core, so some is assigned to DSM (`core_max_km2 = 10,000`).
+
+**What stays the same:** All other specifications are kept the same as in the previous section.
+
+### Create hypothetical DSM areas
+
+We first create three simple, hypothetical DSM proposed areas as rectangles within the AOI. We then flag which planning units intersect these rectangles (`DSM_explore = 1`) so the DSM zone can be applied only within those proposed areas.
+
+```{r hypothetical-DSM, message=FALSE, warning=FALSE}
+# Create three hypothetical deep-sea mining exploration areas
+aoi_pu <- aoi %>%
+  sf::st_transform(sf::st_crs(pus))
+
+bb <- sf::st_bbox(aoi_pu)
+w  <- as.numeric(bb["xmax"] - bb["xmin"])
+h  <- as.numeric(bb["ymax"] - bb["ymin"])
+
+make_rect <- function(xmin, ymin, xmax, ymax, crs) {
+  sf::st_as_sfc(sf::st_bbox(c(xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax), crs = crs))
+}
+
+# Placement window moved to the RIGHT (upper-right area)
+xW0 <- as.numeric(bb["xmin"]) + 0.68 * w
+xW1 <- as.numeric(bb["xmin"]) + 0.86 * w
+yN1 <- as.numeric(bb["ymax"]) - 0.02 * h
+yN0 <- as.numeric(bb["ymax"]) - 0.20 * h
+y_shift <- -0.10 * h  # keep slight downward shift
+
+# Three rectangles
+r1 <- make_rect(
+  xW0 + 0.05 * (xW1 - xW0), yN0 + 0.55 * (yN1 - yN0) + y_shift,
+  xW0 + 0.45 * (xW1 - xW0), yN0 + 0.95 * (yN1 - yN0) + y_shift,
+  sf::st_crs(pus)
+)
+
+r2 <- make_rect(
+  xW0 + 0.55 * (xW1 - xW0), yN0 + 0.25 * (yN1 - yN0) + y_shift,
+  xW0 + 0.95 * (xW1 - xW0), yN0 + 0.85 * (yN1 - yN0) + y_shift,
+  sf::st_crs(pus)
+)
+
+r3 <- make_rect(
+  xW0 + 0.20 * (xW1 - xW0), yN0 + 0.05 * (yN1 - yN0) + y_shift,
+  xW0 + 0.80 * (xW1 - xW0), yN0 + 0.35 * (yN1 - yN0) + y_shift,
+  sf::st_crs(pus)
+)
+
+dsm_rects <- sf::st_sf(
+  dsm_id = c("DSM_1", "DSM_2", "DSM_3"),
+  geometry = sf::st_sfc(
+    sf::st_geometry(r1)[[1]],
+    sf::st_geometry(r2)[[1]],
+    sf::st_geometry(r3)[[1]]
+  ),
+  crs = sf::st_crs(pus)
+) %>%
+  sf::st_make_valid()
+
+# Flag DSM exploration planning units + compute PU area (km2)
+pus <- pus %>%
+  dplyr::mutate(
+    DSM_explore = dplyr::if_else(lengths(sf::st_intersects(., dsm_rects)) > 0, 1L, 0L),
+    pu_area_km2 = as.numeric(sf::st_area(.)) / 1e6
+  )
+
+# Total area of DSM_explore planning units (km2)
+dsm_explore_area_km2 <- sum(pus$pu_area_km2[pus$DSM_explore == 1], na.rm = TRUE)
+dsm_explore_area_km2
+```
+
+There is about *113,666 km²* of DSM proposed-area planning units within our planning region. Here, we plot the DSM proposed areas to visualise where they fall in the AOI.
+
+```{r fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+# Plot DSM areas
+gg_dsm <- splnr_plot(
+  df           = pus,
+  colNames     = "DSM_explore",
+  plotTitle    = "Hypothetical Deep-sea Mining Exploration Areas",
+  legendTitle  = "DSM exploration",
+  legendLabels = c("No", "Yes"),
+  colourVals   = c("grey85", "red")
+) +
+  splnr_gg_add(
+    PUs         = pus,
+    Bndry       = aoi_sf,
+    overlay     = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::geom_sf(
+    data = dsm_rects,
+    fill = NA,
+    colour = "red",
+    linewidth = 0.8
+  ) +
+  ggplot2::geom_sf(
+    data = aoi_pu,
+    fill = NA,
+    colour = "black",
+    linewidth = 0.3
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+gg_dsm
+```
+
+#### A. Set-up zone specifications
+
+```{r dsm-zone-setup, message=FALSE, warning=FALSE}
+# 1) Costs
+pus <- pus %>%
+  dplyr::mutate(
+    pu_area_km2 = as.numeric(sf::st_area(.)) / 1e6,
+    Cost_dsm    = dplyr::if_else(DSM_explore == 1, 0.1, 10) # DSM is cheap inside footprint, expensive outside
+  )
+
+# Total DSM footprint area measured in flagged planning units (this is what constraints use)
+explore_area_km2 <- sum(pus$pu_area_km2[pus$DSM_explore == 1], na.rm = TRUE)
+
+# 2) Zones object
+z4 <- prioritizr::zones(
+  "core"    = feature_names,
+  "use"     = feature_names,
+  "terrace" = feature_names,
+  "dsm"     = feature_names
+)
+
+# 3) Targets
+targets4 <- cbind(targets3, dsm = 0)
+colnames(targets4) <- c("core", "use", "terrace", "dsm")
+
+# 4) Linear constraints
+# DSM exploration weights (PU area only inside DSM proposed areas)
+dsm_w <- dplyr::if_else(pus$DSM_explore == 1, pus$pu_area_km2, 0)
+
+# A) Assign all DSM proposed areas to Core or DSM (100% of DSM_explore)
+rhs_explore_assign   <- sum(dsm_w, na.rm = TRUE)   # total DSM proposed area (km2)
+sense_explore_assign <- "="
+
+# B) Minimum core set-aside inside DSM proposed areas
+core_min_km2 <- 6000
+A_core_in_explore <- cbind(
+  core    = dsm_w,
+  use     = rep(0, N),
+  terrace = rep(0, N),
+  dsm     = rep(0, N)
+)
+rhs_core_in_explore   <- core_min_km2
+sense_core_in_explore <- ">="
+
+# C) Cap core inside DSM proposed areas so DSM absorbs the remainder
+core_max_km2 <- 10000
+rhs_core_cap_in_explore   <- core_max_km2
+sense_core_cap_in_explore <- "<="
+
+# D) Rebuild linear-constraint matrices cleanly for 4 zones
+A_use <- cbind(
+  core    = rep(0, N),
+  use     = rep(1, N),
+  terrace = rep(0, N),
+  dsm     = rep(0, N)
+)
+
+A_fish <- cbind(
+  core    = rep(0, N),
+  use     = pus$fishing_effort,
+  terrace = rep(0, N),
+  dsm     = rep(0, N)
+)
+
+A_explore_assign <- cbind(
+  core    = dsm_w,
+  use     = rep(0, N),
+  terrace = rep(0, N),
+  dsm     = dsm_w
+)
+
+A_core_in_explore <- cbind(
+  core    = dsm_w,
+  use     = rep(0, N),
+  terrace = rep(0, N),
+  dsm     = rep(0, N)
+)
+```
+
+#### B. Build and solve problem
+
+```{r prioritisation-fourzone}
+# Build problem
+p_z4 <- prioritizr::problem(
+  x           = pus,
+  features    = z4,
+  cost_column = c("Cost_core", "Cost_use", "Cost_terrace", "Cost_dsm")
+) %>%
+  prioritizr::add_min_set_objective() %>%
+  prioritizr::add_manual_locked_constraints(lock_core) %>%
+  prioritizr::add_relative_targets(targets4) %>%
+  prioritizr::add_linear_constraints(rhs_use,  sense_use,  A_use) %>%
+  prioritizr::add_linear_constraints(rhs_fish, sense_fish, A_fish) %>%
+  prioritizr::add_linear_constraints(rhs_explore_assign, sense_explore_assign, A_explore_assign) %>%
+  prioritizr::add_linear_constraints(rhs_core_in_explore, sense_core_in_explore, A_core_in_explore) %>%
+  prioritizr::add_linear_constraints(rhs_core_cap_in_explore, sense_core_cap_in_explore, A_core_in_explore) %>%
+  prioritizr::add_binary_decisions() %>%
+  prioritizr::add_default_solver(verbose = FALSE)
+p_z4
+
+# Solve problem
+s_z4 <- prioritizr::solve.ConservationProblem(p_z4)
+```
+
+#### C. Plot solution (Four-zone plan)
+
+```{r plot-four-zone, fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+# Plot solution
+gg_z4 <- splnr_plot_solution(
+  s_z4,
+  zones = TRUE,
+  colorVals = c("#c6dbef", "#3182bd", "orange", "forestgreen", "red"),
+  legendLabels = c("Not selected", "Core", "Use", "Terrace", "DSM")
+) +
+  splnr_gg_add(
+    PUs         = pus,
+    Bndry       = aoi_sf,
+    overlay     = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme     = "Default"
+  ) +
+  # Existing MPAs (outline + legend)
+  ggplot2::geom_sf(
+    data = pus %>% dplyr::filter(pa50 == 1),
+    ggplot2::aes(colour = "Existing MPAs"),
+    fill = NA,
+    linewidth = 0.25,
+    show.legend = TRUE
+  ) +
+  ggplot2::scale_colour_manual(
+    name   = "",
+    values = c("Existing MPAs" = "black")
+  ) +
+  ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(fill = NA))) +
+  ggplot2::labs(fill = "Zones") +
+  ggplot2::theme(legend.position = "right")
+
+gg_z4
+```
+
+From the plot, we can see that some of the DSM proposed area is still allocated to the Core zone, which satisfies the minimum Core set-aside constraint we imposed earlier. While all the remaining DSM proposed areas were assigned to the DSM zone.
+
+#### D. Check whether targets are met
+
+```{r summary-fourzone}
+# Feature representation summary (4-zone solution)
+sol_cols <- grep("^solution", names(s_z4), value = TRUE)
+
+s_z4_tbl <- s_z4 %>%
+  dplyr::select(dplyr::all_of(sol_cols)) %>%
+  sf::st_drop_geometry() %>%
+  tibble::as_tibble()
+
+rep_z4 <- prioritizr::eval_feature_representation_summary(p_z4, s_z4_tbl)
+
+rep_z4
+```
+
+## **6.6. Aquaculture zones**
+
+Now we add a fifth zone for *aquaculture*. In archipelagic countries like Indonesia, aquaculture is a major livelihood, with coastal areas used to grow seaweed, fish, and shellfish. These sites often overlap with conservation areas and other sensitive habitats, and conflicts can arise because farms can take up space, alter habitats, and affect water quality (for example through waste, disturbance, or disease risk). Here, we use hypothetical aquaculture candidate areas to show how an Aqua zone can be added with simple zoning rules.
+
+### Zoning idea in this step
+
+The **Aqua** zone represents the part of the *aquaculture candidate areas* (`AQUA_zone`) that the solution allocates to aquaculture. We first mark which planning units fall inside candidate areas, and only those units are allowed to be assigned to the Aqua zone. We then require a minimum amount of aquaculture allocation, and we prevent Core from being placed inside candidate areas so that meeting the aquaculture minimum creates a real trade-off. Moreover, some aquaculture candidate areas overlap with existing MPAs, so we handle this by prohibiting the Aqua zone within existing MPAs.
+
+### What is added in this step?
+
+-   **Five-zone structure:** We introduce a fifth zone, `aqua`, alongside `core`, `use`, `terrace`, and `dsm`.
+
+-   **Zone targets:**
+
+    -   **Aqua:** We set the biodiversity targets in this zone to zero (`target = 0`), so the Aqua zone is not responsible for meeting feature targets.
+
+-   **Zone-specific costs:**
+
+    -   **Aqua:** We add an Aqua-specific cost column (`Cost_aqua = Cost_area`).
+
+-   **Linear constraints:**
+
+    -   **Aqua:** We add simple allocation rules for aquaculture.
+
+        -   Aqua is only allowed inside aquaculture candidate areas (`AQUA_zone = 1`).
+
+        -   Aqua is forbidden inside existing protected areas (`pa50 = 1`).
+
+        -   Aquaculture must cover at least *2.0% of the total study area* (`aqua_share = 0.02`).
+
+        -   Core is forbidden inside aquaculture candidate areas (`forbid_core_in_aqua = TRUE`).
+
+**What stays the same:** All other specifications are kept the same as in the previous section.
+
+### **Create hypothetical aquaculture candidate areas**
+
+We first create hypothetical aquaculture candidate areas within the AOI, then flag the planning units they intersect (`AQUA_zone = 1`) so the Aqua zone can be applied only within those candidate areas.
+
+```{r create-aqua-areas}
+# Define helper to build rectangles
+make_rect <- function(xmin, ymin, xmax, ymax, crs) {
+  sf::st_as_sfc(
+    sf::st_bbox(c(xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax), crs = crs)
+  )
+}
+
+# Set rectangle anchor points
+anchors <- data.frame(
+  ax = c(0.16, 0.82, 0.15, 0.85),
+  ay = c(0.72, 0.62, 0.20, 0.25)
+)
+
+# Set rectangle size
+h  <- as.numeric(bb["ymax"] - bb["ymin"])
+rw <- 0.08 * w
+rh <- 0.06 * h
+
+# Create four candidate rectangles
+rect_list <- lapply(seq_len(nrow(anchors)), function(i) {
+  cx <- as.numeric(bb["xmin"]) + anchors$ax[i] * w
+  cy <- as.numeric(bb["ymin"]) + anchors$ay[i] * h
+  make_rect(
+    cx - rw / 2, cy - rh / 2,
+    cx + rw / 2, cy + rh / 2,
+    sf::st_crs(pus)
+  )
+})
+
+# Combine rectangles into an sf layer
+aqua_rects <- sf::st_sf(
+  aqua_id = paste0("AQUA_", 1:4),
+  geometry = sf::st_sfc(
+    lapply(rect_list, function(g) sf::st_geometry(g)[[1]]),
+    crs = sf::st_crs(pus)
+  )
+) %>%
+  sf::st_make_valid()
+
+# Flag intersecting planning units and compute area (km2)
+pus <- pus %>%
+  dplyr::mutate(
+    AQUA_zone   = dplyr::if_else(lengths(sf::st_intersects(., aqua_rects)) > 0, 1L, 0L),
+    pu_area_km2 = as.numeric(sf::st_area(.)) / 1e6
+  )
+```
+
+Then we plot the hypothetical aquaculture areas.
+
+```{r plot-aqua-areas, fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+
+# Plot
+gg_aqua <- splnr_plot(
+  df           = pus,
+  colNames     = "AQUA_zone",
+  plotTitle    = "Hypothetical Aquaculture Candidate Areas",
+  legendTitle  = "Aquaculture candidate",
+  legendLabels = c("No", "Yes"),
+  colourVals   = c("grey85", "gold")
+) +
+  splnr_gg_add(
+    PUs         = pus,
+    Bndry       = aoi_sf,
+    overlay     = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::geom_sf(
+    data = aqua_rects,
+    fill = NA,
+    colour = "goldenrod4",
+    linewidth = 0.9
+  ) +
+  ggplot2::geom_sf(
+    data = aoi_pu,
+    fill = NA,
+    colour = "black",
+    linewidth = 0.3
+  ) +
+  ggplot2::theme(legend.position = "bottom")
+gg_aqua
+```
+
+#### A. Set up zoning specifications
+
+```{r prepare-fivezones}
+# Study area and DSM exploration area (km2)
+study_area_km2 <- sum(pus$pu_area_km2, na.rm = TRUE)
+explore_area_km2 <- sum(pus$pu_area_km2[pus$DSM_explore == 1], na.rm = TRUE)
+
+# 1) Costs
+pus <- pus %>%
+  dplyr::mutate(
+    Cost_dsm  = dplyr::if_else(DSM_explore == 1, 0.1, 10),
+    Cost_aqua = Cost_area)
+
+# 2) Zones object
+zone_names <- c("core", "use", "terrace", "dsm", "aqua")
+
+z5 <- prioritizr::zones(
+  "core"    = feature_names,
+  "use"     = feature_names,
+  "terrace" = feature_names,
+  "dsm"     = feature_names,
+  "aqua"    = feature_names
+)
+
+# 3) Targets (feature x zone)
+targets5 <- cbind(targets3, dsm = 0, aqua = 0)
+targets5 <- targets5[, zone_names]
+rownames(targets5) <- feature_names
+
+# 4) Locked constraints
+lock_core_in <- pus %>% # Lock current MPAs into core
+  sf::st_drop_geometry() %>%
+  dplyr::filter(pa50 == 1L) %>%
+  dplyr::transmute(zone = "core", pu = pu_id, status = 1L)
+
+lock_aqua_outside <- pus %>% # Forbid aqua outside AQUA candidates
+  sf::st_drop_geometry() %>%
+  dplyr::filter(AQUA_zone != 1L) %>%
+  dplyr::transmute(zone = "aqua", pu = pu_id, status = 0L)
+
+lock_aqua_in_mpa <- pus %>% # Forbid aqua inside locked MPAs
+  sf::st_drop_geometry() %>%
+  dplyr::filter(pa50 == 1L) %>%
+  dplyr::transmute(zone = "aqua", pu = pu_id, status = 0L)
+lock_all <- dplyr::bind_rows(lock_core_in, lock_aqua_outside, lock_aqua_in_mpa)
+
+# 5) Linear constraints
+N <- nrow(pus)
+
+A_use <- cbind(
+  core    = rep(0, N),
+  use     = rep(1, N),
+  terrace = rep(0, N),
+  dsm     = rep(0, N),
+  aqua    = rep(0, N)
+)
+
+A_fish <- cbind(
+  core    = rep(0, N),
+  use     = fish_vec,
+  terrace = rep(0, N),
+  dsm     = rep(0, N),
+  aqua    = rep(0, N)
+)
+
+# C) Minimum aquaculture allocation
+aqua_min_share <- 0.025 # aquaculture units take up 2.5% only of entire planning area
+rhs_aqua_min_km2 <- aqua_min_share * study_area_km2
+sense_aqua_min <- ">="
+aqua_w <- dplyr::if_else(pus$AQUA_zone == 1L, pus$pu_area_km2, 0)
+
+A_aqua_min <- cbind(
+  core    = rep(0, N),
+  use     = rep(0, N),
+  terrace = rep(0, N),
+  dsm     = rep(0, N),
+  aqua    = aqua_w
+)
+
+A_explore_assign <- cbind(
+  core    = dsm_w,
+  use     = rep(0, N),
+  terrace = rep(0, N),
+  dsm     = dsm_w,
+  aqua    = rep(0, N))
+
+A_core_in_explore <- cbind(
+  core    = dsm_w,
+  use     = rep(0, N),
+  terrace = rep(0, N),
+  dsm     = rep(0, N),
+  aqua    = rep(0, N)
+)
+```
+
+#### B. Build and sovle problem
+
+```{r}
+# Build problem
+p_z5 <- prioritizr::problem(
+  x = pus,
+  features = z5,
+  cost_column = c("Cost_core", "Cost_use", "Cost_terrace", "Cost_dsm", "Cost_aqua")
+) %>%
+  prioritizr::add_min_set_objective() %>%
+  prioritizr::add_manual_locked_constraints(lock_all) %>%
+  prioritizr::add_relative_targets(targets5) %>%
+  prioritizr::add_linear_constraints(rhs_use, sense_use, A_use) %>%
+  prioritizr::add_linear_constraints(rhs_fish, sense_fish, A_fish) %>%
+  prioritizr::add_linear_constraints(rhs_aqua_min_km2, sense_aqua_min, A_aqua_min) %>%
+  prioritizr::add_linear_constraints(rhs_explore_assign, sense_explore_assign, A_explore_assign) %>%
+  prioritizr::add_linear_constraints(rhs_core_in_explore, sense_core_in_explore, A_core_in_explore) %>%
+  prioritizr::add_linear_constraints(rhs_core_cap_in_explore, sense_core_cap_in_explore, A_core_in_explore) %>%
+  prioritizr::add_binary_decisions() %>%
+  prioritizr::add_default_solver(verbose = FALSE)
+p_z5
+
+# Solve problem
+s_z5 <- prioritizr::solve.ConservationProblem(p_z5)
+```
+
+#### C. Plot solution (Five-zone plan)
+
+```{r plot-solution-five, fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+# Plot 5-zone solution
+gg_z5 <- splnr_plot_solution(
+  s_z5,
+  zones = TRUE,
+  colorVals = c("#c6dbef", "#3182bd", "orange", "forestgreen", "red", "yellow"),
+  legendLabels = c("Not selected", "Core", "Use", "Terrace", "DSM", "Aqua")
+) +
+  splnr_gg_add(
+    PUs         = pus,
+    Bndry       = aoi_sf,
+    overlay     = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme     = "Default"
+  ) +
+  # Existing MPAs (outline + legend)
+  ggplot2::geom_sf(
+    data = pus %>% dplyr::filter(pa50 == 1),
+    ggplot2::aes(colour = "Existing MPAs"),
+    fill = NA,
+    linewidth = 0.25,
+    show.legend = TRUE
+  ) +
+  ggplot2::scale_colour_manual(
+    name   = "",
+    values = c("Existing MPAs" = "black")
+  ) +
+  ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(fill = NA))) +
+  ggplot2::labs(
+    fill = "Zones",
+    subtitle = paste0(
+      "Aqua minimum = ", aqua_min_share * 100, "% (", round(rhs_aqua_min_km2, 1), " km²)"
+    )
+  ) +
+  ggplot2::theme(legend.position = "right")
+
+gg_z5
+```
+
+From the plot, we can see that the aquaculture candidate areas are being assigned to the Aqua zone. If you can recall, there were four rectangles for aquaculture candidates, but only around three end up as Aqua, which makes sense because aquaculture is limited to only 2.5% of the planning region. If you look closely, no Core zones are found within the Aqua zone unless they were existing MPAs.
+
+#### D. Check whether targets are met
+
+```{r summary-fivezone}
+# Feature representation summary (4-zone solution)
+sol_cols <- grep("^solution", names(s_z5), value = TRUE)
+
+s_z5_tbl <- s_z5 %>%
+  dplyr::select(dplyr::all_of(sol_cols)) %>%
+  sf::st_drop_geometry() %>%
+  tibble::as_tibble()
+
+rep_z5 <- prioritizr::eval_feature_representation_summary(p_z5, s_z5_tbl)
+
+rep_z5
+```
+
+## **6.7. Set up boundary penalty for core zones**
+
+Lastly, looking at the most recent spatial plan, even though we have already set up the zones, the Core zones in particular are still very scattered across the planning region, compared to the other zones. As a simple next step, we make the Core zones more compact. In actual planning, compact Core areas are often preferred because they are easier to manage and enforce (clearer boundaries, less fragmented coverage), and they can also have ecological benefits by improving connectivity, reducing edge effects, and supporting more intact habitat and population processes than small, isolated patches.
+
+### What is added in this step?
+
+In this step, we add a *boundary penalty* to the prioritisation so the solver starts to prefer Core areas that are clumped together rather than scattered. We set the boundary penalty to be very small as a higher boundary penalty may make the runtime longer.
+
+**What stays the same:** All other specifications are kept the same as in the previous section.
+
+#### A. Set up zone specifications
+
+```{r setup-bp}
+# Set up boundary penalty
+bp_core <- 0.000000000001
+
+zm_core_only <- matrix(0, nrow = length(zone_names), ncol = length(zone_names))
+dimnames(zm_core_only) <- list(zone_names, zone_names)
+zm_core_only["core", "core"] <- 1
+```
+
+#### B. Build and solve problem
+
+```{r prioritisation-bp}
+# Build and solve problem
+p_z6 <- prioritizr::problem(
+  x = pus,
+  features = z5,
+  cost_column = c("Cost_core", "Cost_use", "Cost_terrace", "Cost_dsm", "Cost_aqua")
+) %>%
+  prioritizr::add_min_set_objective() %>%
+  prioritizr::add_boundary_penalties(bp_core, zone = zm_core_only) %>%
+  prioritizr::add_manual_locked_constraints(lock_all) %>%
+  prioritizr::add_relative_targets(targets5) %>%
+  prioritizr::add_linear_constraints(rhs_use, sense_use, A_use) %>%
+  prioritizr::add_linear_constraints(rhs_fish, sense_fish, A_fish) %>%
+  prioritizr::add_linear_constraints(rhs_aqua_min_km2, sense_aqua_min, A_aqua_min) %>%
+  prioritizr::add_linear_constraints(rhs_explore_assign, sense_explore_assign, A_explore_assign) %>%
+  prioritizr::add_linear_constraints(rhs_core_in_explore, sense_core_in_explore, A_core_in_explore) %>%
+  prioritizr::add_linear_constraints(rhs_core_cap_in_explore, sense_core_cap_in_explore, A_core_in_explore) %>%
+  prioritizr::add_binary_decisions() %>%
+  prioritizr::add_default_solver(verbose = FALSE)
+p_z6
+
+# Save solution to avoid re-solving every knit
+# Find package root by walking up until we see DESCRIPTION
+pkg_root <- normalizePath(getwd(), winslash = "/")
+while (!file.exists(file.path(pkg_root, "DESCRIPTION")) &&
+       dirname(pkg_root) != pkg_root) {
+  pkg_root <- dirname(pkg_root)
+}
+
+# Cache solution in vignette artefacts folder
+rds_dir <- "_build/rds"
+dir.create(rds_dir, showWarnings = FALSE, recursive = TRUE)
+
+rds_file <- file.path(rds_dir, paste0("s_z6_boundary_penalty_bp", bp_core, ".rds"))
+
+rebuild_bp <- FALSE
+
+if (file.exists(rds_file) && !rebuild_bp) {
+  s_z6 <- readRDS(rds_file)
+} else {
+  s_z6 <- solve(p_z6)   # <- use solve()
+  saveRDS(s_z6, rds_file)
+}
+s_z6
+```
+
+#### C. Plot solution
+
+```{r plot-solution-6, fig.width=14, fig.height=9, out.width="100%", message=FALSE, warning=FALSE}
+# Plot 5-zone solution
+gg_z6 <- splnr_plot_solution(
+  s_z6,
+  zones = TRUE,
+  colorVals = c("#c6dbef", "#3182bd", "orange", "forestgreen", "red", "yellow"),
+  legendLabels = c("Not selected", "Core", "Use", "Terrace", "DSM", "Aqua")
+) +
+  splnr_gg_add(
+    PUs         = pus,
+    Bndry       = aoi_sf,
+    overlay     = landmass_aoi,
+    cropOverlay = pus,
+    ggtheme     = "Default"
+  ) +
+  ggplot2::geom_sf(
+    data = pus %>% dplyr::filter(pa50 == 1),
+    fill = NA,
+    colour = "black",
+    linewidth = 0.25
+  ) +
+  ggplot2::labs(
+    fill = "Zones",
+    subtitle = paste0(
+      "Core boundary penalty = ", bp_core,
+      "; Aqua minimum = ", aqua_min_share * 100, "% (", round(rhs_aqua_min_km2, 1), " km²)"
+    )
+  ) +
+  ggplot2::theme(legend.position = "right")
+gg_z6
+```
+
+We see that the Core zones are more compact after adding the boundary penalty.
+
+#### D. Check whether targets are met
+
+```{r summary-five-zone-with-bp}
+# Representation summary
+sol_cols <- grep("^solution", names(s_z6), value = TRUE)
+
+s_z6_tbl <- s_z6 %>%
+  dplyr::select(dplyr::all_of(sol_cols)) %>%
+  sf::st_drop_geometry() %>%
+  tibble::as_tibble()
+
+rep_z6 <- prioritizr::eval_feature_representation_summary(p_z6, s_z6_tbl)
+rep_z6
+```
+
+Although the Core zones became more compact after adding the boundary penalty, the solution also became less “tight” around the 30% targets. Instead of stopping at \~30% representation for most features in the Core zone, the solver ended up selecting extra planning units that pushed some features well beyond the target. This makes sense because the boundary penalty rewards clumping, so the model may keep neighbouring cells together even if that means over-achieving some feature targets while still meeting the minimum requirement.
+
+## 6.8 Summary
+
+This vignette walked through a simple but practical example of building a multiple-use zoning plan for eastern Indonesia using `prioritizr`. We started with a baseline minimum set prioritisation (30% representation for each feature at minimum area cost), then added planning rules one at a time so it was clear what each new rule changed.
+
+By the end, the plan included a biodiversity-focused *Core* zone (with existing MPAs locked in), a *Use* zone steered toward high fishing areas, a habitat-focused *Terrace* zone with its own target, and two example sector zones, *DSM* and *Aqua*, based on hypothetical proposed areas and simple allocation rules. Lastly, we applied a *Core-only* *boundary penalty* to encourage a more compact Core zone, mainly to show how spatial clustering can be encouraged within a zoning optimisation workflow.
