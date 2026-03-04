@@ -211,7 +211,7 @@ prioritization.</p>
 <span></span>
 <span><span class="op">(</span><span class="va">ggSoln</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_solution.html">splnr_plot_solution</a></span><span class="op">(</span><span class="va">s1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span>PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>, cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="864"></p>
 <p>We can also have a look at how well the set target was met.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">s1T</span> <span class="op">&lt;-</span> <span class="va">s1</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
@@ -292,7 +292,7 @@ set to <code>TRUE</code>.</p>
 <span>    PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="864"></p>
 <p>We can see that we now how planning units that are not selected, and
 planning units that have either been selected for zone 1 or zone 2.</p>
 </div>
@@ -425,7 +425,7 @@ same applies for zone 2. We can also plot the final solution again:</p>
 <span>    PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 <div class="section level4">
 <h4 id="boundary-penalty">Boundary penalty<a class="anchor" aria-label="anchor" href="#boundary-penalty"></a>
@@ -479,7 +479,7 @@ without penalties:</p>
 <span>    PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-24-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-24-1.png" class="r-plt" alt="" width="864"></p>
 <p>A boundary penalty can also be introduced to only one zone:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zm2</span> <span class="op">&lt;-</span> <span class="va">zm1</span></span>
@@ -513,7 +513,7 @@ without penalties:</p>
 <span>      PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-25-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-25-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 <div class="section level5">
 <h5 id="across-zones">Across zones<a class="anchor" aria-label="anchor" href="#across-zones"></a>
@@ -554,7 +554,7 @@ problem.</p>
 <span>      PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-27-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-27-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 </div>
 <div class="section level4">
@@ -611,7 +611,7 @@ be locked-in.</p>
 <span>    colorLockIn <span class="op">=</span> <span class="st">"lightgrey"</span>, alphaLockIn <span class="op">=</span> <span class="fl">0.2</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    labelLockIn <span class="op">=</span> <span class="st">"Current MPAs"</span>, cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 <div class="section level4">
 <h4 id="objective-functions">Objective functions<a class="anchor" aria-label="anchor" href="#objective-functions"></a>
@@ -658,7 +658,7 @@ output again after solving the conservation problem.</p>
 <span>      PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 <div class="section level4">
 <h4 id="alternative-linear-constraints">Alternative: linear constraints<a class="anchor" aria-label="anchor" href="#alternative-linear-constraints"></a>
@@ -712,7 +712,7 @@ cost of all planning units in <code>costRandom$CostR</code>.</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">gg_s8</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_solution.html">splnr_plot_solution</a></span><span class="op">(</span><span class="va">s8</span><span class="op">)</span> <span class="op">+</span></span>
 <span>   <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span>PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>, cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-35-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-35-1.png" class="r-plt" alt="" width="864"></p>
 <p><strong>NOTE:</strong> We can also use multiple linear constraints in
 the same plan, however, this might require a normalization of the input
 data to have the constraints in comparable units, and a careful tuning
@@ -826,7 +826,7 @@ more frequently selected than <code>zone2</code> because
 <span>    PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-41-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-41-1.png" class="r-plt" alt="" width="864"></p>
 <p>The plot also reflects the observation above that PUs were more
 frequently selected in <code>zone1</code>. What if we wanted to
 constrain this, so that <code>zone1</code> is less often selected and
@@ -905,7 +905,7 @@ zones, which is also observable in the plot:</p>
 <span>    PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-45-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-45-1.png" class="r-plt" alt="" width="864"></p>
 <p>However, we also expect the cost for the spatial plan to be higher
 than the previous one.</p>
 </div>
@@ -919,13 +919,13 @@ zone 2 for marine mammals and a target of 5% for sharks and rays in zone
 <div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">targetAcrossSome</span> <span class="op">&lt;-</span> <span class="va">Dict</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
-<span>    target <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case_when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
+<span>    target <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
 <span>      <span class="va">category</span> <span class="op">==</span> <span class="st">"Reptiles"</span> <span class="op">~</span> <span class="fl">30</span> <span class="op">/</span> <span class="fl">100</span>,</span>
 <span>      <span class="va">category</span> <span class="op">==</span> <span class="st">"Mammals"</span> <span class="op">~</span> <span class="fl">10</span> <span class="op">/</span> <span class="fl">100</span>,</span>
 <span>      <span class="va">category</span> <span class="op">==</span> <span class="st">"Sharks and rays"</span> <span class="op">~</span> <span class="fl">5</span> <span class="op">/</span> <span class="fl">100</span>,</span>
 <span>      <span class="cn">TRUE</span> <span class="op">~</span> <span class="fl">0</span></span>
 <span>    <span class="op">)</span>,</span>
-<span>    zone <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case_when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
+<span>    zone <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
 <span>      <span class="va">category</span> <span class="op">==</span> <span class="st">"Reptiles"</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"zone1"</span>, <span class="st">"zone2"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>      <span class="va">category</span> <span class="op">==</span> <span class="st">"Mammals"</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"zone2"</span><span class="op">)</span>,</span>
 <span>      <span class="va">category</span> <span class="op">==</span> <span class="st">"Sharks and rays"</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"zone3"</span><span class="op">)</span>,</span>
@@ -1024,7 +1024,7 @@ respective costs.</p>
 <span>    PUs <span class="op">=</span> <span class="va">PUs</span>, Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
 <span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleUse_files/figure-html/unnamed-chunk-51-1.png" class="r-plt" width="864"></p>
+<p><img src="MultipleUse_files/figure-html/unnamed-chunk-51-1.png" class="r-plt" alt="" width="864"></p>
 </div>
 <div class="section level4">
 <h4 id="next-steps">Next steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>

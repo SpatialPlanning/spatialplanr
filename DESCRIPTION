@@ -1,6 +1,6 @@
 Package: spatialplanr
 Title: Help files for prioritzr Spatial Planning projects
-Version: 0.7.0
+Version: 0.7.1
 Authors@R: c(
     person(
       given = "Jason D.",

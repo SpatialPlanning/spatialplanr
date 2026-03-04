@@ -129,7 +129,7 @@ splnr_get_gfw <- function(region,
 
     # Determine the region ID based on the region_source and region type.
     if (region_source == "EEZ" & is.character(region)){
-      region_id <- gfwr::get_region_id(region_name = region, region_source = region_source, key = key)$id
+      region_id <- gfwr::gfw_region_id(region = region, region_source = region_source, key = key)$id
     } else if (region_source == "EEZ" & is.numeric(region)){
       # If region is numeric for EEZ, assume it's already an ID.
       region_id <- region
@@ -149,7 +149,7 @@ splnr_get_gfw <- function(region,
     get_data_for_range <- function(start_date, end_date, rid) {
 
       # Call the gfwr::get_raster function to retrieve GFW raster data.
-      data <- gfwr::get_raster(
+      data <- gfwr::gfw_ais_fishing_hours(
         spatial_resolution = spat_res,
         temporal_resolution = temp_res,
         group_by = 'FLAGANDGEARTYPE', # Group by flag and geartype.
