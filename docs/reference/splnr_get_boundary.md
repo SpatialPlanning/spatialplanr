@@ -38,14 +38,14 @@ splnr_get_boundary(Limits, Type = NULL, res = 1, cCRS = "ESRI:54009")
 
 - res:
 
-  `[numeric(1)]`  
+  `[numeric(1)]`\
   The resolution (in decimal degrees) used to construct the polygon
   vertices when `Limits` is numeric or `"Global"`. Defaults to `1`. Must
   be a positive number.
 
 - cCRS:
 
-  `[character(1)]`  
+  `[character(1)]`\
   The coordinate reference system (CRS) for the output `sf` object. Can
   be a PROJ4 string or an EPSG code. Defaults to `"ESRI:54009"`
   (Mollweide).

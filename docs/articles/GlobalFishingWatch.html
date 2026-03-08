@@ -76,8 +76,8 @@
 </h2>
 <p>The <code>gfwr</code> package provides convenient functions to pull
 GFW data directly into R into usable formats. It contains three main
-functions, including : <code><a href="https://globalfishingwatch.github.io/gfwr/reference/get_vessel_info.html" class="external-link">get_vessel_info()</a></code>,
-<code><a href="https://globalfishingwatch.github.io/gfwr/reference/get_event.html" class="external-link">get_event()</a></code> and <code><a href="https://globalfishingwatch.github.io/gfwr/reference/get_raster.html" class="external-link">get_raster()</a></code>. The two first
+functions, including : <code><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_renamed.html" class="external-link">get_vessel_info()</a></code>,
+<code><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_renamed.html" class="external-link">get_event()</a></code> and <code><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_renamed.html" class="external-link">get_raster()</a></code>. The two first
 being devoted to retrieving information and features on one ore several
 specific vessels. The last is of particular interest to us because it
 allows us to gather information from global fishing watch raster on the
@@ -131,7 +131,7 @@ effect.)</em></p>
 <p>A region_id is necessary to use the <code>get_raster</code>
 function.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">region_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/get_region_id.html" class="external-link">get_region_id</a></span><span class="op">(</span>region <span class="op">=</span> <span class="st">"Australia"</span>, </span>
+<code class="sourceCode R"><span><span class="va">region_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_renamed.html" class="external-link">get_region_id</a></span><span class="op">(</span>region <span class="op">=</span> <span class="st">"Australia"</span>, </span>
 <span>                                 region_source <span class="op">=</span> <span class="st">"EEZ"</span>,</span>
 <span>                                 key <span class="op">=</span> <span class="fu">gfwr</span><span class="fu">::</span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_auth.html" class="external-link">gfw_auth</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">id</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span></code></pre></div>
 <p>The <code>get_raster</code> function gets a raster of fishing effort
@@ -147,7 +147,7 @@ fishing hours of each vessel per grid cell (<code>geometry</code>).</p>
 resolutions. <br> - <code>VESSEL_ID</code>, <code>FLAG</code>,
 <code>GEARTYPE</code>, <code>FLAGANDGEARTYPE</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/get_raster.html" class="external-link">get_raster</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_renamed.html" class="external-link">get_raster</a></span><span class="op">(</span></span>
 <span>  spatial_resolution <span class="op">=</span> <span class="st">"LOW"</span>,</span>
 <span>  temporal_resolution <span class="op">=</span> <span class="st">"MONTHLY"</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="st">"FLAGANDGEARTYPE"</span>,</span>
@@ -204,12 +204,12 @@ Polygons from <code>oceandatr</code> package</p>
 <div class="section level4">
 <h4 id="raw-fishing-effort">Raw Fishing Effort<a class="anchor" aria-label="anchor" href="#raw-fishing-effort"></a>
 </h4>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="by-years">By years<a class="anchor" aria-label="anchor" href="#by-years"></a>
 </h4>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="year-on-year-comparison">Year-on-year comparison<a class="anchor" aria-label="anchor" href="#year-on-year-comparison"></a>
@@ -229,7 +229,7 @@ activity.</p>
 <span>                                  key <span class="op">=</span> <span class="fu">gfwr</span><span class="fu">::</span><span class="fu"><a href="https://globalfishingwatch.github.io/gfwr/reference/gfw_auth.html" class="external-link">gfw_auth</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">Year</span>, <span class="va">Month</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarize</a></span><span class="op">(</span>Total_Fishing_Hours <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">ApparentFishingHrs</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="fishing-gear-type">Fishing gear type<a class="anchor" aria-label="anchor" href="#fishing-gear-type"></a>
@@ -241,14 +241,14 @@ to the fishing gear type.</p>
 <span>                                  start_date <span class="op">=</span> <span class="st">"2019-12-31"</span>, </span>
 <span>                                  end_date <span class="op">=</span> <span class="st">"2021-01-01"</span>, </span>
 <span>                                  temp_res <span class="op">=</span> <span class="st">"MONTHLY"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="flags">Flags<a class="anchor" aria-label="anchor" href="#flags"></a>
 </h4>
 <p>Here we display the Vessel activity in Papua New Guinea according to
 Vessels flags.</p>
-<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" width="700"></p>
+<p><img src="GlobalFishingWatch_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level4">
 <h4 id="supplementary-materials-">Supplementary materials.<a class="anchor" aria-label="anchor" href="#supplementary-materials-"></a>
