@@ -187,6 +187,17 @@ splnr_climate_priorityArea_preprocess <- function(features,
     sf::st_set_geometry(sf::st_geometry(features)) %>%
     sf::st_as_sf()
 
+  # Sanity check: output must have the same number of rows as the input.
+  # This catches any future regression where a join produces duplicate rows.
+  assertthat::assert_that(
+    nrow(out) == nrow(features),
+    msg = paste0(
+      "Internal error in splnr_climate_priorityArea_preprocess(): output has ",
+      nrow(out), " rows but 'features' has ", nrow(features), " rows. ",
+      "Please report this as a bug."
+    )
+  )
+
   return(out)
 }
 
@@ -340,6 +351,18 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
   }
 
   finalDF <- dplyr::bind_rows(finalList)
+
+  # Sanity check: each original feature should produce exactly one _CS and one
+  # _NCS row, so the output must have 2 × nrow(targets) rows.
+  assertthat::assert_that(
+    nrow(finalDF) == 2L * nrow(targets),
+    msg = paste0(
+      "Internal error in splnr_climate_priorityArea_assignTargets(): output has ",
+      nrow(finalDF), " rows but expected ", 2L * nrow(targets),
+      " (2 per feature). Please report this as a bug."
+    )
+  )
+
   return(finalDF)
 }
 
@@ -454,6 +477,25 @@ splnr_climate_priorityAreaApproach <- function(features,
     targets        = targets,
     climateSmartDF = CPAFeatures,
     refugiaTarget  = refugiaTarget
+  )
+
+  # Sanity check: Features must have the same number of rows as the input.
+  assertthat::assert_that(
+    nrow(CPAFeatures) == nrow(features),
+    msg = paste0(
+      "Internal error in splnr_climate_priorityAreaApproach(): Features has ",
+      nrow(CPAFeatures), " rows but 'features' has ", nrow(features), " rows. ",
+      "Please report this as a bug."
+    )
+  )
+  # Sanity check: Targets must have 2 rows per original feature (_CS + _NCS).
+  assertthat::assert_that(
+    nrow(CPATargets) == 2L * nrow(targets),
+    msg = paste0(
+      "Internal error in splnr_climate_priorityAreaApproach(): Targets has ",
+      nrow(CPATargets), " rows but expected ", 2L * nrow(targets),
+      " (2 per feature). Please report this as a bug."
+    )
   )
 
   return(list(Features = CPAFeatures, Targets = CPATargets))
@@ -572,10 +614,20 @@ splnr_climate_feature_preprocess <- function(features,
   features_df <- dplyr::left_join(features_df, climate_col, by = ".row_id")
   features_df[[".row_id"]] <- NULL   # remove key column; no trace in output
 
-  features <- sf::st_set_geometry(features_df, sf::st_geometry(features)) %>%
+  features_out <- sf::st_set_geometry(features_df, sf::st_geometry(features)) %>%
     sf::st_as_sf()
 
-  return(features)
+  # Sanity check: output must have the same number of rows as the input.
+  assertthat::assert_that(
+    nrow(features_out) == nrow(features),
+    msg = paste0(
+      "Internal error in splnr_climate_feature_preprocess(): output has ",
+      nrow(features_out), " rows but 'features' has ", nrow(features), " rows. ",
+      "Please report this as a bug."
+    )
+  )
+
+  return(features_out)
 }
 
 
@@ -663,6 +715,18 @@ splnr_climate_feature_assignTargets <- function(climateSmartDF,
   )
 
   finalDF <- dplyr::bind_rows(targets, climate_layerDF)
+
+  # Sanity check: output must have one row per original feature plus one row
+  # for the climate_layer.
+  assertthat::assert_that(
+    nrow(finalDF) == nrow(targets) + 1L,
+    msg = paste0(
+      "Internal error in splnr_climate_feature_assignTargets(): output has ",
+      nrow(finalDF), " rows but expected ", nrow(targets) + 1L,
+      " (one per feature plus climate_layer). Please report this as a bug."
+    )
+  )
+
   return(finalDF)
 }
 
@@ -777,6 +841,25 @@ splnr_climate_featureApproach <- function(features,
     targets        = targets,
     climateSmartDF = featureFeatures,
     refugiaTarget  = refugiaTarget
+  )
+
+  # Sanity check: Features must have the same number of rows as the input.
+  assertthat::assert_that(
+    nrow(featureFeatures) == nrow(features),
+    msg = paste0(
+      "Internal error in splnr_climate_featureApproach(): Features has ",
+      nrow(featureFeatures), " rows but 'features' has ", nrow(features), " rows. ",
+      "Please report this as a bug."
+    )
+  )
+  # Sanity check: Targets must have one row per original feature plus climate_layer.
+  assertthat::assert_that(
+    nrow(featureTargets) == nrow(targets) + 1L,
+    msg = paste0(
+      "Internal error in splnr_climate_featureApproach(): Targets has ",
+      nrow(featureTargets), " rows but expected ", nrow(targets) + 1L,
+      " (one per feature plus climate_layer). Please report this as a bug."
+    )
   )
 
   return(list(Features = featureFeatures, Targets = featureTargets))
@@ -931,6 +1014,16 @@ splnr_climate_percentile_preprocess <- function(features,
     sf::st_set_geometry(sf::st_geometry(features)) %>%
     sf::st_as_sf()
 
+  # Sanity check: output must have the same number of rows as the input.
+  assertthat::assert_that(
+    nrow(resultDF) == nrow(features),
+    msg = paste0(
+      "Internal error in splnr_climate_percentile_preprocess(): output has ",
+      nrow(resultDF), " rows but 'features' has ", nrow(features), " rows. ",
+      "Please report this as a bug."
+    )
+  )
+
   return(resultDF)
 }
 
@@ -1040,6 +1133,17 @@ splnr_climate_percentile_assignTargets <- function(features,
     ) %>%
     dplyr::select("feature", "target")
 
+  # Sanity check: output must have the same number of rows as the input targets
+  # (same features, adjusted targets — no rows added or removed).
+  assertthat::assert_that(
+    nrow(df) == nrow(targets),
+    msg = paste0(
+      "Internal error in splnr_climate_percentile_assignTargets(): output has ",
+      nrow(df), " rows but expected ", nrow(targets),
+      " (one per feature). Please report this as a bug."
+    )
+  )
+
   return(df)
 }
 
@@ -1146,6 +1250,25 @@ splnr_climate_percentileApproach <- function(features,
     features       = features,
     targets        = targets,
     climateSmartDF = percentileFeatures
+  )
+
+  # Sanity check: Features must have the same number of rows as the input.
+  assertthat::assert_that(
+    nrow(percentileFeatures) == nrow(features),
+    msg = paste0(
+      "Internal error in splnr_climate_percentileApproach(): Features has ",
+      nrow(percentileFeatures), " rows but 'features' has ", nrow(features), " rows. ",
+      "Please report this as a bug."
+    )
+  )
+  # Sanity check: Targets must have the same number of rows as the input targets.
+  assertthat::assert_that(
+    nrow(percentileTargets) == nrow(targets),
+    msg = paste0(
+      "Internal error in splnr_climate_percentileApproach(): Targets has ",
+      nrow(percentileTargets), " rows but expected ", nrow(targets),
+      " (one per feature). Please report this as a bug."
+    )
   )
 
   return(list(Features = percentileFeatures, Targets = percentileTargets))
