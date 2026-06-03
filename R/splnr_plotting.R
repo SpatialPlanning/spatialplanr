@@ -754,31 +754,35 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
   soln <- soln1 %>%
     # Select 'solution_1' from the first solution.
     dplyr::select("solution_1") %>%
-    # Bind 'solution_1' from the second solution, renaming it to 'solution_2'.
-    dplyr::bind_cols(soln2 %>%
-                       dplyr::as_tibble() %>%
-                       dplyr::select("solution_1") %>%
-                       dplyr::rename(solution_2 = "solution_1")) %>%
+    # Add 'solution_1' from the second solution as 'solution_2' by direct
+    # vector assignment — avoids bind_cols row-count mismatch errors and is
+    # cleaner than converting soln2 to a tibble.
+    dplyr::mutate(solution_2 = soln2[["solution_1"]]) %>%
     # Calculate 'Combined' score (sum of solution_1 and solution_2).
     dplyr::mutate(Combined = .data$solution_1 + .data$solution_2) %>%
     # Categorize differences into "Same", "Removed (-)", or "Added (+)".
     dplyr::mutate(
       Compare = dplyr::case_when(
-        Combined == 2 ~ "Same", # Both selected.
-        solution_1 == 1 & solution_2 == 0 ~ "Removed (-)", # Selected in soln1, not in soln2.
-        solution_1 == 0 & solution_2 == 1 ~ "Added (+)" # Not selected in soln1, selected in soln2.
+        Combined == 2 ~ "Same",                              # Both selected.
+        solution_1 == 1 & solution_2 == 0 ~ "Removed (-)",  # In soln1 only.
+        solution_1 == 0 & solution_2 == 1 ~ "Added (+)"     # In soln2 only.
       ),
-      Compare = factor(.data$Compare, levels = c("Added (+)", "Same", "Removed (-)")) # Set factor levels for consistent plotting order.
+      Compare = factor(.data$Compare, levels = c("Added (+)", "Same", "Removed (-)"))
     ) %>%
-    # Filter out any Planning Units that are NA in the 'Compare' column (e.g., neither were selected in either scenario).
+    # Filter out Planning Units not selected in either scenario.
     dplyr::filter(!is.na(.data$Compare))
+
+  # Bounding box for coord_sf: st_bbox() returns xmin/ymin/xmax/ymax,
+  # not xlim/ylim — use the correct element names.
+  bbox <- sf::st_bbox(soln)
 
   # Initialize the ggplot object.
   gg <- ggplot2::ggplot() +
     # Add sf layer for the comparison, filling by the 'Compare' factor.
     ggplot2::geom_sf(data = soln, ggplot2::aes(fill = .data$Compare), colour = NA, size = 0.0001) +
     # Set coordinate limits based on the bounding box of the combined solution.
-    ggplot2::coord_sf(xlim = sf::st_bbox(soln)$xlim, ylim = sf::st_bbox(soln)$ylim) +
+    ggplot2::coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]),
+                      ylim = c(bbox["ymin"], bbox["ymax"])) +
     # Manually set fill colors for each comparison category.
     ggplot2::scale_fill_manual(
       name = legendTitle, # Set legend title.
