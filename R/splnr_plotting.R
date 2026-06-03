@@ -749,6 +749,14 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
     is.character(legendTitle),
     msg = "'legendTitle' must be a character string."
   )
+  assertthat::assert_that(
+    nrow(soln1) == nrow(soln2),
+    msg = paste0(
+      "'soln1' and 'soln2' must have the same number of planning units. ",
+      "nrow(soln1) = ", nrow(soln1), ", nrow(soln2) = ", nrow(soln2), ". ",
+      "Both solutions must be built from the same planning unit grid."
+    )
+  )
 
   # Combine solutions and categorize differences.
   soln <- soln1 %>%
