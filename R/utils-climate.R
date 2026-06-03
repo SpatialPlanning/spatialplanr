@@ -108,17 +108,20 @@ splnr_climate_priorityArea_preprocess <- function(features,
   # Join features with metric ONCE before the loop.  The metric values are
   # identical for every feature iteration, so repeating st_join N times inside
   # the loop is the primary cause of slow runtimes.
-  # Attach the metric column by column-binding rather than sf::st_join().
+  # Attach the metric column via a row-number key rather than sf::st_join().
   # st_join(join = sf::st_equals) can produce duplicate rows when
   # floating-point coordinate differences cause a 1:many geometry match,
   # which breaks the downstream st_set_geometry() call (nrow mismatch).
-  # bind_cols is safe here because features and metric are guaranteed to
-  # cover the same planning units in the same row order (enforced by the
-  # CRS assertion above and the package's data conventions).
-  joined_df <- dplyr::bind_cols(
-    sf::st_drop_geometry(features),
-    sf::st_drop_geometry(dplyr::select(metric, "metric"))
-  )
+  # A row-number left_join matches each feature planning unit to its
+  # corresponding metric value without any geometry operations.
+  # The temporary .row_id key is removed before the result is used.
+  metric_vals_df <- sf::st_drop_geometry(dplyr::select(metric, "metric"))
+  metric_vals_df[[".row_id"]] <- seq_len(nrow(metric_vals_df))
+
+  joined_df <- sf::st_drop_geometry(features)
+  joined_df[[".row_id"]] <- seq_len(nrow(joined_df))
+  joined_df <- dplyr::left_join(joined_df, metric_vals_df, by = ".row_id")
+  joined_df[[".row_id"]] <- NULL   # remove key column; no trace in output
 
   if (any(is.na(joined_df$metric))) {
     message(
@@ -556,14 +559,15 @@ splnr_climate_feature_preprocess <- function(features,
 
   climateSmartDF <- dplyr::select(df, "climate_layer")
 
-  # Attach the climate_layer column by column-binding rather than sf::st_join().
+  # Attach the climate_layer column via a row-number key rather than sf::st_join().
   # st_join(join = sf::st_equals) can produce duplicate rows from floating-point
-  # geometry mismatches. bind_cols is safe because features and metric share the
-  # same planning units in the same row order.
-  features <- dplyr::bind_cols(
-    features,
-    sf::st_drop_geometry(climateSmartDF)
-  )
+  # geometry mismatches. The temporary .row_id key is removed before returning.
+  climate_col <- sf::st_drop_geometry(climateSmartDF)
+  climate_col[[".row_id"]] <- seq_len(nrow(climate_col))
+
+  features[[".row_id"]] <- seq_len(nrow(features))
+  features <- dplyr::left_join(features, climate_col, by = ".row_id")
+  features[[".row_id"]] <- NULL   # remove key column; no trace in output
 
   return(features)
 }
@@ -861,14 +865,17 @@ splnr_climate_percentile_preprocess <- function(features,
   spp <- sf::st_drop_geometry(features) %>% names()
 
   # --- Key performance fix ---
-  # Attach the metric column by column-binding rather than sf::st_join().
+  # Attach the metric column via a row-number key rather than sf::st_join().
   # st_join(join = sf::st_equals) can produce duplicate rows from floating-point
-  # geometry mismatches. bind_cols is safe because features and metric share the
-  # same planning units in the same row order.
-  joined_df <- dplyr::bind_cols(
-    sf::st_drop_geometry(features),
-    sf::st_drop_geometry(dplyr::select(metric, "metric"))
-  )
+  # geometry mismatches. The temporary .row_id key is removed before the result
+  # is used.
+  metric_vals_df <- sf::st_drop_geometry(dplyr::select(metric, "metric"))
+  metric_vals_df[[".row_id"]] <- seq_len(nrow(metric_vals_df))
+
+  joined_df <- sf::st_drop_geometry(features)
+  joined_df[[".row_id"]] <- seq_len(nrow(joined_df))
+  joined_df <- dplyr::left_join(joined_df, metric_vals_df, by = ".row_id")
+  joined_df[[".row_id"]] <- NULL   # remove key column; no trace in output
 
   # Percentile fraction is constant; compute once outside the loop.
   prct <- if (direction == 1) (100 - percentile) / 100 else percentile / 100
