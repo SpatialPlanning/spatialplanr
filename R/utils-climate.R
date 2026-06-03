@@ -562,12 +562,18 @@ splnr_climate_feature_preprocess <- function(features,
   # Attach the climate_layer column via a row-number key rather than sf::st_join().
   # st_join(join = sf::st_equals) can produce duplicate rows from floating-point
   # geometry mismatches. The temporary .row_id key is removed before returning.
+  # We drop geometry before joining to avoid sf/dplyr join edge cases, then
+  # restore the original geometry afterwards.
   climate_col <- sf::st_drop_geometry(climateSmartDF)
   climate_col[[".row_id"]] <- seq_len(nrow(climate_col))
 
-  features[[".row_id"]] <- seq_len(nrow(features))
-  features <- dplyr::left_join(features, climate_col, by = ".row_id")
-  features[[".row_id"]] <- NULL   # remove key column; no trace in output
+  features_df <- sf::st_drop_geometry(features)
+  features_df[[".row_id"]] <- seq_len(nrow(features_df))
+  features_df <- dplyr::left_join(features_df, climate_col, by = ".row_id")
+  features_df[[".row_id"]] <- NULL   # remove key column; no trace in output
+
+  features <- sf::st_set_geometry(features_df, sf::st_geometry(features)) %>%
+    sf::st_as_sf()
 
   return(features)
 }
