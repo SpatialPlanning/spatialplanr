@@ -23,6 +23,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Jason D. Everett \email{JaseEverett@gmail.com} (\href{https://orcid.org/0000-0002-6681-8054}{ORCID})
   \item Sandra Neubert \email{sandra.neubert97@gmail.com} (\href{https://orcid.org/0000-0002-3112-4116}{ORCID})
 }
 

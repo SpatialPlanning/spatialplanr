@@ -1,6 +1,6 @@
 Package: spatialplanr
 Title: Help files for prioritzr Spatial Planning projects
-Version: 0.7.1
+Version: 0.7.2
 Authors@R: c(
     person(
       given = "Jason D.",
@@ -18,12 +18,11 @@ Authors@R: c(
       ))
 Description: This package provides a range of tools for setting up, running and plotting a spatial plan using the prioritizr. It is only intended for use by the Mathematical Marine Ecology Lab at UQ, as it sets up projects using their approach and data sets.
 License: MIT + file LICENSE
-URL: https://github.com/SpatialPlanning/spatialplanr
+URL: https://mathmarecol.github.io/spatialplanr
 BugReports: https://github.com/SpatialPlanning/spatialplanr/issues
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Suggests:
     gfwr,
     ggcorrplot,
@@ -73,3 +72,4 @@ Remotes:
     github::prioritizr/wdpar,
     github::ropensci/rnaturalearthhires
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

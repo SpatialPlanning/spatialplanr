@@ -90,7 +90,7 @@ if (FALSE) { # \dontrun{
 # Assuming 'dat_PUs' is an existing sf object of planning units in your package.
 
 # Example: Get MPAs for Australia and intersect with planning units.
-dat_mpas <- splnr_get_MPAs(PlanUnits = dat_PUs, Countries = "Australia")
+dat_mpas <- splnr_get_MPAs(PlanUnits = dat_PUs, Countries = "Australia", force = TRUE)
 
 # Example: Get MPAs for multiple countries with specific status and categories.
 dat_mpas_specific <- splnr_get_MPAs(

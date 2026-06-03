@@ -153,7 +153,7 @@ splnr_get_MPAs <- function(PlanUnits,
   # This function identifies which planning units overlap with the WDPA areas.
   wdpa_data <- spatialgridr::get_data_in_grid(spatial_grid = PlanUnits,
                                               dat = wdpa_data,
-                                              cutoff = NULL)
+                                              cutoff = 0.5)
 
   return(wdpa_data)
 }
