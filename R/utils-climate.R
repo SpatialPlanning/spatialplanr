@@ -108,9 +108,17 @@ splnr_climate_priorityArea_preprocess <- function(features,
   # Join features with metric ONCE before the loop.  The metric values are
   # identical for every feature iteration, so repeating st_join N times inside
   # the loop is the primary cause of slow runtimes.
-  joined_df <- features %>%
-    sf::st_join(dplyr::select(metric, "metric"), join = sf::st_equals) %>%
-    sf::st_drop_geometry()   # plain data.frame for fast column access
+  # Attach the metric column by column-binding rather than sf::st_join().
+  # st_join(join = sf::st_equals) can produce duplicate rows when
+  # floating-point coordinate differences cause a 1:many geometry match,
+  # which breaks the downstream st_set_geometry() call (nrow mismatch).
+  # bind_cols is safe here because features and metric are guaranteed to
+  # cover the same planning units in the same row order (enforced by the
+  # CRS assertion above and the package's data conventions).
+  joined_df <- dplyr::bind_cols(
+    sf::st_drop_geometry(features),
+    sf::st_drop_geometry(dplyr::select(metric, "metric"))
+  )
 
   if (any(is.na(joined_df$metric))) {
     message(
@@ -548,8 +556,14 @@ splnr_climate_feature_preprocess <- function(features,
 
   climateSmartDF <- dplyr::select(df, "climate_layer")
 
-  features <- features %>%
-    sf::st_join(climateSmartDF, join = sf::st_equals)
+  # Attach the climate_layer column by column-binding rather than sf::st_join().
+  # st_join(join = sf::st_equals) can produce duplicate rows from floating-point
+  # geometry mismatches. bind_cols is safe because features and metric share the
+  # same planning units in the same row order.
+  features <- dplyr::bind_cols(
+    features,
+    sf::st_drop_geometry(climateSmartDF)
+  )
 
   return(features)
 }
@@ -847,10 +861,14 @@ splnr_climate_percentile_preprocess <- function(features,
   spp <- sf::st_drop_geometry(features) %>% names()
 
   # --- Key performance fix ---
-  # Join features with metric ONCE before the loop.
-  joined_df <- features %>%
-    sf::st_join(dplyr::select(metric, "metric"), join = sf::st_equals) %>%
-    sf::st_drop_geometry()
+  # Attach the metric column by column-binding rather than sf::st_join().
+  # st_join(join = sf::st_equals) can produce duplicate rows from floating-point
+  # geometry mismatches. bind_cols is safe because features and metric share the
+  # same planning units in the same row order.
+  joined_df <- dplyr::bind_cols(
+    sf::st_drop_geometry(features),
+    sf::st_drop_geometry(dplyr::select(metric, "metric"))
+  )
 
   # Percentile fraction is constant; compute once outside the loop.
   prct <- if (direction == 1) (100 - percentile) / 100 else percentile / 100
