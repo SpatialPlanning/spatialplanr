@@ -341,7 +341,11 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
       dplyr::select(tidyselect::all_of(c(solution_names[i], climate_names[i]))) %>% # Select only solution status and metric.
       # dplyr::rename(!!rlang::sym(names[i]) := "metric") %>% # Rename 'metric' column to the solution's name.
       # Pivot data longer to enable plotting multiple solutions on one plot.
-      tidyr::pivot_longer(cols = tidyselect::all_of(climate_names), names_to = group_name, values_to = "metric")
+      # Use climate_names[i] (not the full climate_names vector) so that only
+      # the i-th scenario's climate column is pivoted.  Using the full vector
+      # fails when each scenario has a different climate column name because the
+      # tibble at this point only contains column climate_names[i].
+      tidyr::pivot_longer(cols = tidyselect::all_of(climate_names[i]), names_to = group_name, values_to = "metric")
   }
 
   # Combine all processed data frames into a single data frame.
