@@ -21,5 +21,8 @@ Useful links:
 
 Authors:
 
+- Jason D. Everett <JaseEverett@gmail.com>
+  ([ORCID](https://orcid.org/0000-0002-6681-8054))
+
 - Sandra Neubert <sandra.neubert97@gmail.com>
   ([ORCID](https://orcid.org/0000-0002-3112-4116))
