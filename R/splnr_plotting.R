@@ -578,7 +578,9 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
 #' )
 #' print(plot_cost_overlay_external)
 #' }
-splnr_plot_costOverlay <- function(soln, cost = NA, costName = "Cost",
+splnr_plot_costOverlay <- function(soln,
+                                   cost = NA,
+                                   costName = "Cost",
                                    legendTitle = "Cost",
                                    plotTitle = "Solution overlaid with cost") {
 
@@ -621,6 +623,9 @@ splnr_plot_costOverlay <- function(soln, cost = NA, costName = "Cost",
     # If Cost is an sf object but doesn't contain costName, stop with an error.
     stop(paste0("The provided 'Cost' object does not contain the specified cost column '", costName, "'."))
   }
+
+
+  browser()
 
   # Filter the solution to only include selected Planning Units.
   soln <- soln %>%
