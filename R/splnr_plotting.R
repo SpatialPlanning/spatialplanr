@@ -624,9 +624,6 @@ splnr_plot_costOverlay <- function(soln,
     stop(paste0("The provided 'Cost' object does not contain the specified cost column '", costName, "'."))
   }
 
-
-  browser()
-
   # Filter the solution to only include selected Planning Units.
   soln <- soln %>%
     dplyr::select("solution_1") %>%
@@ -635,7 +632,7 @@ splnr_plot_costOverlay <- function(soln,
   # Initialize the ggplot object.
   gg <- ggplot2::ggplot() +
     # Plot the selected solution units in black.
-    ggplot2::geom_sf(data = soln, fill = "black", colour = NA, size = 0.0001) +
+    ggplot2::geom_sf(data = soln, fill = "black", colour = "black", size = 0.0001) +
     # Overlay the cost data on top of the selected units with transparency.
     ggplot2::geom_sf(data = Cost, ggplot2::aes(fill = !!rlang::sym(costName)), alpha = 0.5, colour = NA, size = 0.0001) +
     # Apply a gradient fill for the cost, with specified low and high colors.
