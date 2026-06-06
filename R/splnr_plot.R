@@ -232,10 +232,12 @@ splnr_plot <- function(df,
       ggplot2::geom_sf(data = df, ggplot2::aes(fill = factor(.data[[colNames]])), colour = "grey80", size = 0.1)
 
     # Apply manual fill scale for binary (0/1) data.
+    # Use a named labels vector so the correct label is assigned regardless of
+    # whether one or both levels (0/1) are present in the data.
     if (isTRUE(is_binary)) {
       gg <- gg +
         ggplot2::scale_fill_manual(values = c("0" = colourVals[1], "1" = colourVals[2]),
-                                   labels = legendLabels,
+                                   labels = c("0" = legendLabels[1], "1" = legendLabels[2]),
                                    name = legendTitle)
     }
 
