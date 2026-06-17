@@ -112,8 +112,17 @@ splnr_get_MPAs <- function(PlanUnits,
   )
 
 
-  # TODO Add a check for wdpar package
-
+  # Check that the optional 'wdpar' package is available before attempting to
+  # use it. 'wdpar' is listed under Suggests (not Imports) because it has
+  # heavy system dependencies (chromote). A missing package produces a cryptic
+  # "could not find function" error without this guard.
+  if (!requireNamespace("wdpar", quietly = TRUE)) {
+    stop(
+      "Package 'wdpar' is required for splnr_get_MPAs(). ",
+      "Install it with: install.packages('wdpar')",
+      call. = FALSE
+    )
+  }
 
   # Fetch WDPA data for the specified countries and then process it.
   # Note: Chromote may produce benign "Unhandled promise error: Browser.close" messages

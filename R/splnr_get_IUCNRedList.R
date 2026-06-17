@@ -87,7 +87,17 @@ splnr_get_IUCNRedList <- function(df, species_col = "Species") {
     msg = "IUCN_REDLIST_KEY environment variable is not set. Please set your IUCN API key using Sys.setenv(IUCN_REDLIST_KEY = 'YOUR_KEY') or add it to your .Renviron file."
   )
 
-  #TODO add check for rredlist package
+  # Check that the optional 'rredlist' package is available before attempting
+  # to use it. 'rredlist' is listed under Suggests (not Imports) because it
+  # requires an IUCN API key and network access. A missing package produces a
+  # cryptic "could not find function" error without this guard.
+  if (!requireNamespace("rredlist", quietly = TRUE)) {
+    stop(
+      "Package 'rredlist' is required for splnr_get_IUCNRedList(). ",
+      "Install it with: install.packages('rredlist')",
+      call. = FALSE
+    )
+  }
 
   # Define all possible IUCN Red List categories to retrieve data for.
   cate <- c("DD", "LC", "NT", "VU", "EN", "CR", "EW", "EX", "LRlc", "LRnt", "LRcd")
