@@ -65,8 +65,12 @@
 #'   Defaults to `"black"`.
 #' @param legendLockIn A character string for the title of the `lockIn` legend.
 #'   Can be an empty string `""` to suppress the title. Defaults to `""`.
-#' @param labelLockIn A character string for the legend label of the `lockIn` areas
-#'   (e.g., "MPAs"). Defaults to `"MPAs"`.
+#' @param labelLockIn A character string or named character vector for the legend
+#'   label(s) of the `lockIn` areas. When a named vector is supplied, names must
+#'   match the values in `nameLockIn` and values are used as the displayed legend
+#'   labels (e.g. `c(MPA_Zone = "MPA Zone", Reserve = "Marine Reserve")`).
+#'   When a single string is supplied it is used as the label for all areas.
+#'   Defaults to `"MPAs"`.
 #' @param lockOut An `sf` object representing locked-out areas (e.g., shipping lanes,
 #'   oil and gas leases, or other excluded zones) that must not be selected in a
 #'   conservation prioritization. Defaults to `NULL`.
@@ -82,8 +86,12 @@
 #'   Defaults to `"black"`.
 #' @param legendLockOut A character string for the title of the `lockOut` legend.
 #'   Can be an empty string `""` to suppress the title. Defaults to `""`.
-#' @param labelLockOut A character string for the legend label of the `lockOut` areas
-#'   (e.g., "Shipping Lanes"). Defaults to `""`.
+#' @param labelLockOut A character string or named character vector for the legend
+#'   label(s) of the `lockOut` areas. When a named vector is supplied, names must
+#'   match the values in `nameLockOut` and values are used as the displayed legend
+#'   labels (e.g. `c(Shipping_Lane = "Shipping Lane")`).
+#'   When a single string is supplied it is used as the label for all areas.
+#'   Defaults to `""`.
 #' @param ggtheme The `ggplot2` theme to apply. Can be:
 #'   \itemize{
 #'     \item `NA` or `FALSE`: No theme is applied, using `ggplot2` defaults.
@@ -324,7 +332,17 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
       ) %>%
       dplyr::mutate(
         lockedIn = as.logical(.data$LockedIn),
-        LI_Area = ifelse(stringr::str_to_title(.data$LI_Area) == "Mpas", "MPAs", stringr::str_to_title(.data$LI_Area))
+        LI_Area = dplyr::case_when(
+          # Named vector supplied: look up nameVariable -> nameCommon
+          length(labelLockIn) > 1 & .data$LI_Area %in% names(labelLockIn) ~
+            labelLockIn[.data$LI_Area],
+          # Single non-empty string supplied: use it directly
+          length(labelLockIn) == 1 & nchar(labelLockIn) > 0 ~
+            labelLockIn,
+          # Fallback: title-case the variable name, preserving "MPAs" special case
+          stringr::str_to_title(.data$LI_Area) == "Mpas" ~ "MPAs",
+          TRUE ~ stringr::str_to_title(.data$LI_Area)
+        )
       ) %>%
       dplyr::filter(.data$lockedIn)
 
@@ -396,7 +414,17 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
       ) %>%
       dplyr::mutate(
         lockedOut = as.logical(.data$LockedOut),
-        LI_Area = ifelse(stringr::str_to_title(.data$LI_Area) == "Mpas", "MPAs", stringr::str_to_title(.data$LI_Area))
+        LI_Area = dplyr::case_when(
+          # Named vector supplied: look up nameVariable -> nameCommon
+          length(labelLockOut) > 1 & .data$LI_Area %in% names(labelLockOut) ~
+            labelLockOut[.data$LI_Area],
+          # Single non-empty string supplied: use it directly
+          length(labelLockOut) == 1 & nchar(labelLockOut) > 0 ~
+            labelLockOut,
+          # Fallback: title-case the variable name, preserving "MPAs" special case
+          stringr::str_to_title(.data$LI_Area) == "Mpas" ~ "MPAs",
+          TRUE ~ stringr::str_to_title(.data$LI_Area)
+        )
       ) %>%
       dplyr::filter(.data$lockedOut)
 

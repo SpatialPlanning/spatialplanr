@@ -53,6 +53,7 @@
 #' @importFrom rappdirs user_data_dir
 #' @importFrom sf st_as_sf
 #' @importFrom spatialgridr get_data_in_grid
+#' @importFrom withr with_options
 #'
 #' @examples
 #' \dontrun{
@@ -114,40 +115,44 @@ splnr_get_MPAs <- function(PlanUnits,
   # TODO Add a check for wdpar package
 
 
-  # Set chromote timeout option to prevent issues with web scraping for WDPA data.
-  options(chromote.timeout = 120)
-
   # Fetch WDPA data for the specified countries and then process it.
   # Note: Chromote may produce benign "Unhandled promise error: Browser.close" messages
   # that can be safely ignored (see wdpar documentation and
   # https://github.com/rstudio/chromote/pull/111)
-  wdpa_data <- suppressWarnings(Countries %>%
-    # Use purrr::map to fetch WDPA data for each country in the 'Countries' vector.
-    # 'wait = TRUE' ensures sequential downloads, and 'download_dir' specifies where to cache the data.
-    purrr::map(wdpar::wdpa_fetch,
-               wait = TRUE,
-               download_dir = rappdirs::user_data_dir("wdpar"),
-               ...) %>%
-    # Bind all fetched data frames into a single data frame.
-    dplyr::bind_rows() %>%
-    # Filter for marine and coastal protected areas only
-    dplyr::filter(.data$REALM %in% c("Coastal", "Marine")) %>%
-    # Filter by the specified IUCN Protected Area Management Categories.
-    dplyr::filter(.data$IUCN_CAT %in% Category) %>%
-    # Filter by the specified Designation Types.
-    dplyr::filter(.data$DESIG_TYPE %in% Desig) %>%
-    # Filter by the specified Status of the protected area.
-    dplyr::filter(.data$STATUS %in% Status) %>%
-    # Clean the protected area data using wdpar::wdpa_clean, removing any invalid geometries
-    # or other issues. 'retain_status = NULL' means all statuses are considered for cleaning.
-    # 'erase_overlaps = FALSE' means overlapping polygons are not removed at this stage.
-    wdpar::wdpa_clean(retain_status = NULL, erase_overlaps = FALSE) %>%
-    # Dissolve the protected area polygons to merge adjacent or overlapping areas into single geometries.
-    wdpar::wdpa_dissolve() %>%
-    # Select only the 'geometry' column, discarding other attributes after dissolving.
-    dplyr::select("geometry") %>%
-    # Add a new column 'wdpa' and set its value to 1, indicating it's a WDPA area.
-    dplyr::mutate(wdpa = 1))
+  #
+  # withr::with_options() is used to set chromote.timeout only for the duration
+  # of the wdpa_fetch calls, restoring the previous value on exit. This avoids
+  # permanently mutating the global R options for the rest of the session.
+  wdpa_data <- withr::with_options(
+    list(chromote.timeout = 120),
+    suppressWarnings(Countries %>%
+      # Use purrr::map to fetch WDPA data for each country in the 'Countries' vector.
+      # 'wait = TRUE' ensures sequential downloads, and 'download_dir' specifies where to cache the data.
+      purrr::map(wdpar::wdpa_fetch,
+                 wait = TRUE,
+                 download_dir = rappdirs::user_data_dir("wdpar"),
+                 ...) %>%
+      # Bind all fetched data frames into a single data frame.
+      dplyr::bind_rows() %>%
+      # Filter for marine and coastal protected areas only
+      dplyr::filter(.data$REALM %in% c("Coastal", "Marine")) %>%
+      # Filter by the specified IUCN Protected Area Management Categories.
+      dplyr::filter(.data$IUCN_CAT %in% Category) %>%
+      # Filter by the specified Designation Types.
+      dplyr::filter(.data$DESIG_TYPE %in% Desig) %>%
+      # Filter by the specified Status of the protected area.
+      dplyr::filter(.data$STATUS %in% Status) %>%
+      # Clean the protected area data using wdpar::wdpa_clean, removing any invalid geometries
+      # or other issues. 'retain_status = NULL' means all statuses are considered for cleaning.
+      # 'erase_overlaps = FALSE' means overlapping polygons are not removed at this stage.
+      wdpar::wdpa_clean(retain_status = NULL, erase_overlaps = FALSE) %>%
+      # Dissolve the protected area polygons to merge adjacent or overlapping areas into single geometries.
+      wdpar::wdpa_dissolve() %>%
+      # Select only the 'geometry' column, discarding other attributes after dissolving.
+      dplyr::select("geometry") %>%
+      # Add a new column 'wdpa' and set its value to 1, indicating it's a WDPA area.
+      dplyr::mutate(wdpa = 1))
+  )
 
   # Intersect the cleaned WDPA data with the provided planning units using spatialgridr::get_data_in_grid.
   # This function identifies which planning units overlap with the WDPA areas.

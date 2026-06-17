@@ -41,7 +41,7 @@ Suggests:
 VignetteBuilder: knitr
 Depends:
     R (>= 3.5.0)
-Imports: 
+Imports:
     assertthat,
     dplyr,
     forcats,
@@ -64,7 +64,8 @@ Imports:
     tidyselect,
     units,
     vctrs,
-    viridis
+    viridis,
+    withr
 Remotes: 
     github::emlab-ucsb/oceandatr,
     github::emlab-ucsb/spatialgridr,
