@@ -73,7 +73,8 @@
 splnr_climate_priorityArea_preprocess <- function(features,
                                                   percentile,
                                                   metric,
-                                                  direction) {
+                                                  direction,
+                                                  metric_col = "metric") {
 
   assertthat::assert_that(
     inherits(features, "sf"),
@@ -84,9 +85,20 @@ splnr_climate_priorityArea_preprocess <- function(features,
     msg = "'metric' must be an 'sf' object."
   )
   assertthat::assert_that(
-    "metric" %in% names(metric),
-    msg = "'metric' sf object must contain a column named 'metric'."
+    is.character(metric_col) && length(metric_col) == 1,
+    msg = "'metric_col' must be a single character string."
   )
+  assertthat::assert_that(
+    metric_col %in% names(metric),
+    msg = paste0("'metric' sf object must contain a column named '", metric_col, "'.")
+  )
+
+  # Normalise: rename the user-supplied column to the internal name "metric"
+  # so the rest of this function can use a single consistent name.
+  # This is a no-op when metric_col == "metric" (the default).
+  if (metric_col != "metric") {
+    metric <- dplyr::rename(metric, "metric" = !!rlang::sym(metric_col))
+  }
   assertthat::assert_that(
     is.numeric(percentile) && length(percentile) == 1 &&
       percentile >= 0 && percentile <= 100,
@@ -385,6 +397,10 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
 #' @param direction `1` (higher = more climate-smart) or `-1` (lower = more climate-smart).
 #' @param percentile Numeric (0-100). Defaults to `5`.
 #' @param refugiaTarget Numeric (0-1). Defaults to `1`.
+#' @param metric_col A single character string giving the name of the column in
+#'   `metric` that contains the climate metric values. Defaults to `"metric"` for
+#'   backwards compatibility. Use this argument when your climate data column has
+#'   a different name (e.g. `"sst_trend"`).
 #'
 #' @return A `list` with:
 #'   \itemize{
@@ -421,7 +437,8 @@ splnr_climate_priorityAreaApproach <- function(features,
                                                targets,
                                                direction,
                                                percentile = 5,
-                                               refugiaTarget = 1) {
+                                               refugiaTarget = 1,
+                                               metric_col = "metric") {
 
   assertthat::assert_that(
     inherits(features, "sf"),
@@ -432,8 +449,12 @@ splnr_climate_priorityAreaApproach <- function(features,
     msg = "'metric' must be an 'sf' object."
   )
   assertthat::assert_that(
-    "metric" %in% names(metric),
-    msg = "'metric' sf object must contain a column named 'metric'."
+    is.character(metric_col) && length(metric_col) == 1,
+    msg = "'metric_col' must be a single character string."
+  )
+  assertthat::assert_that(
+    metric_col %in% names(metric),
+    msg = paste0("'metric' sf object must contain a column named '", metric_col, "'.")
   )
   assertthat::assert_that(
     is.data.frame(targets),
@@ -470,7 +491,8 @@ splnr_climate_priorityAreaApproach <- function(features,
     features   = features,
     metric     = metric,
     direction  = direction,
-    percentile = percentile
+    percentile = percentile,
+    metric_col = metric_col
   )
 
   CPATargets <- splnr_climate_priorityArea_assignTargets(
@@ -547,7 +569,8 @@ splnr_climate_priorityAreaApproach <- function(features,
 splnr_climate_feature_preprocess <- function(features,
                                              percentile,
                                              metric,
-                                             direction) {
+                                             direction,
+                                             metric_col = "metric") {
 
   assertthat::assert_that(
     inherits(features, "sf"),
@@ -558,9 +581,20 @@ splnr_climate_feature_preprocess <- function(features,
     msg = "'metric' must be an 'sf' object."
   )
   assertthat::assert_that(
-    "metric" %in% names(metric),
-    msg = "'metric' sf object must contain a column named 'metric'."
+    is.character(metric_col) && length(metric_col) == 1,
+    msg = "'metric_col' must be a single character string."
   )
+  assertthat::assert_that(
+    metric_col %in% names(metric),
+    msg = paste0("'metric' sf object must contain a column named '", metric_col, "'.")
+  )
+
+  # Normalise: rename the user-supplied column to the internal name "metric"
+  # so the rest of this function can use a single consistent name.
+  # This is a no-op when metric_col == "metric" (the default).
+  if (metric_col != "metric") {
+    metric <- dplyr::rename(metric, "metric" = !!rlang::sym(metric_col))
+  }
   assertthat::assert_that(
     is.numeric(percentile) && length(percentile) == 1 &&
       percentile >= 0 && percentile <= 100,
@@ -749,6 +783,10 @@ splnr_climate_feature_assignTargets <- function(climateSmartDF,
 #' @param direction `1` or `-1`.
 #' @param percentile Numeric (0-100). Defaults to `35`.
 #' @param refugiaTarget Numeric (0-1). Defaults to `0.3`.
+#' @param metric_col A single character string giving the name of the column in
+#'   `metric` that contains the climate metric values. Defaults to `"metric"` for
+#'   backwards compatibility. Use this argument when your climate data column has
+#'   a different name (e.g. `"sst_trend"`).
 #'
 #' @return A `list` with:
 #'   \itemize{
@@ -785,7 +823,8 @@ splnr_climate_featureApproach <- function(features,
                                           targets,
                                           direction,
                                           percentile = 35,
-                                          refugiaTarget = 0.3) {
+                                          refugiaTarget = 0.3,
+                                          metric_col = "metric") {
 
   assertthat::assert_that(
     inherits(features, "sf"),
@@ -796,8 +835,12 @@ splnr_climate_featureApproach <- function(features,
     msg = "'metric' must be an 'sf' object."
   )
   assertthat::assert_that(
-    "metric" %in% names(metric),
-    msg = "'metric' sf object must contain a column named 'metric'."
+    is.character(metric_col) && length(metric_col) == 1,
+    msg = "'metric_col' must be a single character string."
+  )
+  assertthat::assert_that(
+    metric_col %in% names(metric),
+    msg = paste0("'metric' sf object must contain a column named '", metric_col, "'.")
   )
   assertthat::assert_that(
     is.data.frame(targets),
@@ -834,7 +877,8 @@ splnr_climate_featureApproach <- function(features,
     features   = features,
     metric     = metric,
     direction  = direction,
-    percentile = percentile
+    percentile = percentile,
+    metric_col = metric_col
   )
 
   featureTargets <- splnr_climate_feature_assignTargets(
@@ -916,7 +960,8 @@ splnr_climate_featureApproach <- function(features,
 splnr_climate_percentile_preprocess <- function(features,
                                                 metric,
                                                 percentile,
-                                                direction) {
+                                                direction,
+                                                metric_col = "metric") {
 
   assertthat::assert_that(
     inherits(features, "sf"),
@@ -927,9 +972,20 @@ splnr_climate_percentile_preprocess <- function(features,
     msg = "'metric' must be an 'sf' object."
   )
   assertthat::assert_that(
-    "metric" %in% names(metric),
-    msg = "'metric' sf object must contain a column named 'metric'."
+    is.character(metric_col) && length(metric_col) == 1,
+    msg = "'metric_col' must be a single character string."
   )
+  assertthat::assert_that(
+    metric_col %in% names(metric),
+    msg = paste0("'metric' sf object must contain a column named '", metric_col, "'.")
+  )
+
+  # Normalise: rename the user-supplied column to the internal name "metric"
+  # so the rest of this function can use a single consistent name.
+  # This is a no-op when metric_col == "metric" (the default).
+  if (metric_col != "metric") {
+    metric <- dplyr::rename(metric, "metric" = !!rlang::sym(metric_col))
+  }
   assertthat::assert_that(
     is.numeric(percentile) && length(percentile) == 1 &&
       percentile >= 0 && percentile <= 100,
@@ -1165,6 +1221,10 @@ splnr_climate_percentile_assignTargets <- function(features,
 #' @param targets A `data.frame` with columns `feature` and `target`.
 #' @param direction `1` or `-1`.
 #' @param percentile Numeric (0-100). Defaults to `35`.
+#' @param metric_col A single character string giving the name of the column in
+#'   `metric` that contains the climate metric values. Defaults to `"metric"` for
+#'   backwards compatibility. Use this argument when your climate data column has
+#'   a different name (e.g. `"sst_trend"`).
 #'
 #' @return A `list` with:
 #'   \itemize{
@@ -1199,7 +1259,8 @@ splnr_climate_percentileApproach <- function(features,
                                              metric,
                                              targets,
                                              direction,
-                                             percentile = 35) {
+                                             percentile = 35,
+                                             metric_col = "metric") {
 
   assertthat::assert_that(
     inherits(features, "sf"),
@@ -1210,8 +1271,12 @@ splnr_climate_percentileApproach <- function(features,
     msg = "'metric' must be an 'sf' object."
   )
   assertthat::assert_that(
-    "metric" %in% names(metric),
-    msg = "'metric' sf object must contain a column named 'metric'."
+    is.character(metric_col) && length(metric_col) == 1,
+    msg = "'metric_col' must be a single character string."
+  )
+  assertthat::assert_that(
+    metric_col %in% names(metric),
+    msg = paste0("'metric' sf object must contain a column named '", metric_col, "'.")
   )
   assertthat::assert_that(
     is.data.frame(targets),
@@ -1243,7 +1308,8 @@ splnr_climate_percentileApproach <- function(features,
     features   = features,
     metric     = metric,
     direction  = direction,
-    percentile = percentile
+    percentile = percentile,
+    metric_col = metric_col
   )
 
   percentileTargets <- splnr_climate_percentile_assignTargets(

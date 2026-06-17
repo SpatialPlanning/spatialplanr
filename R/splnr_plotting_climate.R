@@ -284,15 +284,30 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
     length(solution_list) > 0,
     msg = "'solution_list' must contain at least one solution."
   )
-  #TODO ADD assert for new _names variables
-  # assertthat::assert_that(
-  #   is.character(names),
-  #   msg = "'names' must be a character vector of solution names."
-  # )
-  # assertthat::assert_that(
-  #   length(names) == length(solution_list),
-  #   msg = "The length of 'names' must match the length of 'solution_list'."
-  # )
+  # Validate solution_names and climate_names vectors — length and type checks
+  # first, then per-solution column-existence checks.
+  assertthat::assert_that(
+    is.character(solution_names),
+    msg = "'solution_names' must be a character vector of solution column names."
+  )
+  assertthat::assert_that(
+    length(solution_names) == length(solution_list),
+    msg = paste0(
+      "Length of 'solution_names' (", length(solution_names), ") must match ",
+      "length of 'solution_list' (", length(solution_list), ")."
+    )
+  )
+  assertthat::assert_that(
+    is.character(climate_names),
+    msg = "'climate_names' must be a character vector of climate column names."
+  )
+  assertthat::assert_that(
+    length(climate_names) == length(solution_list),
+    msg = paste0(
+      "Length of 'climate_names' (", length(climate_names), ") must match ",
+      "length of 'solution_list' (", length(solution_list), ")."
+    )
+  )
   assertthat::assert_that(
     is.character(colorMap),
     msg = "'colorMap' must be a character string for a 'viridis' palette option."
@@ -306,36 +321,58 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
     msg = "'xAxisLab' must be a character string or an expression."
   )
 
-  #TODO Re enable for new _names variable
-  # # Check that each solution in the list has 'metric' and 'solution_1' columns
-  # for (i in seq_along(solution_list)) {
-  #   assertthat::assert_that(
-  #     "metric" %in% names(solution_list[[i]]),
-  #     msg = paste0("Solution ", i, " in 'solution_list' is missing the 'metric' column.")
-  #   )
-  #   assertthat::assert_that(
-  #     "solution_1" %in% names(solution_list[[i]]),
-  #     msg = paste0("Solution ", i, " in 'solution_list' is missing the 'solution_1' column.")
-  #   )
-  #   assertthat::assert_that(
-  #     is.numeric(solution_list[[i]]$metric),
-  #     msg = paste0("The 'metric' column in solution ", i, " must be numeric.")
-  #   )
-  #   assertthat::assert_that(
-  #     is.numeric(solution_list[[i]]$solution_1) || is.logical(solution_list[[i]]$solution_1),
-  #     msg = paste0("The 'solution_1' column in solution ", i, " must be numeric (0/1) or logical.")
-  #   )
-  # }
+  # Check that each solution contains the named solution and climate columns,
+  # and that those columns are of the expected types. Per-solution checks are
+  # done after the length assertions above so we only iterate when lengths match.
+  for (i in seq_along(solution_list)) {
+    assertthat::assert_that(
+      solution_names[i] %in% names(solution_list[[i]]),
+      msg = paste0(
+        "Solution ", i, " in 'solution_list' is missing the solution column '",
+        solution_names[i], "'."
+      )
+    )
+    assertthat::assert_that(
+      climate_names[i] %in% names(solution_list[[i]]),
+      msg = paste0(
+        "Solution ", i, " in 'solution_list' is missing the climate column '",
+        climate_names[i], "'."
+      )
+    )
+    assertthat::assert_that(
+      is.numeric(solution_list[[i]][[solution_names[i]]]) ||
+        is.logical(solution_list[[i]][[solution_names[i]]]),
+      msg = paste0(
+        "Column '", solution_names[i], "' in solution ", i,
+        " must be numeric (0/1) or logical."
+      )
+    )
+    assertthat::assert_that(
+      is.numeric(solution_list[[i]][[climate_names[i]]]),
+      msg = paste0(
+        "Climate column '", climate_names[i], "' in solution ", i,
+        " must be numeric."
+      )
+    )
+  }
 
-
-  #TODO Write check for ggridges
+  # Check that the optional 'ggridges' package is available before attempting
+  # to use it. 'ggridges' is listed under Suggests (not Imports). A missing
+  # package produces a cryptic "could not find function" error without this guard.
+  if (!requireNamespace("ggridges", quietly = TRUE)) {
+    stop(
+      "Package 'ggridges' is required for splnr_plot_climKernelDensity_Fancy(). ",
+      "Install it with: install.packages('ggridges')",
+      call. = FALSE
+    )
+  }
 
 
   list_sol <- list()
   group_name <- "approach" # Define a column name for grouping different solutions.
 
   # Loop through each solution in the list to prepare data for plotting.
-  for (i in 1:length(solution_names)) {
+  for (i in seq_along(solution_names)) {
     list_sol[[i]] <- solution_list[[i]] %>%
       tibble::as_tibble() %>% # Convert to tibble to ensure consistent data frame behavior.
       dplyr::select(tidyselect::all_of(c(solution_names[i], climate_names[i]))) %>% # Select only solution status and metric.
