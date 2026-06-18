@@ -11,19 +11,80 @@ soln <- pDat %>%
   prioritizr::solve.ConservationProblem()
 
 
-testthat::test_that("Correct function output", {
-
+testthat::test_that("splnr_get_featureRep() returns a tibble for basic use", {
   expect_s3_class(
     splnr_get_featureRep(
       soln = soln,
       pDat = pDat
     ), "tbl_df"
-
   )
 })
 
 
-testthat::test_that("Correct function output", {
+testthat::test_that("splnr_get_featureRep() returns correct columns", {
+  df <- splnr_get_featureRep(soln = soln, pDat = pDat)
+  expect_true(all(c("feature", "total_amount", "absolute_held",
+                    "relative_held", "target", "incidental") %in% names(df)))
+})
+
+
+testthat::test_that("splnr_get_featureRep() returns one row per problem feature", {
+  df <- splnr_get_featureRep(soln = soln, pDat = pDat)
+  expect_equal(nrow(df), 3L)
+  expect_setequal(df$feature, c("Spp1", "Spp2", "Spp3"))
+})
+
+
+testthat::test_that("splnr_get_featureRep() incidental_features adds extra rows", {
+  # soln contains Spp4 and Spp5 because dat_species_bin has them, but they
+  # were not declared as features in pDat.
+  df <- splnr_get_featureRep(
+    soln = soln,
+    pDat = pDat,
+    incidental_features = c("Spp4", "Spp5")
+  )
+  expect_equal(nrow(df), 5L)
+  expect_true(all(c("Spp4", "Spp5") %in% df$feature))
+})
+
+
+testthat::test_that("splnr_get_featureRep() incidental features have target = 0 and incidental = TRUE", {
+  df <- splnr_get_featureRep(
+    soln = soln,
+    pDat = pDat,
+    incidental_features = c("Spp4", "Spp5")
+  )
+  incidental_rows <- df[df$feature %in% c("Spp4", "Spp5"), ]
+  expect_true(all(incidental_rows$target == 0))
+  expect_true(all(incidental_rows$incidental == TRUE))
+})
+
+
+testthat::test_that("splnr_get_featureRep() errors when incidental_features column missing from soln", {
+  expect_error(
+    splnr_get_featureRep(
+      soln = soln,
+      pDat = pDat,
+      incidental_features = c("NonExistentColumn")
+    ),
+    regexp = "not present in 'soln'"
+  )
+})
+
+
+testthat::test_that("splnr_get_featureRep() errors when incidental_features overlap with problem features", {
+  expect_error(
+    splnr_get_featureRep(
+      soln = soln,
+      pDat = pDat,
+      incidental_features = c("Spp1")  # Spp1 is already in pDat
+    ),
+    regexp = "already features in 'pDat'"
+  )
+})
+
+
+testthat::test_that("splnr_plot_featureRep() returns a ggplot for basic use", {
   expect_s3_class(
     splnr_plot_featureRep(splnr_get_featureRep(
       soln = soln,

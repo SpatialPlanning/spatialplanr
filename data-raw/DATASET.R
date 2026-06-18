@@ -127,7 +127,25 @@ dat_bathy <- oceandatr::get_bathymetry(spatial_grid = dat_PUs,
 
 
 
-#TODO Need to sort out the datasets that are not created here
+# The three datasets below are loaded from pre-existing .rda files rather than
+# being built reproducibly in this script. Their original sources are:
+#
+#   spDataFiltered  — Species distribution data for the Coral Sea, derived from
+#                     GBIF occurrence records filtered to the Coral Sea planning
+#                     region. The raw GBIF download is not automated here because
+#                     it requires a registered GBIF account and the download job
+#                     can take hours. To reproduce: register at gbif.org, submit
+#                     a download for the Coral Sea bounding box, and process with
+#                     the workflow in data-raw/CreateHex.R.
+#
+#   MPAsCoralSea    — Marine Protected Areas for the Coral Sea, sourced from the
+#                     WDPA (World Database on Protected Areas) via wdpar. The
+#                     snapshot date of the underlying WDPA download is unknown;
+#                     to refresh, run splnr_get_MPAs() with the Coral Sea PUs.
+#
+#   CoralSeaVelocity — Climate velocity data for the Coral Sea planning region.
+#                      Source dataset and processing steps are not documented.
+#                      To reproduce, contact the package maintainer.
 
 load("data/spDataFiltered.rda")
 spDataFiltered <- spDataFiltered %>%

@@ -95,8 +95,12 @@ Defaults to \code{"black"}.}
 \item{legendLockIn}{A character string for the title of the \code{lockIn} legend.
 Can be an empty string \code{""} to suppress the title. Defaults to \code{""}.}
 
-\item{labelLockIn}{A character string for the legend label of the \code{lockIn} areas
-(e.g., "MPAs"). Defaults to \code{"MPAs"}.}
+\item{labelLockIn}{A character string or named character vector for the legend
+label(s) of the \code{lockIn} areas. When a named vector is supplied, names must
+match the values in \code{nameLockIn} and values are used as the displayed legend
+labels (e.g. \code{c(MPA_Zone = "MPA Zone", Reserve = "Marine Reserve")}).
+When a single string is supplied it is used as the label for all areas.
+Defaults to \code{"MPAs"}.}
 
 \item{lockOut}{An \code{sf} object representing locked-out areas (e.g., shipping lanes,
 oil and gas leases, or other excluded zones) that must not be selected in a
@@ -119,8 +123,12 @@ Defaults to \code{"black"}.}
 \item{legendLockOut}{A character string for the title of the \code{lockOut} legend.
 Can be an empty string \code{""} to suppress the title. Defaults to \code{""}.}
 
-\item{labelLockOut}{A character string for the legend label of the \code{lockOut} areas
-(e.g., "Shipping Lanes"). Defaults to \code{""}.}
+\item{labelLockOut}{A character string or named character vector for the legend
+label(s) of the \code{lockOut} areas. When a named vector is supplied, names must
+match the values in \code{nameLockOut} and values are used as the displayed legend
+labels (e.g. \code{c(Shipping_Lane = "Shipping Lane")}).
+When a single string is supplied it is used as the label for all areas.
+Defaults to \code{""}.}
 
 \item{ggtheme}{The \code{ggplot2} theme to apply. Can be:
 \itemize{

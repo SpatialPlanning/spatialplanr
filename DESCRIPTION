@@ -1,6 +1,6 @@
 Package: spatialplanr
 Title: Help files for prioritzr Spatial Planning projects
-Version: 0.7.2
+Version: 0.7.5
 Authors@R: c(
     person(
       given = "Jason D.",
@@ -41,7 +41,7 @@ Suggests:
 VignetteBuilder: knitr
 Depends:
     R (>= 3.5.0)
-Imports: 
+Imports:
     assertthat,
     dplyr,
     forcats,
@@ -64,7 +64,8 @@ Imports:
     tidyselect,
     units,
     vctrs,
-    viridis
+    viridis,
+    withr
 Remotes: 
     github::emlab-ucsb/oceandatr,
     github::emlab-ucsb/spatialgridr,

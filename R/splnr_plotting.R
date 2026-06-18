@@ -578,7 +578,9 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
 #' )
 #' print(plot_cost_overlay_external)
 #' }
-splnr_plot_costOverlay <- function(soln, cost = NA, costName = "Cost",
+splnr_plot_costOverlay <- function(soln,
+                                   cost = NA,
+                                   costName = "Cost",
                                    legendTitle = "Cost",
                                    plotTitle = "Solution overlaid with cost") {
 
@@ -630,9 +632,9 @@ splnr_plot_costOverlay <- function(soln, cost = NA, costName = "Cost",
   # Initialize the ggplot object.
   gg <- ggplot2::ggplot() +
     # Plot the selected solution units in black.
-    ggplot2::geom_sf(data = soln, fill = "black", colour = NA, size = 0.0001) +
+    ggplot2::geom_sf(data = soln, fill = "black", colour = "black", size = 0.0001) +
     # Overlay the cost data on top of the selected units with transparency.
-    ggplot2::geom_sf(data = Cost, ggplot2::aes(fill = !!rlang::sym(costName)), alpha = 0.5, colour = NA, size = 0.0001) +
+    ggplot2::geom_sf(data = Cost, ggplot2::aes(fill = !!rlang::sym(costName)), alpha = 0.1, colour = NA, size = 0.0001) +
     # Apply a gradient fill for the cost, with specified low and high colors.
     ggplot2::scale_fill_gradient(
       name = legendTitle, # Set legend title.
