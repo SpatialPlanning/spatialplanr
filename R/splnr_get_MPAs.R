@@ -165,9 +165,20 @@ splnr_get_MPAs <- function(PlanUnits,
 
   # Intersect the cleaned WDPA data with the provided planning units using spatialgridr::get_data_in_grid.
   # This function identifies which planning units overlap with the WDPA areas.
-  wdpa_data <- spatialgridr::get_data_in_grid(spatial_grid = PlanUnits,
-                                              dat = wdpa_data,
-                                              cutoff = 0.5)
+  # sf::st_intersection() emits a benign "attribute variables are assumed to be
+  # spatially constant" warning whenever an sf object with non-geometry columns
+  # is intersected. We suppress only that specific message here.
+  wdpa_data <- withCallingHandlers(
+    spatialgridr::get_data_in_grid(spatial_grid = PlanUnits,
+                                   dat = wdpa_data,
+                                   cutoff = 0.5),
+    warning = function(w) {
+      if (grepl("attribute variables are assumed to be spatially constant",
+                conditionMessage(w), fixed = TRUE)) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
 
   return(wdpa_data)
 }
