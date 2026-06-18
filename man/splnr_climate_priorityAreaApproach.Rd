@@ -10,7 +10,8 @@ splnr_climate_priorityAreaApproach(
   targets,
   direction,
   percentile = 5,
-  refugiaTarget = 1
+  refugiaTarget = 1,
+  metric_col = "metric"
 )
 }
 \arguments{
@@ -25,6 +26,11 @@ splnr_climate_priorityAreaApproach(
 \item{percentile}{Numeric (0-100). Defaults to \code{5}.}
 
 \item{refugiaTarget}{Numeric (0-1). Defaults to \code{1}.}
+
+\item{metric_col}{A single character string giving the name of the column in
+\code{metric} that contains the climate metric values. Defaults to \code{"metric"} for
+backwards compatibility. Use this argument when your climate data column has
+a different name (e.g. \code{"sst_trend"}).}
 }
 \value{
 A \code{list} with:

@@ -154,9 +154,11 @@ testthat::test_that("Correct function output", {
 # labelLockOut rather than the raw column name (nameVariable).
 # dat_mpas has a binary column "wdpa" (1 = MPA).
 
-# Helper: build a minimal solution sf for use as a base plot
+# Helper: build a minimal solution sf for use as a base plot.
+# Use a mix of 0 and 1 so the factor has two levels (matching the default
+# two-colour palette in splnr_plot_solution()).
 dat_soln_for_lock_test <- dat_species_bin %>%
-  dplyr::mutate(solution_1 = 1L)
+  dplyr::mutate(solution_1 = rep(c(0L, 1L), length.out = dplyr::n()))
 
 # --- Lock-in: named vector maps nameVariable -> nameCommon ---
 testthat::test_that("splnr_gg_add() Full lock-in uses named labelLockIn vector for legend", {

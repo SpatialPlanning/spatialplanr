@@ -28,6 +28,15 @@
 #'         partially or fully captured in the solution).
 #' }
 #'
+#' \strong{Incidental features (`incidental_features`):}
+#' Features that exist in `soln` but were deliberately excluded from the
+#' prioritizr problem (e.g., because no target was set for them) can be
+#' evaluated for incidental protection by passing their column names via
+#' `incidental_features`. Their representation is calculated identically to
+#' primary features, but they are flagged with `target = 0` and
+#' `incidental = TRUE`. All names supplied must be present as columns in
+#' `soln` and must not already be features in `pDat`.
+#'
 #' \strong{Climate-Smart Considerations (`climsmart = TRUE`):}
 #' If `climsmart` is `TRUE`, the function adjusts its calculations based on the
 #' `climsmartApproach` parameter:
@@ -48,7 +57,8 @@
 #' like `splnr_plot_featureRep()`.
 #'
 #' @param soln An `sf` object representing the `prioritizr` solution, containing
-#'   a column indicating selected planning units (default: `solution_1`).
+#'   a column indicating selected planning units (default: `solution_1`). When
+#'   `incidental_features` is supplied, `soln` must also contain those columns.
 #' @param pDat A `prioritizr` problem object, as defined by `prioritizr::problem()`.
 #'   This object provides the original feature data and targets.
 #' @param targets A `data.frame` (optional). If provided, it should contain a
@@ -70,6 +80,12 @@
 #' @param solnCol A character string specifying the name of the column in `soln`
 #'   that contains the binary solution (1 for selected, 0 for not selected).
 #'   Defaults to `"solution_1"`.
+#' @param incidental_features A character vector of column names present in
+#'   `soln` that are NOT features in `pDat` but for which incidental protection
+#'   should be calculated. These features were excluded from the prioritizr
+#'   problem (e.g., no target was set), but their representation in the solution
+#'   is still of interest. All names must exist as columns in `soln`. Defaults
+#'   to `character(0)` (no incidental calculation).
 #'
 #' @return A `tibble` dataframe containing the `feature` names, their
 #'   `total_amount` (total units available), `absolute_held` (total units
@@ -114,6 +130,16 @@
 #'   pDat = pDat_basic
 #' )
 #' print(df_basic_rep)
+#'
+#' # Example with incidental features: Spp1-Spp3 are in the problem,
+#' # Spp4 and Spp5 were excluded but we want to know their incidental protection.
+#' # soln_basic already contains Spp4 and Spp5 columns (they were in dat_species_bin).
+#' df_with_incidental <- splnr_get_featureRep(
+#'   soln = soln_basic,
+#'   pDat = pDat_basic,
+#'   incidental_features = c("Spp4", "Spp5")
+#' )
+#' print(df_with_incidental)
 #'
 #' # Example with Climate Priority Area (CPA) approach
 #' # Assuming 'dat_clim' is an sf object with a 'metric' column.
@@ -165,7 +191,8 @@
 splnr_get_featureRep <- function(soln, pDat, targets = NA,
                                  climsmart = FALSE,
                                  climsmartApproach = 0,
-                                 solnCol = "solution_1") {
+                                 solnCol = "solution_1",
+                                 incidental_features = character(0)) {
 
   # --- Input Assertions ---
   # Ensure 'soln' is an sf object and not empty.
@@ -198,7 +225,8 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
   )
   # Ensure 'climsmartApproach' is a valid integer.
   assertthat::assert_that(
-    is.numeric(climsmartApproach) && length(climsmartApproach) == 1 && climsmartApproach %in% c(0, 1, 2, 3),
+    is.numeric(climsmartApproach) && length(climsmartApproach) == 1 &&
+      climsmartApproach %in% c(0, 1, 2, 3),
     msg = "'climsmartApproach' must be an integer (0, 1, 2, or 3)."
   )
   # Validate 'targets' if provided (not NA).
@@ -212,147 +240,162 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
       msg = "If 'targets' is a data.frame, it must contain 'feature' and 'target' columns."
     )
   }
+  # Validate 'incidental_features'.
+  assertthat::assert_that(
+    is.character(incidental_features),
+    msg = "'incidental_features' must be a character vector."
+  )
+  if (length(incidental_features) > 0) {
+    # All incidental feature columns must exist in soln.
+    missing_incidental <- setdiff(incidental_features, names(soln))
+    assertthat::assert_that(
+      length(missing_incidental) == 0,
+      msg = paste0(
+        "The following 'incidental_features' columns are not present in 'soln': ",
+        paste(missing_incidental, collapse = ", ")
+      )
+    )
+    # Incidental features must not already be features in the problem.
+    s_cols_check <- pDat$data$features[[1]]
+    overlap <- intersect(incidental_features, s_cols_check)
+    assertthat::assert_that(
+      length(overlap) == 0,
+      msg = paste0(
+        "The following 'incidental_features' are already features in 'pDat' and cannot ",
+        "be treated as incidental: ",
+        paste(overlap, collapse = ", ")
+      )
+    )
+  }
 
   # Extract feature names from the problem data (pDat).
   # prioritizr problems store feature names in pDat$data$features[[1]]
   s_cols <- pDat$data$features[[1]]
 
-  # --- Process non-selected features (if any) ---
-  # These are features present in the solution object but NOT part of the
-  # core features defined in pDat. This often includes 'Cost' or other
-  # temporary columns, or potentially features with 0 targets.
-
-  # Select columns that are not 'Cost_', 'solution_' or 'metric', and not in s_cols.
-  # These are considered "not selected" or ancillary features for initial processing.
-  not_selected <- soln %>%
-    dplyr::select(
-      -tidyselect::starts_with(c("Cost", "solution_")), # Exclude Cost and solution columns
-      -tidyselect::any_of(c("metric")), # Exclude 'metric' if it exists
-      -tidyselect::any_of(s_cols) # Exclude primary features defined in pDat
-    ) %>%
-    sf::st_drop_geometry() # Drop geometry for numerical operations
-
-  # Get column names of remaining 'not_selected' features.
-  ns_cols <- colnames(not_selected)
-
-  # Proceed if there are any non-selected features to process.
-  if (length(ns_cols) > 0) {
-    # Combine non_selected features with the solution column for filtering.
-    ns1 <- not_selected %>%
-      dplyr::select(tidyselect::all_of(ns_cols)) %>%
-      dplyr::mutate(solution = dplyr::pull(soln, !!rlang::sym(solnCol))) # Add the solution column
-
-    # Calculate the total amount of each non-selected feature.
-    area_feature <- ns1 %>%
-      dplyr::select(-c("solution")) %>% # Remove solution column for total sum
-      tidyr::pivot_longer(cols = tidyselect::everything(), names_to = "feature", values_to = "total_amount") %>%
-      dplyr::group_by(.data$feature) %>%
-      dplyr::summarise(total_amount = sum(.data$total_amount, na.rm = TRUE)) # Sum total amount, handling NAs
-
-    # Calculate the absolute amount of each non-selected feature in selected units.
-    selected_feature <- ns1 %>%
-      dplyr::filter(.data$solution == 1) %>% # Filter for selected planning units
-      dplyr::select(-c("solution")) %>% # Remove solution column for sum
-      tidyr::pivot_longer(cols = tidyselect::everything(), names_to = "feature", values_to = "absolute_held") %>%
-      dplyr::group_by(.data$feature) %>%
-      dplyr::summarise(absolute_held = sum(.data$absolute_held, na.rm = TRUE)) # Sum absolute held, handling NAs
-
-    # Join total and selected amounts and calculate relative held.
-    ns1 <- dplyr::left_join(area_feature, selected_feature, by = "feature") %>%
-      dplyr::mutate(
-        relative_held = dplyr::if_else(
-          .data$total_amount > 0, # Avoid division by zero
-          .data$absolute_held / .data$total_amount,
-          0 # Set to 0 if total_amount is 0
-        )
-      )
-  } else {
-    # If no non-selected features, create an empty tibble with required columns.
-    message("No non-selected features to process.")
-    ns1 <- tibble::tibble(
-      feature = character(),
-      total_amount = numeric(),
-      absolute_held = numeric(),
-      relative_held = numeric()
-    )
-  }
-
-  # --- Process primary selected features (from pDat) ---
+  # --- Process primary features (from pDat) ---
 
   # Create a tibble with the solution column from the soln sf object.
-  # This is needed as eval_feature_representation_summary expects a data.frame.
+  # eval_feature_representation_summary() only uses the solution column —
+  # it does not read any other columns from soln_df.
   soln_df <- soln %>%
-    dplyr::rename(solution = !!rlang::sym(solnCol)) %>% # Rename solution column to 'solution'
-    tibble::as_tibble() # Convert to tibble for prioritizr function
+    dplyr::rename(solution = !!rlang::sym(solnCol)) %>%
+    tibble::as_tibble()
 
   # Evaluate feature representation summary using prioritizr's internal function.
+  # This correctly handles all features in the problem, including those with
+  # target = 0 (which will be flagged as incidental below).
   s1 <- prioritizr::eval_feature_representation_summary(pDat, soln_df[, "solution"]) %>%
-    dplyr::select(-"summary") # Remove the 'summary' column, which is not needed here.
+    dplyr::select(-"summary")
 
   # --- Apply Climate-Smart Logic ---
 
-  # If climate-smart approach is enabled and is CPA (Approach 1).
   if (climsmart == TRUE && climsmartApproach == 1) {
-    message("Processing features with Climate Priority Area (CPA) approach.")
+    # Climate Priority Area (CPA) approach: features were split into _CS and _NCS
+    # components. Aggregate them back to the original feature name.
     s1 <- s1 %>%
-      dplyr::select(-.data$relative_held) %>% # Remove existing relative_held for recalculation
-      # Remove _CS and _NCS suffixes to group related features.
+      dplyr::select(-.data$relative_held) %>%
       dplyr::mutate(
         feature = stringr::str_remove_all(.data$feature, "_CS"),
         feature = stringr::str_remove_all(.data$feature, "_NCS")
       ) %>%
-      dplyr::group_by(.data$feature) %>% # Group by original feature names
+      dplyr::group_by(.data$feature) %>%
       dplyr::summarise(
-        total_amount = sum(.data$total_amount, na.rm = TRUE), # Sum total amounts for original feature
-        absolute_held = sum(.data$absolute_held, na.rm = TRUE) # Sum absolute held for original feature
+        total_amount  = sum(.data$total_amount,  na.rm = TRUE),
+        absolute_held = sum(.data$absolute_held, na.rm = TRUE)
       ) %>%
       dplyr::ungroup() %>%
-      # Recalculate relative held for the aggregated feature.
       dplyr::mutate(relative_held = dplyr::if_else(
         .data$total_amount > 0,
         .data$absolute_held / .data$total_amount,
         0
       )) %>%
-      # Join with the provided 'targets' dataframe for CPA.
-      # This assumes 'targets' dataframe contains adjusted targets for original features.
       dplyr::left_join(targets, by = "feature")
 
   } else if (climsmart == TRUE && climsmartApproach == 3) {
-    # If climate-smart approach is enabled and is Percentile Approach (Approach 3).
-    message("Processing features with Percentile Climate-Smart Approach.")
-    # For percentile approach, directly join with provided 'targets' as they are
-    # assumed to be already adjusted for the filtered features.
+    # Percentile approach: join with pre-adjusted targets dataframe.
     s1 <- s1 %>%
       dplyr::left_join(targets, by = "feature")
 
   } else {
-    # Default case: no climate-smart approach or other approaches.
-    # Targets are taken directly from the prioritizr problem object.
-    message("No specific climate-smart approach detected or standard approach used. Using targets from 'pDat'.")
+    # Standard (non-climate-smart) approach: targets from the problem object.
     s1 <- s1 %>%
       dplyr::left_join(pDat$targets$data[["targets"]], by = "feature") %>%
-      dplyr::select(-"type") # Remove 'type' column from prioritizr targets if it exists.
+      dplyr::select(-"type")
   }
 
-  # Remove rows with NA in 'relative_held' which might occur if total_amount was zero.
+  # Remove rows where target is NA (can occur if the join found no match).
   s1 <- s1 %>%
-    stats::na.omit() # Remove any rows with NAs (e.g., if target was NA and not handled by above logic)
+    stats::na.omit()
+
+  # --- Process incidental features (explicitly supplied, not in the problem) ---
+
+  if (length(incidental_features) > 0) {
+    # Extract the solution indicator and the incidental feature columns from soln.
+    incidental_df <- soln %>%
+      sf::st_drop_geometry() %>%
+      dplyr::select(
+        solution = !!rlang::sym(solnCol),
+        tidyselect::all_of(incidental_features)
+      )
+
+    # Total amount of each incidental feature across all planning units.
+    area_incidental <- incidental_df %>%
+      dplyr::select(-"solution") %>%
+      tidyr::pivot_longer(
+        cols = tidyselect::everything(),
+        names_to = "feature",
+        values_to = "total_amount"
+      ) %>%
+      dplyr::group_by(.data$feature) %>%
+      dplyr::summarise(total_amount = sum(.data$total_amount, na.rm = TRUE))
+
+    # Amount of each incidental feature in selected planning units.
+    held_incidental <- incidental_df %>%
+      dplyr::filter(.data$solution == 1) %>%
+      dplyr::select(-"solution") %>%
+      tidyr::pivot_longer(
+        cols = tidyselect::everything(),
+        names_to = "feature",
+        values_to = "absolute_held"
+      ) %>%
+      dplyr::group_by(.data$feature) %>%
+      dplyr::summarise(absolute_held = sum(.data$absolute_held, na.rm = TRUE))
+
+    incidental_rep <- dplyr::left_join(area_incidental, held_incidental, by = "feature") %>%
+      dplyr::mutate(
+        relative_held = dplyr::if_else(
+          .data$total_amount > 0,
+          .data$absolute_held / .data$total_amount,
+          0
+        ),
+        target     = 0,
+        incidental = TRUE
+      )
+  } else {
+    incidental_rep <- tibble::tibble(
+      feature       = character(),
+      total_amount  = numeric(),
+      absolute_held = numeric(),
+      relative_held = numeric(),
+      target        = numeric(),
+      incidental    = logical()
+    )
+  }
 
   # --- Combine and Finalize Results ---
 
-  # Bind rows of primary features (s1) and non-selected features (ns1).
-  # This ensures all features are represented in the final output.
-  df <- dplyr::bind_rows(s1, ns1)
+  # Bind primary features (s1) and any explicitly supplied incidental features.
+  df <- dplyr::bind_rows(s1, incidental_rep)
 
-  # Add an 'incidental' flag: TRUE if a feature was included but its target was 0 or NA.
-  # This helps distinguish features intentionally targeted from those incidentally selected.
+  # Add the 'incidental' flag for primary features:
+  # TRUE when target == 0 (feature was in the problem but with no target set).
   df <- df %>%
     dplyr::mutate(
       incidental = dplyr::if_else(
-        .data$target > 0 & .data$absolute_held > 0, # If target > 0 AND something was held, it's NOT incidental
+        .data$target > 0 & .data$absolute_held > 0,
         FALSE,
-        TRUE, # Otherwise, it's incidental (target 0, NA, or target > 0 but nothing held)
-        missing = TRUE # Explicitly handle missing values for 'target'
+        TRUE,
+        missing = TRUE
       )
     )
 

@@ -9,7 +9,8 @@ splnr_climate_percentileApproach(
   metric,
   targets,
   direction,
-  percentile = 35
+  percentile = 35,
+  metric_col = "metric"
 )
 }
 \arguments{
@@ -22,6 +23,11 @@ splnr_climate_percentileApproach(
 \item{direction}{\code{1} or \code{-1}.}
 
 \item{percentile}{Numeric (0-100). Defaults to \code{35}.}
+
+\item{metric_col}{A single character string giving the name of the column in
+\code{metric} that contains the climate metric values. Defaults to \code{"metric"} for
+backwards compatibility. Use this argument when your climate data column has
+a different name (e.g. \code{"sst_trend"}).}
 }
 \value{
 A \code{list} with:

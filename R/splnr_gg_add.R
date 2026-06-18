@@ -188,8 +188,6 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
                          labelLockOut = "",
                          ggtheme = "Default") {
 
-  # TODO Remove all uneeded arguments, especially the lockIn
-
   # Assertions to validate input parameters are of the correct 'sf' class if not NULL.
   if(!is.null(PUs)){assertthat::assert_that(inherits(PUs, "sf"), msg = "'PUs' must be an 'sf' object or NULL.")}
   if(!is.null(Bndry)){assertthat::assert_that(inherits(Bndry, "sf"), msg = "'Bndry' must be an 'sf' object or NULL.")}

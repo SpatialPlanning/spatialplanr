@@ -10,16 +10,23 @@ splnr_apply_cutoffs(features, Cutoffs, inverse = FALSE)
 \item{features}{An \code{sf} dataframe. It must contain a \code{geometry} column and
 at least one numeric column to which cutoffs will be applied.}
 
-\item{Cutoffs}{A numeric value or a named numeric vector of cutoffs.
+\item{Cutoffs}{One of:
 \itemize{
-\item If a single unnamed numeric value, it's applied to all numeric columns.
-\item If a named numeric vector, names must correspond to numeric column names in \code{features}.
-}
-All cutoff values must be between \code{0} and \code{1}.}
+\item A single unnamed numeric value in \verb{[0, 1]} — applied to all
+numeric columns.
+\item A single unnamed function that accepts a numeric vector and returns
+a single numeric in \verb{[0, 1]} — called independently per column
+with the non-\code{NA} values of that column.
+\item A named numeric vector — names must match numeric column names in
+\code{features}; each value is applied to its named column only.
+\item A named list of numerics and/or functions — names must match
+numeric column names in \code{features}; each entry is applied to its
+named column only.
+}}
 
 \item{inverse}{A logical value (\code{TRUE} or \code{FALSE}). If \code{TRUE}, values below
-the \code{Cutoffs} are converted to \code{1} (and others to \code{0}). If \code{FALSE} (default),
-values at or above the \code{Cutoffs} are converted to \code{1}.}
+the threshold are converted to \code{1} (and others to \code{0}). If \code{FALSE}
+(default), values at or above the threshold are converted to \code{1}.}
 }
 \value{
 A modified \code{sf} dataframe with the same structure and geometry as
@@ -38,57 +45,78 @@ probability distributions or habitat suitability scores, into a binary format
 often required for conservation planning and spatial analysis (e.g., in
 \code{prioritizr}).
 
-The function operates in two primary modes based on the \code{Cutoffs} parameter:
+The function operates in four modes based on the \code{Cutoffs} parameter:
 \itemize{
-\item \strong{Single Cutoff:} If \code{Cutoffs} is a single numeric value (e.g., \code{0.5}),
-this value is applied uniformly to \strong{all numeric columns} in the
-\code{features} dataframe, excluding the \code{geometry} column.
-For each numeric cell:
-- If \code{value >= Cutoffs}, it becomes \code{1}.
-- If \code{value < Cutoffs}, it becomes \code{0}.
-- \code{NA} values are always converted to \code{0}.
-\item \strong{Named Vector of Cutoffs:} If \code{Cutoffs} is a named numeric vector
-(e.g., \code{c("feature1" = 0.5, "feature2" = 0.3)}), each specified cutoff
-is applied individually to its corresponding named column in \code{features}.
-This allows for different thresholds for different features. The same
-transformation rules as above apply to each specified column.
+\item \strong{Single numeric scalar:} A single unnamed numeric value (e.g., \code{0.5})
+is applied uniformly to \strong{all numeric columns} in \code{features},
+excluding the \code{geometry} column.
+\item \strong{Single function:} A single unnamed function (e.g.,
+\verb{\\(x) quantile(x, 0.99)}) is called independently for each numeric
+column, with \code{x} being the non-\code{NA} values of that column. The
+returned scalar is then used as the threshold for that column.
+Because the function is evaluated per-column, different columns may
+receive different thresholds even though the same function is supplied.
+\item \strong{Named numeric vector:} A named numeric vector
+(e.g., \code{c("feature1" = 0.5, "feature2" = 0.3)}) applies each value
+to its corresponding named column only.
+\item \strong{Named list of numerics and/or functions:} A named list
+(e.g., \verb{list("feature1" = 0.5, "feature2" = \\(x) quantile(x, 0.99))})
+applies each entry to its corresponding named column. Numeric entries
+are used directly; function entries are called with the non-\code{NA}
+values of that column and must return a single numeric in \verb{[0, 1]}.
 }
 
-The \code{inverse} parameter provides additional control over the binarization:
+For all modes, the binarisation rules are:
 \itemize{
-\item \code{inverse = FALSE} (default): Values \strong{at or above} the cutoff become \code{1}.
-\item \code{inverse = TRUE}: Values \strong{below} the cutoff become \code{1}. After initial
-binarization (where values >= cutoff are 1), the binary results are
-flipped (0s become 1s, and 1s become 0s) to achieve the inverse effect.
+\item If \code{value >= threshold}, it becomes \code{1}.
+\item If \code{value < threshold}, it becomes \code{0}.
+\item \code{NA} values are always converted to \code{0}.
 }
-All \code{NA} values in the numeric columns are consistently converted to \code{0} during
-the binarization process, regardless of the \code{inverse} setting.
+
+The \code{inverse} parameter flips the result after binarisation:
+\itemize{
+\item \code{inverse = FALSE} (default): values \strong{at or above} the threshold
+become \code{1}.
+\item \code{inverse = TRUE}: values \strong{below} the threshold become \code{1}.
+}
+
+All resolved threshold values (whether supplied directly or returned by a
+function) must lie in \verb{[0, 1]}. \code{NA} values are stripped from the column
+vector before it is passed to a function-based cutoff.
 }
 \examples{
 
-# Example 1: Single cutoff (0.5) applied to all numeric feature columns
-# (Spp1_Prob, Spp2_Prob, and Cost will be binarized based on 0.5)
+# Example 1: Single numeric cutoff applied to all numeric feature columns
 df_single_cutoff <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5)
 print(df_single_cutoff)
 
-# Example 2: Named cutoffs for specific columns
-# Spp1_Prob >= 0.6 becomes 1, Spp2_Prob >= 0.4 becomes 1
+# Example 2: Single function cutoff applied to all numeric feature columns
+# Each column independently receives the 99th-percentile of its own values
+# as its threshold.
+df_fn_cutoff <- splnr_apply_cutoffs(
+  dat_species_prob,
+  Cutoffs = \(x) quantile(x, 0.99)
+)
+print(df_fn_cutoff)
+
+# Example 3: Named numeric cutoffs for specific columns
 df_named_cutoffs <- splnr_apply_cutoffs(
   dat_species_prob,
   Cutoffs = c("Spp1" = 0.6, "Spp2" = 0.4)
 )
 print(df_named_cutoffs)
 
-# Example 3: Single cutoff (0.5) with inverse logic
-# Values BELOW 0.5 become 1.
+# Example 4: Named list mixing fixed and function-based cutoffs
+df_mixed_cutoffs <- splnr_apply_cutoffs(
+  dat_species_prob,
+  Cutoffs = list(
+    "Spp1" = 0.5,
+    "Spp2" = \(x) quantile(x, 0.99)
+  )
+)
+print(df_mixed_cutoffs)
+
+# Example 5: Single numeric cutoff with inverse logic
 df_inverse_cutoff <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = TRUE)
 print(df_inverse_cutoff)
-
-# Example 4: Named cutoffs with inverse logic
-df_named_inverse <- splnr_apply_cutoffs(
-  dat_species_prob,
-  Cutoffs = c("Spp1" = 0.7, "Spp2" = 0.3),
-  inverse = TRUE
-)
-print(df_named_inverse)
 }
