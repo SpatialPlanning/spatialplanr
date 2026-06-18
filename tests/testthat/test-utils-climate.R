@@ -6,42 +6,100 @@ targets <- dat_species_bin %>%
   setNames(c("feature")) %>%
   dplyr::mutate(target = 0.3)
 
+feat_names <- dat_species_bin %>%
+  sf::st_drop_geometry() %>%
+  colnames()
 
-testthat::test_that("Correct function output", {
-  expect_true(
-    rlang::is_list(splnr_climate_priorityAreaApproach(
-      features = dat_species_bin,
-      metric = dat_clim,
-      targets = targets,
-      direction = -1))
-    , "sf"
+
+# --- Climate Priority Area (CPA) approach -----------------------------------
+
+testthat::test_that("splnr_climate_priorityAreaApproach() returns correct structure", {
+  result <- splnr_climate_priorityAreaApproach(
+    features      = dat_species_bin,
+    metric        = dat_clim,
+    targets       = targets,
+    direction     = -1
   )
+
+  # Return value is a list with named elements
+  expect_true(rlang::is_list(result))
+  expect_named(result, c("Features", "Targets"))
+
+  # Features is an sf object with the same number of rows as the input
+  expect_s3_class(result$Features, "sf")
+  expect_equal(nrow(result$Features), nrow(dat_species_bin))
+
+  # Features contains _CS and _NCS columns for every input feature
+  cs_cols  <- paste0(feat_names, "_CS")
+  ncs_cols <- paste0(feat_names, "_NCS")
+  expect_true(all(cs_cols  %in% names(result$Features)))
+  expect_true(all(ncs_cols %in% names(result$Features)))
+
+  # Targets is a data.frame with feature and target columns
+  expect_s3_class(result$Targets, "data.frame")
+  expect_true(all(c("feature", "target") %in% names(result$Targets)))
+
+  # Targets has 2 rows per input feature (_CS and _NCS)
+  expect_equal(nrow(result$Targets), 2L * length(feat_names))
 })
 
 
+# --- Feature approach -------------------------------------------------------
 
-testthat::test_that("Correct function output", {
-  expect_true(
-    rlang::is_list(
-    splnr_climate_featureApproach(
-      features = dat_species_bin,
-      metric = dat_clim,
-      targets = targets,
-      direction = 1))
-    , "sf"
+testthat::test_that("splnr_climate_featureApproach() returns correct structure", {
+  result <- splnr_climate_featureApproach(
+    features      = dat_species_bin,
+    metric        = dat_clim,
+    targets       = targets,
+    direction     = 1
   )
+
+  # Return value is a list with named elements
+  expect_true(rlang::is_list(result))
+  expect_named(result, c("Features", "Targets"))
+
+  # Features is an sf object with the same number of rows as the input
+  expect_s3_class(result$Features, "sf")
+  expect_equal(nrow(result$Features), nrow(dat_species_bin))
+
+  # Features contains a climate_layer column
+  expect_true("climate_layer" %in% names(result$Features))
+
+  # Targets is a data.frame with feature and target columns
+  expect_s3_class(result$Targets, "data.frame")
+  expect_true(all(c("feature", "target") %in% names(result$Targets)))
+
+  # Targets has one row per input feature plus one row for climate_layer
+  expect_equal(nrow(result$Targets), length(feat_names) + 1L)
 })
 
 
-testthat::test_that("Correct function output", {
-  expect_true(
-    rlang::is_list(
-    splnr_climate_percentileApproach(
-      features = dat_species_bin,
-      metric = dat_clim,
-      targets = targets,
-      direction = 1))
-    , "sf"
-  )
-})
+# --- Percentile approach ----------------------------------------------------
 
+testthat::test_that("splnr_climate_percentileApproach() returns correct structure", {
+  result <- splnr_climate_percentileApproach(
+    features  = dat_species_bin,
+    metric    = dat_clim,
+    targets   = targets,
+    direction = 1
+  )
+
+  # Return value is a list with named elements
+  expect_true(rlang::is_list(result))
+  expect_named(result, c("Features", "Targets"))
+
+  # Features is an sf object with the same number of rows as the input
+  expect_s3_class(result$Features, "sf")
+  expect_equal(nrow(result$Features), nrow(dat_species_bin))
+
+  # Features contains the same column names as the input (values are filtered
+  # to climate-smart areas only; the column names are not renamed)
+  expect_true(all(feat_names %in% names(result$Features)))
+
+  # Targets is a data.frame with feature and target columns
+  expect_s3_class(result$Targets, "data.frame")
+  expect_true(all(c("feature", "target") %in% names(result$Targets)))
+
+  # Targets has one row per input feature
+  expect_equal(nrow(result$Targets), length(feat_names))
+})

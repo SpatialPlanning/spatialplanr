@@ -1,3 +1,19 @@
+# Internal helper ---------------------------------------------------------
+
+# Converts a user-facing `percentile` (0–100, meaning "top X% of areas") and
+# a `direction` flag into the quantile fraction passed to `stats::quantile()`.
+#
+# Convention (shared by all three climate approaches):
+#   percentile = 35, direction =  1  →  keep areas >= 65th percentile (top 35%)
+#   percentile = 35, direction = -1  →  keep areas <= 35th percentile (bottom 35%)
+#
+# @param percentile Numeric scalar 0–100.
+# @param direction  1 (higher = more climate-smart) or -1 (lower = more climate-smart).
+# @return Numeric scalar in [0, 1] suitable for `stats::quantile()`.
+.splnr_climate_prct <- function(percentile, direction) {
+  if (direction == 1) (100 - percentile) / 100 else percentile / 100
+}
+
 #' @title Preprocess Feature Data for Climate Priority Area Approach
 #'
 #' @description
@@ -57,7 +73,7 @@
 #' @importFrom assertthat assert_that
 #' @importFrom dplyr across bind_cols if_else mutate select summarize
 #' @importFrom rlang .data
-#' @importFrom sf st_as_sf st_drop_geometry st_geometry st_join st_set_geometry
+#' @importFrom sf st_as_sf st_drop_geometry st_geometry st_set_geometry
 #' @importFrom stats quantile
 #' @importFrom tidyr replace_na
 #'
@@ -136,14 +152,14 @@ splnr_climate_priorityArea_preprocess <- function(features,
   joined_df[[".row_id"]] <- NULL   # remove key column; no trace in output
 
   if (any(is.na(joined_df$metric))) {
-    message(
-      "Warning: NAs present in the metric data. ",
+    warning(
+      "NAs present in the metric data. ",
       "These will be excluded from per-feature quantile calculations."
     )
   }
 
   # Percentile fraction is constant across all features; compute once.
-  prct <- if (direction == 1) (100 - percentile) / 100 else percentile / 100
+  prct <- .splnr_climate_prct(percentile, direction)
 
   result_list <- vector("list", length(spp))
 
@@ -184,8 +200,8 @@ splnr_climate_priorityArea_preprocess <- function(features,
     # CS  = feature present AND in climate-smart zone.
     # NCS = feature present AND NOT in climate-smart zone.
     # Both derived in one pass; no second loop or second join needed.
-    cs_col  <- dplyr::if_else(feat_vals == 1L, climate_smart,       0L)
-    ncs_col <- dplyr::if_else(feat_vals == 1L, 1L - climate_smart,  0L)
+    cs_col  <- dplyr::if_else(feat_vals == 1, climate_smart,       0L)
+    ncs_col <- dplyr::if_else(feat_vals == 1, 1L - climate_smart,  0L)
 
     result_list[[i]] <- data.frame(cs_col, ncs_col)
     names(result_list[[i]]) <- c(
@@ -302,6 +318,7 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
     )
 
   finalList <- vector("list", length(spp))
+  skipped   <- 0L
 
   for (i in seq_along(spp)) {
     feat     <- spp[i]
@@ -320,6 +337,7 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
         "Could not find CS or NCS counts for feature '", feat,
         "'. Skipping target assignment."
       )
+      skipped <- skipped + 1L
       next
     }
 
@@ -364,14 +382,15 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
 
   finalDF <- dplyr::bind_rows(finalList)
 
-  # Sanity check: each original feature should produce exactly one _CS and one
-  # _NCS row, so the output must have 2 × nrow(targets) rows.
+  # Sanity check: each non-skipped feature should produce exactly one _CS and
+  # one _NCS row.  Skipped features (warned above) are excluded from the count.
+  expected_rows <- 2L * (nrow(targets) - skipped)
   assertthat::assert_that(
-    nrow(finalDF) == 2L * nrow(targets),
+    nrow(finalDF) == expected_rows,
     msg = paste0(
       "Internal error in splnr_climate_priorityArea_assignTargets(): output has ",
-      nrow(finalDF), " rows but expected ", 2L * nrow(targets),
-      " (2 per feature). Please report this as a bug."
+      nrow(finalDF), " rows but expected ", expected_rows,
+      " (2 per non-skipped feature). Please report this as a bug."
     )
   )
 
@@ -554,7 +573,7 @@ splnr_climate_priorityAreaApproach <- function(features,
 #' @importFrom assertthat assert_that
 #' @importFrom dplyr if_else mutate select
 #' @importFrom rlang .data
-#' @importFrom sf st_crs st_join
+#' @importFrom sf st_crs
 #' @importFrom stats quantile
 #'
 #' @examples
@@ -610,23 +629,21 @@ splnr_climate_feature_preprocess <- function(features,
   )
 
   if (any(is.na(metric$metric))) {
-    message(
-      "Warning: NAs present in the metric data. ",
+    warning(
+      "NAs present in the metric data. ",
       "These will be excluded from the percentile calculation."
     )
   }
 
-  prct <- percentile / 100
+  prct <- .splnr_climate_prct(percentile, direction)
   qntl <- stats::quantile(metric$metric, prct, na.rm = TRUE)[[1]]
 
   if (direction == 1) {
-    message("Higher metric values indicate more climate-smart areas.")
     df <- metric %>%
       dplyr::mutate(
         climate_layer = dplyr::if_else(.data$metric >= qntl, 1L, 0L)
       )
   } else {
-    message("Lower metric values indicate more climate-smart areas.")
     df <- metric %>%
       dplyr::mutate(
         climate_layer = dplyr::if_else(.data$metric <= qntl, 1L, 0L)
@@ -944,7 +961,7 @@ splnr_climate_featureApproach <- function(features,
 #' @importFrom assertthat assert_that
 #' @importFrom dplyr across bind_cols if_else mutate rename_with select summarize
 #' @importFrom rlang .data
-#' @importFrom sf st_as_sf st_drop_geometry st_geometry st_join st_set_geometry
+#' @importFrom sf st_as_sf st_drop_geometry st_geometry st_set_geometry
 #' @importFrom stats quantile
 #' @importFrom tidyselect everything
 #'
@@ -1001,8 +1018,8 @@ splnr_climate_percentile_preprocess <- function(features,
   )
 
   if (any(is.na(metric$metric))) {
-    message(
-      "Warning: NAs present in the metric data. ",
+    warning(
+      "NAs present in the metric data. ",
       "These will be excluded from per-feature percentile calculations."
     )
   }
@@ -1023,13 +1040,7 @@ splnr_climate_percentile_preprocess <- function(features,
   joined_df[[".row_id"]] <- NULL   # remove key column; no trace in output
 
   # Percentile fraction is constant; compute once outside the loop.
-  prct <- if (direction == 1) (100 - percentile) / 100 else percentile / 100
-
-  if (direction == 1) {
-    message("Higher metric values indicate more climate-smart areas.")
-  } else {
-    message("Lower metric values indicate more climate-smart areas.")
-  }
+  prct <- .splnr_climate_prct(percentile, direction)
 
   percentileList <- vector("list", length(spp))
 
@@ -1059,7 +1070,7 @@ splnr_climate_percentile_preprocess <- function(features,
     }
 
     # Filtered column: 1 only where feature is present AND climate-smart.
-    filtered_col <- dplyr::if_else(feat_vals == 1L, climate_smart, 0L)
+    filtered_col <- dplyr::if_else(feat_vals == 1, climate_smart, 0L)
 
     percentileList[[i]] <- data.frame(filtered_col)
     names(percentileList[[i]]) <- feat_col
@@ -1108,7 +1119,6 @@ splnr_climate_percentile_preprocess <- function(features,
 #' @importFrom dplyr across everything if_else left_join mutate select summarize
 #' @importFrom rlang .data
 #' @importFrom sf st_drop_geometry
-#' @importFrom tibble as_tibble
 #' @importFrom tidyr replace_na pivot_longer
 #'
 #' @examples
@@ -1155,7 +1165,6 @@ splnr_climate_percentile_assignTargets <- function(features,
   df_orig <- features %>%
     sf::st_drop_geometry() %>%
     dplyr::mutate(dplyr::across(dplyr::everything(), ~ tidyr::replace_na(.x, 0))) %>%
-    tibble::as_tibble() %>%
     dplyr::summarize(dplyr::across(dplyr::everything(), sum)) %>%
     tidyr::pivot_longer(
       tidyselect::everything(),
@@ -1168,7 +1177,6 @@ splnr_climate_percentile_assignTargets <- function(features,
   df_filt <- climateSmartDF %>%
     sf::st_drop_geometry() %>%
     dplyr::mutate(dplyr::across(dplyr::everything(), ~ tidyr::replace_na(.x, 0))) %>%
-    tibble::as_tibble() %>%
     dplyr::summarize(dplyr::across(dplyr::everything(), sum)) %>%
     tidyr::pivot_longer(
       tidyselect::everything(),
