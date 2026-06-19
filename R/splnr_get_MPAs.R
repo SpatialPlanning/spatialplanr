@@ -3,15 +3,21 @@
 #' @description
 #' This function serves as a wrapper for the `wdpar` package, facilitating the
 #' retrieval of Marine Protected Areas (MPAs) from the World Database on Protected
-#' Areas (WDPA) and intersecting them with provided planning units.
-#' The result is an `sf` object indicating the area of planning units covered by
-#' the selected marine protected areas.
+#' Areas (WDPA) and optionally intersecting them with provided planning units.
+#'
+#' When `Raw = FALSE` (the default), the result is an `sf` object indicating
+#' which planning units are covered by the selected marine protected areas.
+#'
+#' When `Raw = TRUE`, the function returns the dissolved WDPA polygon layer
+#' directly — after fetching, filtering, cleaning, and dissolving — without
+#' intersecting against planning units. This is useful for inspecting the raw
+#' MPA geometries, reprojecting them, or passing them to a custom gridding step.
 #'
 #' @details
 #' This function leverages the robust capabilities of the `wdpar` package by
 #' Jeffrey O. Hanson to access and process WDPA data. It allows filtering of MPAs
 #' based on country, status, designation type, and IUCN category, and then
-#' spatially intersects these MPAs with your defined planning units.
+#' optionally spatially intersects these MPAs with your defined planning units.
 #'
 #' For a comprehensive understanding of the WDPA data fields:
 #' \itemize{
@@ -27,8 +33,9 @@
 #'         and "Not Assigned".
 #' }
 #'
-#' @param PlanUnits An `sf` object representing the planning units to be used for intersection.
-#'   This object should have a valid CRS defined.
+#' @param PlanUnits An `sf` object representing the planning units to be used for
+#'   intersection. Required when `Raw = FALSE`. Ignored (and may be `NULL`) when
+#'   `Raw = TRUE`. This object should have a valid CRS defined.
 #' @param Countries A character vector specifying the countries for which to extract MPAs.
 #'   To retrieve all global MPAs, use the value `"global"`. Country names should match
 #'   those recognized by the WDPA database.
@@ -38,12 +45,22 @@
 #'   protected areas. Defaults to `c("National", "Regional", "International", "Not Applicable")`.
 #' @param Category A character vector specifying the desired IUCN Protected Area
 #'   Management Categories. Defaults to `c("Ia", "Ib", "II", "III", "IV")`.
+#' @param Raw Logical. If `FALSE` (the default), the fetched and cleaned WDPA data
+#'   are intersected with `PlanUnits` and the function returns a planning-unit `sf`
+#'   object with a `wdpa` coverage column. If `TRUE`, the function returns the
+#'   dissolved WDPA polygon layer directly (after fetching, filtering, cleaning, and
+#'   dissolving), without any intersection. `PlanUnits` is not required in this case.
 #' @param ... Other arguments that are passed directly to the `wdpa_fetch()` function
 #'   from the `wdpar` package (e.g., `verbose = TRUE`).
 #'
-#' @return An `sf` object. This object contains the planning units, with an
-#'   additional `wdpa` column (set to 1) for areas that intersect with the
-#'   selected MPAs.
+#' @return
+#' \describe{
+#'   \item{`Raw = FALSE`}{An `sf` object of planning units with an additional `wdpa`
+#'     column (set to 1) for planning units that intersect with the selected MPAs.}
+#'   \item{`Raw = TRUE`}{An `sf` object of dissolved WDPA polygons with all columns
+#'     returned by `wdpar::wdpa_dissolve()`, prior to any geometry-only selection or
+#'     planning-unit intersection.}
+#' }
 #' @export
 #'
 #' @importFrom assertthat assert_that
@@ -59,8 +76,11 @@
 #' \dontrun{
 #' # Assuming 'dat_PUs' is an existing sf object of planning units in your package.
 #'
-#' # Example: Get MPAs for Australia and intersect with planning units.
+#' # Example: Get MPAs for Australia and intersect with planning units (default).
 #' dat_mpas <- splnr_get_MPAs(PlanUnits = dat_PUs, Countries = "Australia", force = TRUE)
+#'
+#' # Example: Get raw dissolved WDPA polygons without intersecting planning units.
+#' raw_mpas <- splnr_get_MPAs(Countries = "Australia", Raw = TRUE)
 #'
 #' # Example: Get MPAs for multiple countries with specific status and categories.
 #' dat_mpas_specific <- splnr_get_MPAs(
@@ -82,18 +102,32 @@
 #'   ggplot2::theme_minimal()
 #' print(gg)
 #' }
-splnr_get_MPAs <- function(PlanUnits,
-                           Countries,
-                           Status = c("Designated", "Established", "Inscribed"),
-                           Desig = c("National", "Regional", "International", "Not Applicable"),
-                           Category = c("Ia", "Ib", "II", "III", "IV"),
-                           ...) {
+splnr_get_MPAs <- function(PlanUnits = NULL,
+                            Countries,
+                            Status = c("Designated", "Established", "Inscribed"),
+                            Desig = c("National", "Regional", "International", "Not Applicable"),
+                            Category = c("Ia", "Ib", "II", "III", "IV"),
+                            Raw = FALSE,
+                            ...) {
 
-  # Assertions to validate input parameters.
+  # Validate Raw argument first so subsequent guards can branch on it.
   assertthat::assert_that(
-    inherits(PlanUnits, "sf"),
-    msg = "The 'PlanUnits' parameter must be an 'sf' object."
+    is.logical(Raw) && length(Raw) == 1L && !is.na(Raw),
+    msg = "The 'Raw' parameter must be a single logical value (TRUE or FALSE)."
   )
+
+  # PlanUnits is only required when Raw = FALSE (i.e. the intersection path).
+  if (!Raw) {
+    assertthat::assert_that(
+      !is.null(PlanUnits),
+      msg = "The 'PlanUnits' parameter must be provided when Raw = FALSE."
+    )
+    assertthat::assert_that(
+      inherits(PlanUnits, "sf"),
+      msg = "The 'PlanUnits' parameter must be an 'sf' object."
+    )
+  }
+
   assertthat::assert_that(
     is.character(Countries),
     msg = "The 'Countries' parameter must be a character vector."
@@ -110,7 +144,6 @@ splnr_get_MPAs <- function(PlanUnits,
     all(Category %in% c("Ia", "Ib", "II", "III", "IV", "V", "VI", "Not Reported", "Not Applicable", "Not Assigned")),
     msg = "Invalid 'Category' provided. Must be one or more of valid IUCN categories (e.g., 'Ia', 'Ib', 'II', 'III', 'IV', 'V', 'VI', 'Not Reported', 'Not Applicable', 'Not Assigned')."
   )
-
 
   # Check that the optional 'wdpar' package is available before attempting to
   # use it. 'wdpar' is listed under Suggests (not Imports) because it has
@@ -156,12 +189,22 @@ splnr_get_MPAs <- function(PlanUnits,
       # 'erase_overlaps = FALSE' means overlapping polygons are not removed at this stage.
       wdpar::wdpa_clean(retain_status = NULL, erase_overlaps = FALSE) %>%
       # Dissolve the protected area polygons to merge adjacent or overlapping areas into single geometries.
-      wdpar::wdpa_dissolve() %>%
-      # Select only the 'geometry' column, discarding other attributes after dissolving.
-      dplyr::select("geometry") %>%
-      # Add a new column 'wdpa' and set its value to 1, indicating it's a WDPA area.
-      dplyr::mutate(wdpa = 1))
+      wdpar::wdpa_dissolve())
   )
+
+  # When Raw = TRUE, return the dissolved WDPA polygons directly — before any
+  # geometry-only selection or planning-unit intersection. This gives the caller
+  # the full dissolved sf object with all wdpar columns intact.
+  if (Raw) {
+    return(wdpa_data)
+  }
+
+  # Raw = FALSE: reduce to geometry + wdpa indicator, then intersect with planning units.
+  wdpa_data <- wdpa_data %>%
+    # Select only the 'geometry' column, discarding other attributes after dissolving.
+    dplyr::select("geometry") %>%
+    # Add a new column 'wdpa' and set its value to 1, indicating it's a WDPA area.
+    dplyr::mutate(wdpa = 1)
 
   # Intersect the cleaned WDPA data with the provided planning units using spatialgridr::get_data_in_grid.
   # This function identifies which planning units overlap with the WDPA areas.
