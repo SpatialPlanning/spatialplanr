@@ -36,15 +36,3 @@ already within the desired range.
 This approach ensures that the data is scaled appropriately without
 hardcoding a fixed division factor.
 }
-\examples{
-\dontrun{
-# Scale the 'Spp1' column.
-df_scaled_spp1 <- splnr_scale_01(dat = dat_species_prob, col_name = "Spp1")
-print(df_scaled_spp1)
-
-# Example where max is already <= 1
-df_already_scaled <- dat_species_prob \%>\% dplyr::mutate(Spp1 = Spp1 / 100)
-df_no_change <- splnr_scale_01(dat = df_already_scaled, col_name = "Spp1")
-print(df_no_change) # Spp1 values should remain unchanged
-}
-}

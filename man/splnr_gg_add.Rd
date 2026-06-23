@@ -32,6 +32,7 @@ splnr_gg_add(
   colorLockOut = "black",
   legendLockOut = "",
   labelLockOut = "",
+  base_size = 14,
   ggtheme = "Default"
 )
 }
@@ -129,6 +130,10 @@ match the values in \code{nameLockOut} and values are used as the displayed lege
 labels (e.g. \code{c(Shipping_Lane = "Shipping Lane")}).
 When a single string is supplied it is used as the label for all areas.
 Defaults to \code{""}.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()} when \code{ggtheme = "Default"}. All text elements scale
+proportionally from this value. Defaults to \code{14}.}
 
 \item{ggtheme}{The \code{ggplot2} theme to apply. Can be:
 \itemize{

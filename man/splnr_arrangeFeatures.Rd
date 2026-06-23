@@ -30,14 +30,3 @@ Sorting can be beneficial for tasks like debugging, comparing data from
 different runs, or ensuring deterministic behavior in algorithms that
 process spatial units sequentially.
 }
-\examples{
-\dontrun{
-print("Original order:")
-print(dat_species_prob)
-
-# Sort the features.
-df_arranged <- splnr_arrangeFeatures(df = dat_species_prob)
-print("Sorted order:")
-print(df_arranged)
-}
-}

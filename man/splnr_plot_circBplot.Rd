@@ -11,7 +11,8 @@ splnr_plot_circBplot(
   indicateTargets = TRUE,
   impTarget = NA,
   repTarget = NA,
-  colTarget = "red"
+  colTarget = "red",
+  base_size = 14
 )
 }
 \arguments{
@@ -41,6 +42,10 @@ percentage for 'representative' features. Required if \code{indicateTargets} is 
 
 \item{colTarget}{A \link[base:character]{character} string specifying the color
 for the target indicator lines.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_minimal()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \link[ggplot2:ggplot]{ggplot2::ggplot} object of the circular bar plot.

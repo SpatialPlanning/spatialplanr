@@ -64,7 +64,7 @@ Percentile_result <- splnr_climate_percentileApproach(
   direction  = 1,
   percentile = 35
 )
-out_sf_percentile  <- Percentile_result$Features
+out_sf_percentile <- Percentile_result$Features
 targets_percentile <- Percentile_result$Targets
 }
 }

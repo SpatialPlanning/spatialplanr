@@ -14,6 +14,7 @@ splnr_plot_featureRep(
   showTarget = NA,
   plotTitle = "",
   sort_by = "category",
+  base_size = 14,
   ...
 )
 }
@@ -53,6 +54,10 @@ Can be an empty string \code{""} (default).}
 by which to sort the features on the x-axis. Accepted values include:
 \code{"category"}, \code{"feature"}, \code{"target"}, \code{"representation"} (\code{relative_held}),
 or \code{"difference"} (between representation and target).}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 
 \item{...}{Other arguments passed on to \code{\link[ggplot2:theme]{ggplot2::theme()}} to customize the plot's theme.}
 }

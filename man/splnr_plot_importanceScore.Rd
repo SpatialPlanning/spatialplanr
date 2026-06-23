@@ -11,7 +11,8 @@ splnr_plot_importanceScore(
   plotTitle = "",
   colorMap = "A",
   decimals = 4,
-  legendTitle = "Importance Score"
+  legendTitle = "Importance Score",
+  base_size = 14
 )
 }
 \arguments{
@@ -36,6 +37,10 @@ Defaults to \code{4}.}
 
 \item{legendTitle}{A character string for the title of the legend.
 Defaults to \code{"Importance Score"}.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \code{ggplot} object representing the plot of importance scores.
