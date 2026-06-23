@@ -14,8 +14,14 @@ CPA <- splnr_climate_priorityAreaApproach(
   refugiaTarget = 1)
 
 out_sf <- CPA$Features %>%
-  dplyr::mutate(Cost_None = rep(1, 780)) %>%
-  sf::st_join(dat_clim, join = sf::st_equals)
+  dplyr::mutate(Cost_None = 1, .row_id = dplyr::row_number()) %>%
+  dplyr::left_join(
+    dat_clim %>%
+      sf::st_drop_geometry() %>%
+      dplyr::mutate(.row_id = dplyr::row_number()),
+    by = ".row_id"
+  ) %>%
+  dplyr::select(-".row_id")
 
 usedFeatures <- out_sf %>%
   sf::st_drop_geometry() %>%
@@ -47,7 +53,7 @@ testthat::test_that("Correct function output", {
 
 testthat::test_that("Correct function output", {
   expect_s3_class(
-    splnr_plot_climKernelDensity(soln = list(dat_solnClim), type = "Normal")
+    splnr_plot_climKernelDensity(soln = dat_solnClim, type = "Normal")
     , "gg")
 })
 

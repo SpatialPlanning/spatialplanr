@@ -132,17 +132,6 @@ splnr_climate_priorityArea_preprocess <- function(features,
   # Feature column names (excluding geometry).
   spp <- sf::st_drop_geometry(features) %>% names()
 
-  # --- Key performance fix ---
-  # Join features with metric ONCE before the loop.  The metric values are
-  # identical for every feature iteration, so repeating st_join N times inside
-  # the loop is the primary cause of slow runtimes.
-  # Attach the metric column via a row-number key rather than sf::st_join().
-  # st_join(join = sf::st_equals) can produce duplicate rows when
-  # floating-point coordinate differences cause a 1:many geometry match,
-  # which breaks the downstream st_set_geometry() call (nrow mismatch).
-  # A row-number left_join matches each feature planning unit to its
-  # corresponding metric value without any geometry operations.
-  # The temporary .row_id key is removed before the result is used.
   metric_vals_df <- sf::st_drop_geometry(dplyr::select(metric, "metric"))
   metric_vals_df[[".row_id"]] <- seq_len(nrow(metric_vals_df))
 
@@ -652,11 +641,6 @@ splnr_climate_feature_preprocess <- function(features,
 
   climateSmartDF <- dplyr::select(df, "climate_layer")
 
-  # Attach the climate_layer column via a row-number key rather than sf::st_join().
-  # st_join(join = sf::st_equals) can produce duplicate rows from floating-point
-  # geometry mismatches. The temporary .row_id key is removed before returning.
-  # We drop geometry before joining to avoid sf/dplyr join edge cases, then
-  # restore the original geometry afterwards.
   climate_col <- sf::st_drop_geometry(climateSmartDF)
   climate_col[[".row_id"]] <- seq_len(nrow(climate_col))
 
@@ -1026,11 +1010,6 @@ splnr_climate_percentile_preprocess <- function(features,
 
   spp <- sf::st_drop_geometry(features) %>% names()
 
-  # --- Key performance fix ---
-  # Attach the metric column via a row-number key rather than sf::st_join().
-  # st_join(join = sf::st_equals) can produce duplicate rows from floating-point
-  # geometry mismatches. The temporary .row_id key is removed before the result
-  # is used.
   metric_vals_df <- sf::st_drop_geometry(dplyr::select(metric, "metric"))
   metric_vals_df[[".row_id"]] <- seq_len(nrow(metric_vals_df))
 

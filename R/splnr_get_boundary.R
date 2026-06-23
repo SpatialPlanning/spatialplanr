@@ -38,7 +38,7 @@
 #' @importFrom assertthat assert_that is.string is.flag
 #' @importFrom dplyr tibble bind_rows filter
 #' @importFrom rnaturalearth ne_download
-#' @importFrom sf st_crs st_join st_as_sf st_union st_transform st_set_crs st_polygon st_sfc
+#' @importFrom sf st_crs st_as_sf st_union st_transform st_set_crs st_polygon st_sfc
 #' @importFrom lifecycle deprecate_warn
 #' @importFrom rlang .data
 #'
