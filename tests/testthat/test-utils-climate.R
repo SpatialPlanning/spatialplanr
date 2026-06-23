@@ -6,6 +6,15 @@ targets <- dat_species_bin %>%
   setNames(c("feature")) %>%
   dplyr::mutate(target = 0.3)
 
+# Tibble version of targets — replicates what fget_targets_with_bioregions()
+# returns via tibble::enframe(). The CPA assignTargets function previously
+# extracted trgt with [, "target"] which returns a 1-row tibble (not a scalar)
+# when the input is a tibble, causing NA targets after bind_rows().
+targets_tbl <- tibble::tibble(
+  feature = dat_species_bin %>% sf::st_drop_geometry() %>% colnames(),
+  target  = 0.3
+)
+
 feat_names <- dat_species_bin %>%
   sf::st_drop_geometry() %>%
   colnames()
@@ -41,6 +50,29 @@ testthat::test_that("splnr_climate_priorityAreaApproach() returns correct struct
 
   # Targets has 2 rows per input feature (_CS and _NCS)
   expect_equal(nrow(result$Targets), 2L * length(feat_names))
+})
+
+testthat::test_that("splnr_climate_priorityAreaApproach() produces no NA targets when targets is a tibble", {
+  # Regression test: when targets is a tibble (as returned by shinyplanr's
+  # fget_targets_with_bioregions()), the [, "target"] subsetting inside
+  # splnr_climate_priorityArea_assignTargets() previously returned a 1-row
+  # tibble instead of a scalar. This caused targetCS to be a data frame,
+  # c(targetCS, targetNCS) to be a list, and dplyr::bind_rows() to produce
+  # NA in the target column — crashing prioritizr::add_relative_targets().
+  # The fix uses dplyr::pull() to always extract a scalar.
+  result <- splnr_climate_priorityAreaApproach(
+    features      = dat_species_bin,
+    metric        = dat_clim,
+    targets       = targets_tbl,   # tibble, not plain data.frame
+    direction     = -1,
+    percentile    = 5              # small percentile → prop_cs > trgt for most features
+  )
+
+  # The target column must be a plain numeric vector with no NA values.
+  # NA targets cause prioritizr::add_relative_targets() to error.
+  expect_true(is.numeric(result$Targets$target))
+  expect_false(any(is.na(result$Targets$target)))
+  expect_false(any(!is.finite(result$Targets$target)))
 })
 
 
