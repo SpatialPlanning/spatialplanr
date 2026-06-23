@@ -229,132 +229,97 @@ splnr_plot_climKernelDensity_Basic <- function(soln) {
     )
 }
 
-#' @title Fancy Kernel Density Plots for Climate-Smart Spatial Plans
+#' @title Fancy Kernel Density Plot for a Single Climate-Smart Spatial Plan
 #'
 #' @description
-#' `splnr_plot_climKernelDensity_Fancy()` generates a more elaborate kernel
-#' density plot suitable for comparing distributions of a climate metric across
-#' multiple conservation solutions.
+#' `splnr_plot_climKernelDensity_Fancy()` generates a kernel density plot for
+#' a single conservation solution, showing the distribution of a climate metric
+#' within selected and unselected planning units.
 #'
 #' @details
 #' This internal function is used by `splnr_plot_climKernelDensity()` when
-#' `type = "Normal"`. It accepts a list of `prioritizr` solutions and their
-#' corresponding names, allowing for a comparative visualization of climate
-#' metric distributions between different scenarios.
+#' `type = "Normal"`. It accepts a single `prioritizr` solution and produces a
+#' ridge plot with:
+#' \itemize{
+#'   \item A viridis gradient-filled ridge for selected planning units.
+#'   \item A grey dotted-outline ridge for unselected planning units.
+#'   \item Vertical lines at the median of each group (solid black for selected,
+#'     dotted black for unselected).
+#'   \item A categorical legend showing the visual style of each group.
+#' }
 #'
-#' The function pivots the data to a long format, enabling `ggridges` to plot
-#' overlapping density ridges for each solution, with selected areas filled
-#' by a gradient based on the metric value and unselected areas shown as dotted
-#' outlines. This provides a detailed visual comparison of how climate metrics
-#' vary across different spatial plans.
+#' To compare two solutions side-by-side, call this function twice and combine
+#' the results with \code{patchwork::wrap_plots()}.
 #'
-#' @param solution_list A `list` of `prioritizr` solution objects. Each solution
-#'   (e.g., `s1`, `s2`) in the list must be an `sf` or `data.frame` object
-#'   containing a `metric` column (numeric) and a `solution_1` column (numeric, 0 or 1).
-#' @param solution_names A character vector of prioritizr solution names corresponding to each solution in
-#'   `solution_list`. The length of this vector must match the length of `solution_list`.
-#' @param climate_names A character vector of climate column names corresponding to each solution in
-#'   `solution_list`. The length of this vector must match the length of `solution_list`.
+#' @param soln A single `prioritizr` solution object (`sf` or `data.frame`)
+#'   containing a solution column (numeric 0/1 or logical) and a climate metric
+#'   column (numeric).
+#' @param solution_name A scalar character string naming the solution column in
+#'   `soln`. Defaults to `"solution_1"`.
+#' @param climate_name A scalar character string naming the climate metric column
+#'   in `soln`. Defaults to `"metric"`.
 #' @param colorMap A character string indicating the `viridis` color map to use
 #'   for filling the selected areas (e.g., "A", "B", "C", "D", "E"). See
 #'   \url{https://ggplot2.tidyverse.org/reference/scale_viridis.html} for all options.
 #'   Defaults to `"C"`.
-#' @param legendTitle A character string or `expression` for the title of the legend.
-#'   Defaults to `expression(" \u00B0C y"^"-1" * "")`, representing "°C year⁻¹".
-#' @param xAxisLab A character string or `expression` for the x-axis label,
-#'   depending on the climate metric input. Defaults to
-#'   `expression("Climate warming ( \u00B0C y"^"-1" * ")")`.
+#' @param legendTitle A character string or `expression` for the title of the
+#'   viridis colour bar legend. Defaults to
+#'   `expression(" \u00B0C y"^"-1" * "")`, representing "°C year⁻¹".
+#' @param xAxisLab A character string or `expression` for the x-axis label.
+#'   Defaults to `expression("Climate warming ( \u00B0C y"^"-1" * ")")`.
 #'
-#' @return A `ggplot` object representing the fancy kernel density plot.
+#' @return A `ggplot` object representing the kernel density plot.
 #' @keywords internal
 #' @noRd
-splnr_plot_climKernelDensity_Fancy <- function(solution_list,
-                                               solution_names = "solution_1",
-                                               climate_names = "metric",
+splnr_plot_climKernelDensity_Fancy <- function(soln,
+                                               solution_name = "solution_1",
+                                               climate_name = "metric",
                                                colorMap = "C",
                                                legendTitle = expression(" \u00B0C y"^"-1" * ""),
                                                xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")")) {
 
-  # Assertions to validate input parameters.
+  # --- Input validation -------------------------------------------------------
+
   assertthat::assert_that(
-    is.list(solution_list),
-    msg = "'solution_list' must be a list of prioritizr solutions."
+    inherits(soln, "data.frame"),
+    msg = "'soln' must be a data.frame or sf object."
   )
   assertthat::assert_that(
-    length(solution_list) > 0,
-    msg = "'solution_list' must contain at least one solution."
-  )
-  # Validate solution_names and climate_names vectors — length and type checks
-  # first, then per-solution column-existence checks.
-  assertthat::assert_that(
-    is.character(solution_names),
-    msg = "'solution_names' must be a character vector of solution column names."
+    is.character(solution_name) && length(solution_name) == 1L,
+    msg = "'solution_name' must be a single character string."
   )
   assertthat::assert_that(
-    length(solution_names) == length(solution_list),
-    msg = paste0(
-      "Length of 'solution_names' (", length(solution_names), ") must match ",
-      "length of 'solution_list' (", length(solution_list), ")."
-    )
+    is.character(climate_name) && length(climate_name) == 1L,
+    msg = "'climate_name' must be a single character string."
   )
   assertthat::assert_that(
-    is.character(climate_names),
-    msg = "'climate_names' must be a character vector of climate column names."
+    solution_name %in% names(soln),
+    msg = paste0("'soln' is missing the solution column '", solution_name, "'.")
   )
   assertthat::assert_that(
-    length(climate_names) == length(solution_list),
-    msg = paste0(
-      "Length of 'climate_names' (", length(climate_names), ") must match ",
-      "length of 'solution_list' (", length(solution_list), ")."
-    )
+    climate_name %in% names(soln),
+    msg = paste0("'soln' is missing the climate column '", climate_name, "'.")
+  )
+  assertthat::assert_that(
+    is.numeric(soln[[solution_name]]) || is.logical(soln[[solution_name]]),
+    msg = paste0("Column '", solution_name, "' must be numeric (0/1) or logical.")
+  )
+  assertthat::assert_that(
+    is.numeric(soln[[climate_name]]),
+    msg = paste0("Climate column '", climate_name, "' must be numeric.")
   )
   assertthat::assert_that(
     is.character(colorMap),
     msg = "'colorMap' must be a character string for a 'viridis' palette option."
   )
   assertthat::assert_that(
-    is.vector(legendTitle) || is.expression(legendTitle), # Allow vector (character) or expression.
+    is.vector(legendTitle) || is.expression(legendTitle),
     msg = "'legendTitle' must be a character string or an expression."
   )
   assertthat::assert_that(
-    is.vector(xAxisLab) || is.expression(xAxisLab), # Allow vector (character) or expression.
+    is.vector(xAxisLab) || is.expression(xAxisLab),
     msg = "'xAxisLab' must be a character string or an expression."
   )
-
-  # Check that each solution contains the named solution and climate columns,
-  # and that those columns are of the expected types. Per-solution checks are
-  # done after the length assertions above so we only iterate when lengths match.
-  for (i in seq_along(solution_list)) {
-    assertthat::assert_that(
-      solution_names[i] %in% names(solution_list[[i]]),
-      msg = paste0(
-        "Solution ", i, " in 'solution_list' is missing the solution column '",
-        solution_names[i], "'."
-      )
-    )
-    assertthat::assert_that(
-      climate_names[i] %in% names(solution_list[[i]]),
-      msg = paste0(
-        "Solution ", i, " in 'solution_list' is missing the climate column '",
-        climate_names[i], "'."
-      )
-    )
-    assertthat::assert_that(
-      is.numeric(solution_list[[i]][[solution_names[i]]]) ||
-        is.logical(solution_list[[i]][[solution_names[i]]]),
-      msg = paste0(
-        "Column '", solution_names[i], "' in solution ", i,
-        " must be numeric (0/1) or logical."
-      )
-    )
-    assertthat::assert_that(
-      is.numeric(solution_list[[i]][[climate_names[i]]]),
-      msg = paste0(
-        "Climate column '", climate_names[i], "' in solution ", i,
-        " must be numeric."
-      )
-    )
-  }
 
   # Check that the optional 'ggridges' package is available before attempting
   # to use it. 'ggridges' is listed under Suggests (not Imports). A missing
@@ -367,122 +332,168 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
     )
   }
 
+  # --- Data preparation -------------------------------------------------------
 
-  list_sol <- list()
-  group_name <- "approach" # Define a column name for grouping different solutions.
+  # Rename the solution and climate columns to standard names so the rest of
+  # the function can reference them without tidy-eval gymnastics.
+  df <- soln %>%
+    tibble::as_tibble() %>%
+    dplyr::select(tidyselect::all_of(c(solution_name, climate_name))) %>%
+    dplyr::rename(solution_1 = tidyselect::all_of(solution_name),
+                  metric     = tidyselect::all_of(climate_name)) %>%
+    # A single-solution plot still needs a y-axis grouping variable for ggridges.
+    # We use the climate column name as the label so the y-axis is informative
+    # when the user inspects the raw plot object.
+    dplyr::mutate(approach = climate_name)
 
-  # Loop through each solution in the list to prepare data for plotting.
-  for (i in seq_along(solution_names)) {
-    list_sol[[i]] <- solution_list[[i]] %>%
-      tibble::as_tibble() %>% # Convert to tibble to ensure consistent data frame behavior.
-      dplyr::select(tidyselect::all_of(c(solution_names[i], climate_names[i]))) %>% # Select only solution status and metric.
-      # dplyr::rename(!!rlang::sym(names[i]) := "metric") %>% # Rename 'metric' column to the solution's name.
-      # Pivot data longer to enable plotting multiple solutions on one plot.
-      # Use climate_names[i] (not the full climate_names vector) so that only
-      # the i-th scenario's climate column is pivoted.  Using the full vector
-      # fails when each scenario has a different climate column name because the
-      # tibble at this point only contains column climate_names[i].
-      tidyr::pivot_longer(cols = tidyselect::all_of(climate_names[i]), names_to = group_name, values_to = "metric")
-  }
+  # Compute medians for the vertical reference lines.
+  # These are computed from the data rather than passed in so the function
+  # remains self-contained and the lines always reflect the actual distribution.
+  medians <- df %>%
+    dplyr::group_by(.data$solution_1) %>%
+    dplyr::summarise(med = stats::median(.data$metric, na.rm = TRUE),
+                     .groups = "drop")
 
-  # Combine all processed data frames into a single data frame.
-  df <- do.call(rbind, list_sol) %>%
-    # Relevel the 'approach' factor to control the order of ridges in the plot.
-    dplyr::mutate(approach = forcats::fct_relevel(.data$approach, rev))
+  med_selected   <- medians$med[medians$solution_1 == 1]
+  med_unselected <- medians$med[medians$solution_1 == 0]
 
+  # Middle colour of the viridis palette — used as the representative fill
+  # colour for the "Selected PUs" key in the categorical legend.
+  mid_colour <- scales::viridis_pal(option = colorMap)(3)[2]
 
-  # Initialize ggplot object.
+  # --- Plot construction ------------------------------------------------------
+
   ggRidge <- ggplot2::ggplot() +
-    # Add density ridges with gradient fill for selected planning units.
+    # Gradient-filled ridge for selected planning units.
     ggridges::geom_density_ridges_gradient(
-      data = df %>% dplyr::filter(.data$solution_1 == 1), # Filter for selected units.
+      data = df %>% dplyr::filter(.data$solution_1 == 1),
       ggplot2::aes(
-        x = .data$metric,
-        y = .data$approach,
-        fill = ggplot2::after_stat(.data$x), # Fill based on the x-value (metric).
-      ), scale = 1 # Set ridge scale.
+        x    = .data$metric,
+        y    = .data$approach,
+        fill = ggplot2::after_stat(.data$x)
+      ),
+      scale = 1
     ) +
-    # Apply a viridis color scale for the gradient fill.
+    # Viridis colour scale for the gradient fill (continuous legend).
     ggplot2::scale_fill_viridis_c(name = legendTitle, option = colorMap) +
-    # Add density ridges for not selected planning units with dotted lines and transparency.
+    # Grey dotted ridge for unselected planning units.
     ggridges::geom_density_ridges(
-      data = df %>% dplyr::filter(.data$solution_1 == 0), # Filter for not selected units.
+      data = df %>% dplyr::filter(.data$solution_1 == 0),
       ggplot2::aes(x = .data$metric, y = .data$approach),
-      alpha = 0.25, linetype = "dotted", scale = 1 # Set transparency, linetype, and scale.
+      alpha = 0.25, linetype = "dotted", scale = 1
     ) +
-    # (Commented out in original: Optional vertical line for mean climate warming)
-    # geom_vline(xintercept = climate$mean_climate_warming,
-    #            linetype = "dashed", color = "tan1", size = 0.5) +
-    # Set x-axis limits with no expansion.
+    # Median line for selected PUs — solid black.
+    ggplot2::geom_vline(
+      xintercept = med_selected,
+      colour     = "black",
+      linetype   = "solid",
+      linewidth  = 0.8
+    ) +
+    # Median line for unselected PUs — dotted black.
+    ggplot2::geom_vline(
+      xintercept = med_unselected,
+      colour     = "black",
+      linetype   = "dotted",
+      linewidth  = 0.8
+    ) +
+    # Invisible points used solely to generate the categorical legend.
+    # shape = 22 (filled square) with override.aes gives legend keys that
+    # visually match the ridge appearance without affecting the actual plot.
+    ggplot2::geom_point(
+      data = data.frame(x = NA_real_, group = "Selected PUs"),
+      ggplot2::aes(x = .data$x, y = 1, colour = .data$group),
+      alpha = 0, na.rm = TRUE
+    ) +
+    ggplot2::geom_point(
+      data = data.frame(x = NA_real_, group = "Unselected PUs"),
+      ggplot2::aes(x = .data$x, y = 1, colour = .data$group),
+      alpha = 0, na.rm = TRUE
+    ) +
+    ggplot2::scale_colour_manual(
+      name   = NULL,
+      values = c("Selected PUs" = mid_colour, "Unselected PUs" = "grey70"),
+      guide  = ggplot2::guide_legend(
+        override.aes = list(
+          fill     = c(mid_colour, "grey70"),
+          colour   = c("black",    "black"),
+          linetype = c("solid",    "dotted"),
+          shape    = 22,
+          size     = 8,
+          alpha    = 1
+        )
+      )
+    ) +
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
-    # Set y-axis limits with expansion.
     ggplot2::scale_y_discrete(expand = ggplot2::expansion(mult = c(0.01, 0))) +
-    ggplot2::labs(x = xAxisLab) + # Set x-axis label.
-    ggplot2::theme_bw() + # Apply black and white theme.
-    # Customize theme elements.
+    ggplot2::labs(x = xAxisLab) +
+    ggplot2::theme_bw() +
     ggplot2::theme(
-      axis.ticks = ggplot2::element_line(color = "black", linewidth = 1),
-      axis.line = ggplot2::element_line(colour = "black", linewidth = 1),
-      axis.text = ggplot2::element_text(color = "black", size = 14),
-      axis.title.x = ggplot2::element_text(size = 14),
-      axis.title.y = ggplot2::element_blank(), # Hide y-axis title.
-      axis.text.y = ggplot2::element_blank(), # Hide y-axis text.
-      legend.text = ggplot2::element_text(size = 15, color = "black"),
-      legend.title = ggplot2::element_text(size = 15, color = "black")
+      axis.ticks      = ggplot2::element_line(color = "black", linewidth = 1),
+      axis.line       = ggplot2::element_line(colour = "black", linewidth = 1),
+      axis.text       = ggplot2::element_text(color = "black", size = 14),
+      axis.title.x    = ggplot2::element_text(size = 14),
+      axis.title.y    = ggplot2::element_blank(),
+      axis.text.y     = ggplot2::element_blank(),
+      legend.text     = ggplot2::element_text(size = 15, color = "black"),
+      legend.title    = ggplot2::element_text(size = 15, color = "black")
     )
+
+  return(ggRidge)
 }
 
 
 #' @title Kernel Density Plots for Climate-Smart Spatial Plans
 #'
 #' @description
-#' `splnr_plot_climKernelDensity()` generates kernel density plots for
-#' climate-smart spatial plans, offering two distinct plotting styles:
-#' "Normal" (for publication-quality comparison of multiple solutions) and
-#' "Basic" (for simplified visualization for stakeholders).
+#' `splnr_plot_climKernelDensity()` generates kernel density plots for a single
+#' climate-smart spatial plan, offering two distinct plotting styles:
+#' "Normal" (for publication-quality visualisation) and "Basic" (for simplified
+#' visualisation for stakeholders).
 #'
 #' @details
-#' This wrapper function intelligently dispatches to either
+#' This wrapper function dispatches to either
 #' `splnr_plot_climKernelDensity_Fancy()` (for `type = "Normal"`) or
 #' `splnr_plot_climKernelDensity_Basic()` (for `type = "Basic"`) based on the
 #' `type` parameter.
 #'
-#' The "Normal" (Fancy) style is suitable for detailed comparisons,
-#' accommodating a list of solutions and custom axis labels, while the "Basic"
-#' style is streamlined for clarity and quick interpretation, ideal for
-#' stakeholder engagement.
+#' The "Normal" style produces a ridge plot with a viridis gradient fill for
+#' selected planning units, a grey dotted ridge for unselected units, vertical
+#' median lines, and a categorical legend. The "Basic" style is streamlined for
+#' clarity and quick interpretation.
 #'
-#' Both underlying functions require a `prioritizr` solution containing a
-#' climate metric column with climate metric information and a prioritizr solution column
-#' indicating selected planning units.
+#' To compare two solutions side-by-side, call this function once per solution
+#' and combine the results with \code{patchwork::wrap_plots()}.
 #'
-#' @param soln For `type = "Normal"`: A `list` of `prioritizr` solution objects
-#'   (e.g., `list(s1, s2)`). Each solution must contain a `metric` column and
-#'   a `solution_1` column.
-#'   For `type = "Basic"`: A single `prioritizr` solution `sf` object.
-#' @param solution_names A character vector of names corresponding to each solution in
-#'   `soln` when `type = "Normal"`. Not used for `type = "Basic"`.
-#'   Defaults to `NA`.
-#' @param climate_names A character string of the name of the climate
+#' @param soln A single `prioritizr` solution object (`sf` or `data.frame`).
+#'   For `type = "Normal"`: must contain the columns named by `solution_name`
+#'   and `climate_name`.
+#'   For `type = "Basic"`: must be an `sf` object with `solution_1` and
+#'   `metric` columns.
+#' @param solution_name A scalar character string naming the solution column
+#'   (0/1 or logical) in `soln`. Used only for `type = "Normal"`.
+#'   Defaults to `"solution_1"`.
+#' @param climate_name A scalar character string naming the climate metric
+#'   column (numeric) in `soln`. Used only for `type = "Normal"`.
+#'   Defaults to `"metric"`.
 #' @param type A character string specifying the plotting style. Must be either
 #'   `"Normal"` or `"Basic"`. Defaults to `"Normal"`.
 #' @param colorMap A character string indicating the `viridis` color map to use
 #'   (e.g., "A", "B", "C", "D", "E"). See
 #'   \url{https://ggplot2.tidyverse.org/reference/scale_viridis.html} for all options.
 #'   Defaults to `"C"`.
-#' @param legendTitle A character string or `expression` for the title of the legend.
-#'   Defaults to `expression(" \u00B0C y"^"-1" * "")`, representing "°C year⁻¹".
-#' @param xAxisLab A character string or `expression` for the x-axis label,
-#'   depending on the climate metric input. Defaults to
-#'   `expression("Climate warming ( \u00B0C y"^"-1" * ")")`.
+#' @param legendTitle A character string or `expression` for the title of the
+#'   viridis colour bar legend. Defaults to
+#'   `expression(" \u00B0C y"^"-1" * "")`, representing "°C year⁻¹".
+#' @param xAxisLab A character string or `expression` for the x-axis label.
+#'   Defaults to `expression("Climate warming ( \u00B0C y"^"-1" * ")")`.
 #'
 #' @return A `ggplot` object representing the kernel density plot.
 #' @export
 #'
 #' @importFrom assertthat assert_that
 #' @importFrom prioritizr problem add_min_set_objective add_relative_targets add_binary_decisions add_default_solver solve.ConservationProblem
-#' @importFrom dplyr mutate select
-#' @importFrom sf st_drop_geometry st_join
+#' @importFrom dplyr mutate select left_join row_number
+#' @importFrom sf st_drop_geometry
 #' @importFrom tidyselect starts_with
 #'
 #' @examples
@@ -506,10 +517,15 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
 #'   refugiaTarget = 1
 #' )
 #'
-#' # Join climate metric to features for the problem
 #' out_sf <- CPA$Features %>%
-#'   dplyr::mutate(Cost_None = rep(1, dim(.)[[1]])) %>% # Ensure enough costs for PUs
-#'   sf::st_join(dat_clim, join = sf::st_equals)
+#'   dplyr::mutate(Cost_None = 1, .row_id = dplyr::row_number()) %>%
+#'   dplyr::left_join(
+#'     dat_clim %>%
+#'       sf::st_drop_geometry() %>%
+#'       dplyr::mutate(.row_id = dplyr::row_number()),
+#'     by = ".row_id"
+#'   ) %>%
+#'   dplyr::select(-".row_id")
 #'
 #' # Define features for the prioritizr problem
 #' usedFeatures <- out_sf %>%
@@ -530,33 +546,39 @@ splnr_plot_climKernelDensity_Fancy <- function(solution_list,
 #' plot_basic_kde <- splnr_plot_climKernelDensity(soln = dat_solnClim, type = "Basic")
 #' print(plot_basic_kde)
 #'
-#' # Example 2: Normal (Fancy) kernel density plot for a single solution
-#' plot_normal_kde_single <- splnr_plot_climKernelDensity(
-#'   soln = list(dat_solnClim),
-#'   solution_names = c("Solution 1"),
+#' # Example 2: Normal (Fancy) kernel density plot
+#' plot_normal_kde <- splnr_plot_climKernelDensity(
+#'   soln = dat_solnClim,
 #'   type = "Normal"
 #' )
-#' print(plot_normal_kde_single)
+#' print(plot_normal_kde)
 #'
-#' # Example 3: Normal (Fancy) plot comparing two solutions (create a dummy second solution)
-#' # For demonstration, let's create another dummy solution
+#' # Example 3: Compare two solutions side-by-side using patchwork
 #' dat_solnClim_2 <- dat_solnClim %>%
-#'   dplyr::mutate(solution_1 = sample(c(0, 1), n(), replace = TRUE)) # Randomize selection
+#'   dplyr::mutate(solution_1 = sample(c(0L, 1L), dplyr::n(), replace = TRUE))
 #'
-#' plot_normal_kde_multi <- splnr_plot_climKernelDensity(
-#'   soln = list(dat_solnClim, dat_solnClim_2),
-#'   solution_names = c("Solution A", "Solution B"),
-#'   climate_names = "metric",
+#' plot_compare <- patchwork::wrap_plots(
+#'   splnr_plot_climKernelDensity(soln = dat_solnClim,   type = "Normal",
+#'                                legendTitle = "Scenario 1", xAxisLab = "Climate metric"),
+#'   splnr_plot_climKernelDensity(soln = dat_solnClim_2, type = "Normal",
+#'                                legendTitle = "Scenario 2", xAxisLab = "Climate metric"),
+#'   ncol = 1
+#' )
+#' print(plot_compare)
+#'
+#' # Example 4: Custom colour map and labels
+#' plot_custom <- splnr_plot_climKernelDensity(
+#'   soln = dat_solnClim,
 #'   type = "Normal",
 #'   colorMap = "plasma",
 #'   legendTitle = "Climate Value",
 #'   xAxisLab = "Climate Metric (units)"
 #' )
-#' print(plot_normal_kde_multi)
+#' print(plot_custom)
 #' }
 splnr_plot_climKernelDensity <- function(soln,
-                                         solution_names = "solution_1",
-                                         climate_names = "metric",
+                                         solution_name = "solution_1",
+                                         climate_name = "metric",
                                          type = "Normal",
                                          colorMap = "C",
                                          legendTitle = expression(" \u00B0C y"^"-1" * ""),
@@ -572,12 +594,12 @@ splnr_plot_climKernelDensity <- function(soln,
     msg = "'type' must be either 'Normal' or 'Basic'."
   )
   assertthat::assert_that(
-    is.character(solution_names),
-    msg = "'solution_names' must be a character vector."
+    is.character(solution_name) && length(solution_name) == 1L,
+    msg = "'solution_name' must be a single character string."
   )
   assertthat::assert_that(
-    is.character(climate_names),
-    msg = "'climate_names' must be a character vector."
+    is.character(climate_name) && length(climate_name) == 1L,
+    msg = "'climate_name' must be a single character string."
   )
   assertthat::assert_that(
     is.character(colorMap),
@@ -594,31 +616,26 @@ splnr_plot_climKernelDensity <- function(soln,
 
   # Conditional logic to call either Basic or Fancy plotting function.
   if (type == "Normal") {
-    # If type is "Normal", expect a list of solutions.
-    if (inherits(soln, "list") == FALSE) {
-      stop("For 'type = \"Normal\"', 'soln' must be a list of prioritizr solutions.")
-    } else if (inherits(soln, "list")) {
-      # Ensure 'names' matches the number of solutions if 'type' is "Normal" and 'names' is provided.
-      if (!is.na(solution_names[1]) && length(solution_names) != length(soln)) {
-        stop("When 'type = \"Normal\"' the length of 'solution_names' must match the number of solutions in 'soln'.")
-      }
-      # Call the fancy kernel density plotting function.
-      ggclimDens <- splnr_plot_climKernelDensity_Fancy(
-        solution_list = soln,
-        solution_names = solution_names,
-        climate_names = climate_names,
-        colorMap = colorMap,
-        legendTitle = legendTitle, xAxisLab = xAxisLab
-      )
+    # For type = "Normal", soln must be a single sf or data.frame.
+    # To compare two solutions, call this function twice and combine with
+    # patchwork::wrap_plots().
+    if (!inherits(soln, "data.frame")) {
+      stop("For 'type = \"Normal\"', 'soln' must be a single sf or data.frame object.")
     }
+    ggclimDens <- splnr_plot_climKernelDensity_Fancy(
+      soln          = soln,
+      solution_name = solution_name,
+      climate_name  = climate_name,
+      colorMap      = colorMap,
+      legendTitle   = legendTitle,
+      xAxisLab      = xAxisLab
+    )
   } else if (type == "Basic") {
     # If type is "Basic", expect a single sf object.
-    if (inherits(soln, "sf") == FALSE) {
+    if (!inherits(soln, "sf")) {
       stop("For 'type = \"Basic\"', 'soln' must be a single sf object.")
-    } else if (inherits(soln, "sf")) {
-      # Call the basic kernel density plotting function.
-      ggclimDens <- splnr_plot_climKernelDensity_Basic(soln = soln)
     }
+    ggclimDens <- splnr_plot_climKernelDensity_Basic(soln = soln)
   } else {
     # This case should ideally be caught by initial assertthat, but kept as a fallback.
     stop("Invalid 'type' specified. Must be 'Normal' or 'Basic'.")

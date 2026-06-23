@@ -5,17 +5,19 @@
 \title{Get Marine Protected Areas (MPAs) from WDPA}
 \usage{
 splnr_get_MPAs(
-  PlanUnits,
+  PlanUnits = NULL,
   Countries,
   Status = c("Designated", "Established", "Inscribed"),
   Desig = c("National", "Regional", "International", "Not Applicable"),
   Category = c("Ia", "Ib", "II", "III", "IV"),
+  Raw = FALSE,
   ...
 )
 }
 \arguments{
-\item{PlanUnits}{An \code{sf} object representing the planning units to be used for intersection.
-This object should have a valid CRS defined.}
+\item{PlanUnits}{An \code{sf} object representing the planning units to be used for
+intersection. Required when \code{Raw = FALSE}. Ignored (and may be \code{NULL}) when
+\code{Raw = TRUE}. This object should have a valid CRS defined.}
 
 \item{Countries}{A character vector specifying the countries for which to extract MPAs.
 To retrieve all global MPAs, use the value \code{"global"}. Country names should match
@@ -30,26 +32,42 @@ protected areas. Defaults to \code{c("National", "Regional", "International", "N
 \item{Category}{A character vector specifying the desired IUCN Protected Area
 Management Categories. Defaults to \code{c("Ia", "Ib", "II", "III", "IV")}.}
 
+\item{Raw}{Logical. If \code{FALSE} (the default), the fetched and cleaned WDPA data
+are intersected with \code{PlanUnits} and the function returns a planning-unit \code{sf}
+object with a \code{wdpa} coverage column. If \code{TRUE}, the function returns the
+dissolved WDPA polygon layer directly (after fetching, filtering, cleaning, and
+dissolving), without any intersection. \code{PlanUnits} is not required in this case.}
+
 \item{...}{Other arguments that are passed directly to the \code{wdpa_fetch()} function
 from the \code{wdpar} package (e.g., \code{verbose = TRUE}).}
 }
 \value{
-An \code{sf} object. This object contains the planning units, with an
-additional \code{wdpa} column (set to 1) for areas that intersect with the
-selected MPAs.
+\describe{
+\item{\code{Raw = FALSE}}{An \code{sf} object of planning units with an additional \code{wdpa}
+column (set to 1) for planning units that intersect with the selected MPAs.}
+\item{\code{Raw = TRUE}}{An \code{sf} object of dissolved WDPA polygons with all columns
+returned by \code{wdpar::wdpa_dissolve()}, prior to any geometry-only selection or
+planning-unit intersection.}
+}
 }
 \description{
 This function serves as a wrapper for the \code{wdpar} package, facilitating the
 retrieval of Marine Protected Areas (MPAs) from the World Database on Protected
-Areas (WDPA) and intersecting them with provided planning units.
-The result is an \code{sf} object indicating the area of planning units covered by
-the selected marine protected areas.
+Areas (WDPA) and optionally intersecting them with provided planning units.
+
+When \code{Raw = FALSE} (the default), the result is an \code{sf} object indicating
+which planning units are covered by the selected marine protected areas.
+
+When \code{Raw = TRUE}, the function returns the dissolved WDPA polygon layer
+directly — after fetching, filtering, cleaning, and dissolving — without
+intersecting against planning units. This is useful for inspecting the raw
+MPA geometries, reprojecting them, or passing them to a custom gridding step.
 }
 \details{
 This function leverages the robust capabilities of the \code{wdpar} package by
 Jeffrey O. Hanson to access and process WDPA data. It allows filtering of MPAs
 based on country, status, designation type, and IUCN category, and then
-spatially intersects these MPAs with your defined planning units.
+optionally spatially intersects these MPAs with your defined planning units.
 
 For a comprehensive understanding of the WDPA data fields:
 \itemize{
@@ -69,8 +87,11 @@ and "Not Assigned".
 \dontrun{
 # Assuming 'dat_PUs' is an existing sf object of planning units in your package.
 
-# Example: Get MPAs for Australia and intersect with planning units.
+# Example: Get MPAs for Australia and intersect with planning units (default).
 dat_mpas <- splnr_get_MPAs(PlanUnits = dat_PUs, Countries = "Australia", force = TRUE)
+
+# Example: Get raw dissolved WDPA polygons without intersecting planning units.
+raw_mpas <- splnr_get_MPAs(Countries = "Australia", Raw = TRUE)
 
 # Example: Get MPAs for multiple countries with specific status and categories.
 dat_mpas_specific <- splnr_get_MPAs(
