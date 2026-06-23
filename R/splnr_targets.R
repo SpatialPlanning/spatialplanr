@@ -62,7 +62,6 @@
 #' print(targets_custom_range)
 #' }
 splnr_targets_byInverseArea <- function(df, target_min, target_max) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(df, "sf"), # Ensure df is an sf object.
@@ -179,7 +178,6 @@ splnr_targets_byInverseArea <- function(df, target_min, target_max) {
 #' print(targets_by_type)
 #' }
 splnr_targets_byCategory <- function(dat, catTarg, catName = "Category") {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(dat, "data.frame"), # Ensure dat is a data.frame (or sf object).
@@ -280,8 +278,10 @@ splnr_targets_byCategory <- function(dat, catTarg, catName = "Category") {
 #' # Example 1: Assigning specific targets to categories
 #' # Create a dummy dataframe resembling output from splnr_get_IUCNRedList
 #' df_species_iucn <- data.frame(
-#'   Species = c("Diomedea exulans", "Hippocampus kuda",
-#'               "Squatina squatina", "Common Dolphin"),
+#'   Species = c(
+#'     "Diomedea exulans", "Hippocampus kuda",
+#'     "Squatina squatina", "Common Dolphin"
+#'   ),
 #'   IUCN_Category = c("VU", "EN", "CR", "LC")
 #' )
 #'
@@ -313,7 +313,6 @@ splnr_targets_byCategory <- function(dat, catTarg, catName = "Category") {
 #' print(df_updated_targets)
 #' }
 splnr_targets_byIUCN <- function(dat, IUCN_target, IUCN_col = "IUCN_Category") {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(dat, "data.frame"), # Ensure dat is a data.frame or sf object.
@@ -348,14 +347,17 @@ splnr_targets_byIUCN <- function(dat, IUCN_target, IUCN_col = "IUCN_Category") {
     # If IUCN_target is a named vector, join and coalesce targets.
     dat <- dat %>%
       # Convert the named IUCN_target vector to a data frame for joining.
-      dplyr::left_join(data.frame(IUCN_target_value = IUCN_target,
-                                  IUCN_Category = names(IUCN_target)),
-                       by = dplyr::join_by(!!rlang::sym(IUCN_col) == "IUCN_Category")) %>%
+      dplyr::left_join(
+        data.frame(
+          IUCN_target_value = IUCN_target,
+          IUCN_Category = names(IUCN_target)
+        ),
+        by = dplyr::join_by(!!rlang::sym(IUCN_col) == "IUCN_Category")
+      ) %>%
       # Use coalesce to update 'target' only where new IUCN_target_value is not NA.
       dplyr::mutate(target = dplyr::coalesce(.data$IUCN_target_value, .data$target)) %>%
       # Remove the temporary IUCN_target_value column.
       dplyr::select(-"IUCN_target_value")
-
   } else if (is.numeric(IUCN_target) && length(IUCN_target) == 1) {
     # If IUCN_target is a single numeric, apply to specific threatened IUCN categories.
     dat <- dat %>%

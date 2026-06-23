@@ -193,7 +193,6 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
                                  climsmartApproach = 0,
                                  solnCol = "solution_1",
                                  incidental_features = character(0)) {
-
   # --- Input Assertions ---
   # Ensure 'soln' is an sf object and not empty.
   assertthat::assert_that(
@@ -300,7 +299,7 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
       ) %>%
       dplyr::group_by(.data$feature) %>%
       dplyr::summarise(
-        total_amount  = sum(.data$total_amount,  na.rm = TRUE),
+        total_amount  = sum(.data$total_amount, na.rm = TRUE),
         absolute_held = sum(.data$absolute_held, na.rm = TRUE)
       ) %>%
       dplyr::ungroup() %>%
@@ -310,12 +309,10 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
         0
       )) %>%
       dplyr::left_join(targets, by = "feature")
-
   } else if (climsmart == TRUE && climsmartApproach == 3) {
     # Percentile approach: join with pre-adjusted targets dataframe.
     s1 <- s1 %>%
       dplyr::left_join(targets, by = "feature")
-
   } else {
     # Standard (non-climate-smart) approach: targets from the problem object.
     s1 <- s1 %>%
@@ -368,7 +365,7 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
           .data$absolute_held / .data$total_amount,
           0
         ),
-        target     = 0,
+        target = 0,
         incidental = TRUE
       )
   } else {
@@ -505,7 +502,6 @@ splnr_plot_featureRep <- function(df,
                                   sort_by = "category",
                                   base_size = 14,
                                   ...) {
-
   assertthat::assert_that(
     inherits(df, c("data.frame", "tbl_df")),
     is.logical(renameFeatures),
@@ -775,7 +771,6 @@ splnr_plot_circBplot <- function(df, legend_color, legend_list,
                                  indicateTargets = TRUE, impTarget = NA,
                                  repTarget = NA, colTarget = "red",
                                  base_size = 14) {
-
   # assertthat checks for initial inputs
   assertthat::assert_that(
     inherits(df, c("data.frame", "tbl_df")),
@@ -907,14 +902,14 @@ splnr_plot_circBplot <- function(df, legend_color, legend_list,
       inherit.aes = FALSE
     ) +
     ggplot2::annotate("text",
-                      x = rep(max(data$id - 1), 4),
-                      y = c(25, 50, 75, 100),
-                      label = c(25, 50, 75, 100),
-                      color = "grey50",
-                      size = 4,
-                      angle = 0, # -5
-                      fontface = "bold",
-                      hjust = 0.5
+      x = rep(max(data$id - 1), 4),
+      y = c(25, 50, 75, 100),
+      label = c(25, 50, 75, 100),
+      color = "grey50",
+      size = 4,
+      angle = 0, # -5
+      fontface = "bold",
+      hjust = 0.5
     ) +
 
     # setting limitations of actual plot
@@ -929,7 +924,6 @@ splnr_plot_circBplot <- function(df, legend_color, legend_list,
       fontface = "bold", alpha = 0.6, size = 2.5, angle = label_data$angle,
       inherit.aes = FALSE
     ) +
-
     ggplot2::theme(
       legend.position = "bottom",
       axis.text = ggplot2::element_blank(),

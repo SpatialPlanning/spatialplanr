@@ -1,6 +1,6 @@
 pDat <- prioritizr::problem(dat_species_bin %>% dplyr::mutate(Cost = runif(n = dim(.)[[1]])),
-                            features = c("Spp1", "Spp2", "Spp3"),
-                            cost_column = "Cost"
+  features = c("Spp1", "Spp2", "Spp3"),
+  cost_column = "Cost"
 ) %>%
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_relative_targets(0.3) %>%
@@ -23,8 +23,10 @@ testthat::test_that("splnr_get_featureRep() returns a tibble for basic use", {
 
 testthat::test_that("splnr_get_featureRep() returns correct columns", {
   df <- splnr_get_featureRep(soln = soln, pDat = pDat)
-  expect_true(all(c("feature", "total_amount", "absolute_held",
-                    "relative_held", "target", "incidental") %in% names(df)))
+  expect_true(all(c(
+    "feature", "total_amount", "absolute_held",
+    "relative_held", "target", "incidental"
+  ) %in% names(df)))
 })
 
 
@@ -77,7 +79,7 @@ testthat::test_that("splnr_get_featureRep() errors when incidental_features over
     splnr_get_featureRep(
       soln = soln,
       pDat = pDat,
-      incidental_features = c("Spp1")  # Spp1 is already in pDat
+      incidental_features = c("Spp1") # Spp1 is already in pDat
     ),
     regexp = "already features in 'pDat'"
   )
@@ -88,12 +90,11 @@ testthat::test_that("splnr_plot_featureRep() returns a ggplot for basic use", {
   expect_s3_class(
     splnr_plot_featureRep(splnr_get_featureRep(
       soln = soln,
-      pDat = pDat), category = dat_category)
-    , "gg"
+      pDat = pDat
+    ), category = dat_category),
+    "gg"
   )
 })
-
-
 
 
 testthat::test_that("Correct function output", {
@@ -111,10 +112,10 @@ testthat::test_that("Correct function output", {
 
   target <- data.frame(feature = c("Spp1", "Spp2", "Spp3", "Spp4", "Spp5")) %>%
     dplyr::mutate(class = dplyr::if_else(.data$feature %in% imp_layers,
-                                         "important", "representative"
+      "important", "representative"
     )) %>%
     dplyr::mutate(target = dplyr::if_else(class == "important",
-                                          50 / 100, 30 / 100
+      50 / 100, 30 / 100
     ))
 
   df <- merge(df_rep_imp, target) %>%
@@ -131,10 +132,11 @@ testthat::test_that("Correct function output", {
 
   expect_s3_class(
     (splnr_plot_circBplot(df,
-                          legend_list = legends,
-                          legend_color = colors,
-                          impTarget = 50, repTarget = 30))
-    , "gg"
+      legend_list = legends,
+      legend_color = colors,
+      impTarget = 50, repTarget = 30
+    )),
+    "gg"
   )
 })
 
@@ -216,8 +218,10 @@ testthat::test_that("splnr_get_featureRep() works with climsmart=TRUE, climsmart
   # Should return one row per original feature (not per CS/NCS split)
   expect_s3_class(df, "tbl_df")
   expect_equal(nrow(df), nrow(targets_df))
-  expect_true(all(c("feature", "total_amount", "absolute_held",
-                    "relative_held", "target") %in% names(df)))
+  expect_true(all(c(
+    "feature", "total_amount", "absolute_held",
+    "relative_held", "target"
+  ) %in% names(df)))
 })
 
 
@@ -263,8 +267,10 @@ testthat::test_that("splnr_get_featureRep() works with climsmart=TRUE, climsmart
 
   expect_s3_class(df, "tbl_df")
   expect_equal(nrow(df), nrow(targets_df))
-  expect_true(all(c("feature", "total_amount", "absolute_held",
-                    "relative_held", "target") %in% names(df)))
+  expect_true(all(c(
+    "feature", "total_amount", "absolute_held",
+    "relative_held", "target"
+  ) %in% names(df)))
 })
 
 
@@ -312,4 +318,3 @@ testthat::test_that("splnr_plot_featureRep() works with categoryFeatureCol when 
     "gg"
   )
 })
-

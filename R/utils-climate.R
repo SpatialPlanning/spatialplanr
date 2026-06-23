@@ -91,7 +91,6 @@ splnr_climate_priorityArea_preprocess <- function(features,
                                                   metric,
                                                   direction,
                                                   metric_col = "metric") {
-
   assertthat::assert_that(
     inherits(features, "sf"),
     msg = "'features' must be an 'sf' object."
@@ -138,7 +137,7 @@ splnr_climate_priorityArea_preprocess <- function(features,
   joined_df <- sf::st_drop_geometry(features)
   joined_df[[".row_id"]] <- seq_len(nrow(joined_df))
   joined_df <- dplyr::left_join(joined_df, metric_vals_df, by = ".row_id")
-  joined_df[[".row_id"]] <- NULL   # remove key column; no trace in output
+  joined_df[[".row_id"]] <- NULL # remove key column; no trace in output
 
   if (any(is.na(joined_df$metric))) {
     warning(
@@ -153,8 +152,8 @@ splnr_climate_priorityArea_preprocess <- function(features,
   result_list <- vector("list", length(spp))
 
   for (i in seq_along(spp)) {
-    feat_col    <- spp[i]
-    feat_vals   <- joined_df[[feat_col]]
+    feat_col <- spp[i]
+    feat_vals <- joined_df[[feat_col]]
     metric_vals <- joined_df[["metric"]]
 
     # Indices where the feature is present AND metric is not NA.
@@ -189,8 +188,8 @@ splnr_climate_priorityArea_preprocess <- function(features,
     # CS  = feature present AND in climate-smart zone.
     # NCS = feature present AND NOT in climate-smart zone.
     # Both derived in one pass; no second loop or second join needed.
-    cs_col  <- dplyr::if_else(feat_vals == 1, climate_smart,       0L)
-    ncs_col <- dplyr::if_else(feat_vals == 1, 1L - climate_smart,  0L)
+    cs_col <- dplyr::if_else(feat_vals == 1, climate_smart, 0L)
+    ncs_col <- dplyr::if_else(feat_vals == 1, 1L - climate_smart, 0L)
 
     result_list[[i]] <- data.frame(cs_col, ncs_col)
     names(result_list[[i]]) <- c(
@@ -262,7 +261,6 @@ splnr_climate_priorityArea_preprocess <- function(features,
 splnr_climate_priorityArea_assignTargets <- function(targets,
                                                      climateSmartDF,
                                                      refugiaTarget = 1) {
-
   assertthat::assert_that(
     is.data.frame(targets),
     msg = "'targets' must be a data.frame."
@@ -285,7 +283,7 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
     msg = "'refugiaTarget' must be a single numeric value between 0 and 1."
   )
   assertthat::assert_that(
-    any(grepl("_CS$",  names(climateSmartDF))) &&
+    any(grepl("_CS$", names(climateSmartDF))) &&
       any(grepl("_NCS$", names(climateSmartDF))),
     msg = paste0(
       "'climateSmartDF' must contain '_CS' and '_NCS' columns ",
@@ -307,18 +305,20 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
     )
 
   finalList <- vector("list", length(spp))
-  skipped   <- 0L
+  skipped <- 0L
 
   for (i in seq_along(spp)) {
-    feat     <- spp[i]
-    cs_name  <- paste0(feat, "_CS")
+    feat <- spp[i]
+    cs_name <- paste0(feat, "_CS")
     ncs_name <- paste0(feat, "_NCS")
 
-    trgt <- targets %>% dplyr::filter(.data$feature == feat) %>% dplyr::pull("target")
+    trgt <- targets %>%
+      dplyr::filter(.data$feature == feat) %>%
+      dplyr::pull("target")
 
     # Use exact equality (not str_ends) to avoid substring-matching bugs
     # where e.g. "fish" would match "bluefish".
-    row_cs  <- featDF[featDF$feature == cs_name,  , drop = FALSE]
+    row_cs <- featDF[featDF$feature == cs_name, , drop = FALSE]
     row_ncs <- featDF[featDF$feature == ncs_name, , drop = FALSE]
 
     if (nrow(row_cs) == 0 || nrow(row_ncs) == 0) {
@@ -330,7 +330,7 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
       next
     }
 
-    n_cs  <- row_cs[["planunit"]]
+    n_cs <- row_cs[["planunit"]]
     n_ncs <- row_ncs[["planunit"]]
     total <- n_cs + n_ncs
 
@@ -343,12 +343,12 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
       next
     }
 
-    prop_cs  <- n_cs  / total
+    prop_cs <- n_cs / total
     prop_ncs <- n_ncs / total
 
     if (prop_cs > trgt) {
       # All required representation can be met within CS areas alone.
-      targetCS  <- trgt / prop_cs
+      targetCS <- trgt / prop_cs
       targetNCS <- 0
     } else {
       targetCS <- refugiaTarget
@@ -437,8 +437,8 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
 #'   percentile    = 5,
 #'   refugiaTarget = 1
 #' )
-#' out_sf_cpa    <- CPA_result$Features
-#' targets_cpa   <- CPA_result$Targets
+#' out_sf_cpa <- CPA_result$Features
+#' targets_cpa <- CPA_result$Targets
 #' }
 splnr_climate_priorityAreaApproach <- function(features,
                                                metric,
@@ -447,7 +447,6 @@ splnr_climate_priorityAreaApproach <- function(features,
                                                percentile = 5,
                                                refugiaTarget = 1,
                                                metric_col = "metric") {
-
   assertthat::assert_that(
     inherits(features, "sf"),
     msg = "'features' must be an 'sf' object."
@@ -579,7 +578,6 @@ splnr_climate_feature_preprocess <- function(features,
                                              metric,
                                              direction,
                                              metric_col = "metric") {
-
   assertthat::assert_that(
     inherits(features, "sf"),
     msg = "'features' must be an 'sf' object."
@@ -647,7 +645,7 @@ splnr_climate_feature_preprocess <- function(features,
   features_df <- sf::st_drop_geometry(features)
   features_df[[".row_id"]] <- seq_len(nrow(features_df))
   features_df <- dplyr::left_join(features_df, climate_col, by = ".row_id")
-  features_df[[".row_id"]] <- NULL   # remove key column; no trace in output
+  features_df[[".row_id"]] <- NULL # remove key column; no trace in output
 
   features_out <- sf::st_set_geometry(features_df, sf::st_geometry(features)) %>%
     sf::st_as_sf()
@@ -701,7 +699,6 @@ splnr_climate_feature_preprocess <- function(features,
 splnr_climate_feature_assignTargets <- function(climateSmartDF,
                                                 refugiaTarget,
                                                 targets) {
-
   assertthat::assert_that(
     inherits(climateSmartDF, "data.frame"),
     msg = "'climateSmartDF' must be a data.frame or sf object."
@@ -731,8 +728,8 @@ splnr_climate_feature_assignTargets <- function(climateSmartDF,
     msg = "'targets' must contain a 'target' column."
   )
 
-  total_planning_units    <- nrow(climateSmartDF)
-  total_climate_smart     <- sum(climateSmartDF$climate_layer, na.rm = TRUE)
+  total_planning_units <- nrow(climateSmartDF)
+  total_climate_smart <- sum(climateSmartDF$climate_layer, na.rm = TRUE)
 
   if (total_planning_units == 0) {
     stop("'climateSmartDF' has no planning units. Cannot assign targets.")
@@ -745,8 +742,8 @@ splnr_climate_feature_assignTargets <- function(climateSmartDF,
   trgt <- refugiaTarget / proportion_climate_smart
 
   climate_layerDF <- tibble::tribble(
-    ~feature,        ~target,
-    "climate_layer",  trgt
+    ~feature, ~target,
+    "climate_layer", trgt
   )
 
   finalDF <- dplyr::bind_rows(targets, climate_layerDF)
@@ -816,7 +813,7 @@ splnr_climate_feature_assignTargets <- function(climateSmartDF,
 #'   percentile    = 35,
 #'   refugiaTarget = 0.3
 #' )
-#' out_sf_feature  <- Feature_result$Features
+#' out_sf_feature <- Feature_result$Features
 #' targets_feature <- Feature_result$Targets
 #' }
 splnr_climate_featureApproach <- function(features,
@@ -826,7 +823,6 @@ splnr_climate_featureApproach <- function(features,
                                           percentile = 35,
                                           refugiaTarget = 0.3,
                                           metric_col = "metric") {
-
   assertthat::assert_that(
     inherits(features, "sf"),
     msg = "'features' must be an 'sf' object."
@@ -963,7 +959,6 @@ splnr_climate_percentile_preprocess <- function(features,
                                                 percentile,
                                                 direction,
                                                 metric_col = "metric") {
-
   assertthat::assert_that(
     inherits(features, "sf"),
     msg = "'features' must be an 'sf' object."
@@ -1016,7 +1011,7 @@ splnr_climate_percentile_preprocess <- function(features,
   joined_df <- sf::st_drop_geometry(features)
   joined_df[[".row_id"]] <- seq_len(nrow(joined_df))
   joined_df <- dplyr::left_join(joined_df, metric_vals_df, by = ".row_id")
-  joined_df[[".row_id"]] <- NULL   # remove key column; no trace in output
+  joined_df[[".row_id"]] <- NULL # remove key column; no trace in output
 
   # Percentile fraction is constant; compute once outside the loop.
   prct <- .splnr_climate_prct(percentile, direction)
@@ -1024,8 +1019,8 @@ splnr_climate_percentile_preprocess <- function(features,
   percentileList <- vector("list", length(spp))
 
   for (i in seq_along(spp)) {
-    feat_col    <- spp[i]
-    feat_vals   <- joined_df[[feat_col]]
+    feat_col <- spp[i]
+    feat_vals <- joined_df[[feat_col]]
     metric_vals <- joined_df[["metric"]]
 
     present_idx <- which(feat_vals == 1 & !is.na(metric_vals))
@@ -1111,7 +1106,6 @@ splnr_climate_percentile_preprocess <- function(features,
 splnr_climate_percentile_assignTargets <- function(features,
                                                    climateSmartDF,
                                                    targets) {
-
   assertthat::assert_that(
     inherits(features, "sf"),
     msg = "'features' must be an 'sf' object."
@@ -1167,12 +1161,14 @@ splnr_climate_percentile_assignTargets <- function(features,
     dplyr::left_join(df_filt, by = "feature") %>%
     dplyr::mutate(
       proportion = dplyr::if_else(.data$original > 0,
-                                  .data$filtered / .data$original, 0),
-      target     = dplyr::if_else(.data$proportion > 0,
-                                  .data$target / .data$proportion,
-                                  .data$target),
+        .data$filtered / .data$original, 0
+      ),
+      target = dplyr::if_else(.data$proportion > 0,
+        .data$target / .data$proportion,
+        .data$target
+      ),
       # Cap at 1 (100%) to prevent infeasible targets.
-      target     = dplyr::if_else(.data$target > 1, 1, .data$target)
+      target = dplyr::if_else(.data$target > 1, 1, .data$target)
     ) %>%
     dplyr::select("feature", "target")
 
@@ -1239,7 +1235,7 @@ splnr_climate_percentile_assignTargets <- function(features,
 #'   direction  = 1,
 #'   percentile = 35
 #' )
-#' out_sf_percentile  <- Percentile_result$Features
+#' out_sf_percentile <- Percentile_result$Features
 #' targets_percentile <- Percentile_result$Targets
 #' }
 splnr_climate_percentileApproach <- function(features,
@@ -1248,7 +1244,6 @@ splnr_climate_percentileApproach <- function(features,
                                              direction,
                                              percentile = 35,
                                              metric_col = "metric") {
-
   assertthat::assert_that(
     inherits(features, "sf"),
     msg = "'features' must be an 'sf' object."

@@ -9,13 +9,13 @@ vignette: >
   
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-collapse = TRUE,
-comment = "#>",
-warning = FALSE,
-cache = FALSE,
-message = FALSE,
-eval = TRUE,
-fig.width = 9
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  cache = FALSE,
+  message = FALSE,
+  eval = TRUE,
+  fig.width = 9
 )
 ```
 
@@ -70,10 +70,12 @@ landmass <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>
 
 ## Create Planning Units 
 ```{r}
-PUs <- spatialgridr::get_grid(boundary = Bndry,
-                              crs = cCRS,
-                              output = "sf_hex",
-                              resolution = PU_size)
+PUs <- spatialgridr::get_grid(
+  boundary = Bndry,
+  crs = cCRS,
+  output = "sf_hex",
+  resolution = PU_size
+)
 ```
 
 ## Get the features 
@@ -81,21 +83,21 @@ PUs <- spatialgridr::get_grid(boundary = Bndry,
 For our example, we will use a small subset of charismatic megafauna species of the Coral Sea to inform the conservation plan. We filtered the Aquamaps (Aquamaps.org) species distribution models for our study area for the following species: 
 ```{r}
 Dict <- tibble::tribble(
-  ~nameCommon, ~nameVariable, ~category, 
-  "Green sea turtle", "Chelonia_mydas", "Reptiles", 
-  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles", 
-  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles", 
-  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles", 
-  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles", 
-  "Humpback whale", "Megaptera_novaeangliae", "Mammals", 
-  "Common Minke whale", "Balaenoptera_acutorostrata", "Mammals", 
-  "Dugong", "Dugong_dugon", "Mammals", 
-  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays", 
-  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays", 
+  ~nameCommon, ~nameVariable, ~category,
+  "Green sea turtle", "Chelonia_mydas", "Reptiles",
+  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles",
+  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles",
+  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles",
+  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles",
+  "Humpback whale", "Megaptera_novaeangliae", "Mammals",
+  "Common Minke whale", "Balaenoptera_acutorostrata", "Mammals",
+  "Dugong", "Dugong_dugon", "Mammals",
+  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays",
+  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays",
   "Great hammerhead shark", "Sphyrna_mokarran",
-  "Sharks and rays", 
-  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays", 
-  "Reef manta ray", "Mobula_alfredi", "Sharks and rays", 
+  "Sharks and rays",
+  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays",
+  "Reef manta ray", "Mobula_alfredi", "Sharks and rays",
   "Whitetip reef shark", "Triaenodon_obesus", "Sharks and rays",
   "Red-footed booby", "Sula_sula", "Birds"
 )
@@ -140,10 +142,10 @@ The climate velocity data can be visualized using the `splnr_plot_climData()` fu
 
 ```{r, fig.width = 9}
 (ggclim <- splnr_plot_climData(metric, "metric") +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 In our case, there were few areas with low climate velocity, which are the areas we define as climate refugia in our example. Usually, we would combine several metrics (e.g. exposure, velocity etc.) of multiple SSP scenarios to get more robust climate refugia. For our example, we randomly set areas with very high velocity to a value between `0.85-1` to visualize the output (CHANGE THIS LATER TO BETTER DATA).
@@ -159,10 +161,10 @@ metric <- CoralSeaVelocity %>%
   )
 
 (ggclim <- splnr_plot_climData(metric, "metric") +
-    splnr_gg_add(
-      Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 We then use the climate priority area approach `splnr_climate_priorityAreaApproach()` detailed in [Buenafe et al (2023)](https://doi.org/10.1002/eap.2852) to determine climate refugia. Briefly, this approach selects a percentile (in our case 5%) of the suitable habitat of each feature that is considered the most climate-smart. It also requires a `direction` input indicating at which side of the metric range the more climate-smart areas can be found. In our case, lower climate velocity denotes more climate-smart (`direction = -1`), but in other cases a higher value might represent the more climate-smart planning units (`direction = 1`). 
@@ -181,9 +183,9 @@ targets <- datEx_species_bin %>%
 
 CPA_Approach <- splnr_climate_priorityAreaApproach(
   features = datEx_species_bin,
-  metric = metric, 
-  targets = targets, 
-  direction = -1, 
+  metric = metric,
+  targets = targets,
+  direction = -1,
   refugiaTarget = 1
 )
 
@@ -193,7 +195,8 @@ out_sf <- CPA_Approach$Features %>%
       dplyr::select(
         tidyselect::starts_with("Cost_")
       ),
-    join = sf::st_equals) %>%
+    join = sf::st_equals
+  ) %>%
   sf::st_join(metric, join = sf::st_equals)
 
 targets <- CPA_Approach$Targets
@@ -232,10 +235,10 @@ We can look at the resulting plan using `splnr_plot_solution()`.
 
 ```{r, fig.width = 9}
 (ggSoln <- splnr_plot_solution(dat_solnClim) +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 However, we are also interested how climate-smart the selected planning units in the solution actually are. For this, we can use a kernel density plot.
@@ -243,7 +246,7 @@ However, we are also interested how climate-smart the selected planning units in
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
   soln = list(dat_solnClim),
-  # names = c("Input 1"), 
+  # names = c("Input 1"),
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"
@@ -264,9 +267,9 @@ targets <- datEx_species_bin %>%
 
 Percentile_Approach <- splnr_climate_percentileApproach(
   features = datEx_species_bin,
-  metric = metric, 
-  targets = targets, 
-  direction = -1, 
+  metric = metric,
+  targets = targets,
+  direction = -1,
   percentile = 35
 )
 
@@ -304,7 +307,7 @@ p2 <- prioritizr::problem(out_sf, usedFeatures, "Cost_None") %>%
   prioritizr::add_default_solver(verbose = FALSE)
 
 dat_solnClimPercentile <- prioritizr::solve.ConservationProblem(p2,
-                                                                force = TRUE
+  force = TRUE
 )
 ```
 
@@ -312,10 +315,10 @@ We can look at the resulting plan using `splnr_plot_solution()`.
 
 ```{r, fig.width = 9}
 (ggSoln <- splnr_plot_solution(dat_solnClimPercentile) +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 However, we are also interested how climate-smart the selected planning units in the solution actually are. For this, we can use a kernel density plot 
@@ -324,7 +327,7 @@ However, we are also interested how climate-smart the selected planning units in
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
   soln = list(dat_solnClimPercentile),
-  # names = c("Input 1"), 
+  # names = c("Input 1"),
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"
@@ -343,8 +346,8 @@ targets <- datEx_species_bin %>%
 
 Feature_Approach <- splnr_climate_featureApproach(
   features = datEx_species_bin,
-  metric = metric, 
-  targets = targets, 
+  metric = metric,
+  targets = targets,
   direction = 1
 )
 
@@ -354,7 +357,8 @@ out_sf <- Feature_Approach$Features %>%
       dplyr::select(
         tidyselect::starts_with("Cost_")
       ),
-    join = sf::st_equals) %>%
+    join = sf::st_equals
+  ) %>%
   sf::st_join(metric, join = sf::st_equals)
 
 targets <- Feature_Approach$Targets
@@ -385,10 +389,10 @@ dat_solnClimFeature <- prioritizr::solve.ConservationProblem(p3)
 
 ```{r, fig.width = 9}
 (ggSoln <- splnr_plot_solution(dat_solnClimFeature) +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 However, we are also interested how climate-smart the selected planning units in the solution actually are. For this, we can use a kernel density plot 
@@ -397,7 +401,7 @@ However, we are also interested how climate-smart the selected planning units in
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
   soln = list(dat_solnClimFeature),
-  # names = c("Input 1"), 
+  # names = c("Input 1"),
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"

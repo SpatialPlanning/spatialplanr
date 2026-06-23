@@ -1,4 +1,3 @@
-
 targets <- dat_species_bin %>%
   sf::st_drop_geometry() %>%
   colnames() %>%
@@ -39,9 +38,9 @@ testthat::test_that("splnr_climate_priorityAreaApproach() returns correct struct
   expect_equal(nrow(result$Features), nrow(dat_species_bin))
 
   # Features contains _CS and _NCS columns for every input feature
-  cs_cols  <- paste0(feat_names, "_CS")
+  cs_cols <- paste0(feat_names, "_CS")
   ncs_cols <- paste0(feat_names, "_NCS")
-  expect_true(all(cs_cols  %in% names(result$Features)))
+  expect_true(all(cs_cols %in% names(result$Features)))
   expect_true(all(ncs_cols %in% names(result$Features)))
 
   # Targets is a data.frame with feature and target columns
@@ -63,9 +62,9 @@ testthat::test_that("splnr_climate_priorityAreaApproach() produces no NA targets
   result <- splnr_climate_priorityAreaApproach(
     features      = dat_species_bin,
     metric        = dat_clim,
-    targets       = targets_tbl,   # tibble, not plain data.frame
+    targets       = targets_tbl, # tibble, not plain data.frame
     direction     = -1,
-    percentile    = 5              # small percentile → prop_cs > trgt for most features
+    percentile    = 5 # small percentile → prop_cs > trgt for most features
   )
 
   # The target column must be a plain numeric vector with no NA values.

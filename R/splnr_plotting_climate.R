@@ -1,4 +1,3 @@
-
 #' @title Plot Climate Metric Data
 #'
 #' @description
@@ -70,7 +69,6 @@ splnr_plot_climData <- function(df,
                                 plotTitle = " ",
                                 legendTitle = "Climate metric",
                                 base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(df, "sf"),
@@ -148,7 +146,6 @@ splnr_plot_climData <- function(df,
 #' @importFrom rlang .data :=
 #'
 splnr_plot_climKernelDensity_Basic <- function(soln, base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln, "data.frame"),
@@ -172,7 +169,7 @@ splnr_plot_climKernelDensity_Basic <- function(soln, base_size = 14) {
   )
 
   # Check if ggridges package is installed, if not, stop with an error.
-  if (requireNamespace("ggridges", quietly = TRUE) == FALSE){
+  if (requireNamespace("ggridges", quietly = TRUE) == FALSE) {
     stop("To run splnr_plot_climKernelDensity you will need to install the package ggridges.")
   }
 
@@ -281,7 +278,6 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
                                                legendTitle = expression(" \u00B0C y"^"-1" * ""),
                                                xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")"),
                                                base_size = 14) {
-
   # --- Input validation -------------------------------------------------------
 
   assertthat::assert_that(
@@ -343,8 +339,10 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
   df <- soln %>%
     tibble::as_tibble() %>%
     dplyr::select(tidyselect::all_of(c(solution_name, climate_name))) %>%
-    dplyr::rename(solution_1 = tidyselect::all_of(solution_name),
-                  metric     = tidyselect::all_of(climate_name)) %>%
+    dplyr::rename(
+      solution_1 = tidyselect::all_of(solution_name),
+      metric = tidyselect::all_of(climate_name)
+    ) %>%
     # A single-solution plot still needs a y-axis grouping variable for ggridges.
     # We use the climate column name as the label so the y-axis is informative
     # when the user inspects the raw plot object.
@@ -355,10 +353,12 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
   # remains self-contained and the lines always reflect the actual distribution.
   medians <- df %>%
     dplyr::group_by(.data$solution_1) %>%
-    dplyr::summarise(med = stats::median(.data$metric, na.rm = TRUE),
-                     .groups = "drop")
+    dplyr::summarise(
+      med = stats::median(.data$metric, na.rm = TRUE),
+      .groups = "drop"
+    )
 
-  med_selected   <- medians$med[medians$solution_1 == 1]
+  med_selected <- medians$med[medians$solution_1 == 1]
   med_unselected <- medians$med[medians$solution_1 == 0]
 
   # Middle colour of the viridis palette — used as the representative fill
@@ -380,9 +380,9 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     ) +
     # Viridis colour scale for the gradient fill (continuous legend).
     ggplot2::scale_fill_viridis_c(
-      name   = legendTitle,
+      name = legendTitle,
       option = colorMap,
-      guide  = ggplot2::guide_colorbar(
+      guide = ggplot2::guide_colorbar(
         barheight = ggplot2::unit(10, "lines"),
         barwidth  = ggplot2::unit(3, "lines")
       )
@@ -421,13 +421,13 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
       alpha = 0, na.rm = TRUE
     ) +
     ggplot2::scale_colour_manual(
-      name   = NULL,
+      name = NULL,
       values = c("Selected PUs" = mid_colour, "Unselected PUs" = "grey70"),
-      guide  = ggplot2::guide_legend(
+      guide = ggplot2::guide_legend(
         override.aes = list(
           fill     = c(mid_colour, "grey70"),
-          colour   = c("black",    "black"),
-          linetype = c("solid",    "dotted"),
+          colour   = c("black", "black"),
+          linetype = c("solid", "dotted"),
           shape    = 22,
           size     = 8,
           alpha    = 1
@@ -440,13 +440,13 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     ggplot2::theme_bw(base_size = base_size) +
     # Colour/layout overrides only; sizes inherit from base_size.
     ggplot2::theme(
-      axis.ticks      = ggplot2::element_line(color = "black", linewidth = 1),
-      axis.line       = ggplot2::element_line(colour = "black", linewidth = 1),
-      axis.text       = ggplot2::element_text(color = "black"),
-      axis.title.y    = ggplot2::element_blank(),
-      axis.text.y     = ggplot2::element_blank(),
-      legend.text     = ggplot2::element_text(color = "black"),
-      legend.title    = ggplot2::element_text(color = "black"),
+      axis.ticks = ggplot2::element_line(color = "black", linewidth = 1),
+      axis.line = ggplot2::element_line(colour = "black", linewidth = 1),
+      axis.text = ggplot2::element_text(color = "black"),
+      axis.title.y = ggplot2::element_blank(),
+      axis.text.y = ggplot2::element_blank(),
+      legend.text = ggplot2::element_text(color = "black"),
+      legend.title = ggplot2::element_text(color = "black"),
       legend.title.position = "right"
     )
 
@@ -573,10 +573,14 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
 #'   dplyr::mutate(solution_1 = sample(c(0L, 1L), dplyr::n(), replace = TRUE))
 #'
 #' plot_compare <- patchwork::wrap_plots(
-#'   splnr_plot_climKernelDensity(soln = dat_solnClim,   type = "Normal",
-#'                                legendTitle = "Scenario 1", xAxisLab = "Climate metric"),
-#'   splnr_plot_climKernelDensity(soln = dat_solnClim_2, type = "Normal",
-#'                                legendTitle = "Scenario 2", xAxisLab = "Climate metric"),
+#'   splnr_plot_climKernelDensity(
+#'     soln = dat_solnClim, type = "Normal",
+#'     legendTitle = "Scenario 1", xAxisLab = "Climate metric"
+#'   ),
+#'   splnr_plot_climKernelDensity(
+#'     soln = dat_solnClim_2, type = "Normal",
+#'     legendTitle = "Scenario 2", xAxisLab = "Climate metric"
+#'   ),
 #'   ncol = 1
 #' )
 #' print(plot_compare)
@@ -599,7 +603,6 @@ splnr_plot_climKernelDensity <- function(soln,
                                          legendTitle = expression(" \u00B0C y"^"-1" * ""),
                                          xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")"),
                                          base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.character(type),

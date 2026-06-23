@@ -1,4 +1,3 @@
-
 #' Convert a world sf object to a Pacific-centred one
 #' Defaults to assuming Robinson projection
 #'
@@ -19,7 +18,6 @@
 splnr_convert_toPacific <- function(df,
                                     buff = 0,
                                     cCRS) {
-
   assertthat::assert_that(
     inherits(df, "sf"),
     is.numeric(buff) && buff >= 0,

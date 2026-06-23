@@ -56,7 +56,7 @@
 #' # Example: Retrieve yearly GFW data for Australia, transformed to a
 #' # Mollweide projection (ESRI:54009) and compressed (aggregated) by location.
 #' gfw_data <- splnr_get_gfw(
-#'   region = 'Australia',
+#'   region = "Australia",
 #'   start_date = "2021-01-01",
 #'   end_date = "2022-12-31",
 #'   temp_res = "YEARLY",
@@ -85,7 +85,6 @@ splnr_get_gfw <- function(region,
                           key = gfwr::gfw_auth(),
                           cCRS = "EPSG:4326",
                           compress = FALSE) {
-
   # Assertions for input parameters to ensure correct types and values
   assertthat::assert_that(
     (is.character(region) || is.numeric(region) || (region_source == "USER_SHAPEFILE" && inherits(region, "sf"))),
@@ -108,7 +107,7 @@ splnr_get_gfw <- function(region,
     msg = "The 'spat_res' parameter must be one of 'LOW' or 'HIGH'."
   )
   assertthat::assert_that(
-    region_source %in% c('EEZ', 'MPA', 'RFMO', 'USER_SHAPEFILE'),
+    region_source %in% c("EEZ", "MPA", "RFMO", "USER_SHAPEFILE"),
     msg = "The 'region_source' parameter must be one of 'EEZ', 'MPA', 'RFMO', or 'USER_SHAPEFILE'."
   )
   assertthat::assert_that(
@@ -125,18 +124,17 @@ splnr_get_gfw <- function(region,
   )
 
   # Define an internal helper function to fetch GFW data for a single region.
-  get_gfw_byRegion <- function(region){
-
+  get_gfw_byRegion <- function(region) {
     # Determine the region ID based on the region_source and region type.
-    if (region_source == "EEZ" & is.character(region)){
+    if (region_source == "EEZ" & is.character(region)) {
       region_id <- gfwr::gfw_region_id(region = region, region_source = region_source, key = key)$id
-    } else if (region_source == "EEZ" & is.numeric(region)){
+    } else if (region_source == "EEZ" & is.numeric(region)) {
       # If region is numeric for EEZ, assume it's already an ID.
       region_id <- region
-    } else if (region_source == "RFMO"){
+    } else if (region_source == "RFMO") {
       # For RFMO, pass the region as is; handles potential gfwr package quirks.
       region_id <- region
-    } else if (region_source == "USER_SHAPEFILE"){
+    } else if (region_source == "USER_SHAPEFILE") {
       # If region_source is USER_SHAPEFILE, use the provided region (assumed to be an sf object).
       region_id <- region
     }
@@ -147,24 +145,26 @@ splnr_get_gfw <- function(region,
 
     # Define a nested helper function to obtain data for a specific date range within the loop.
     get_data_for_range <- function(start_date, end_date, rid) {
-
       # Call the gfwr::get_raster function to retrieve GFW raster data.
       data <- gfwr::gfw_ais_fishing_hours(
         spatial_resolution = spat_res,
         temporal_resolution = temp_res,
-        group_by = 'FLAGANDGEARTYPE', # Group by flag and geartype.
+        group_by = "FLAGANDGEARTYPE", # Group by flag and geartype.
         start_date = start_date,
         end_date = end_date,
         region = rid,
         region_source = region_source,
-        key = key)
+        key = key
+      )
 
       # Mutate and rename columns for consistency and clarity.
       data <- data %>%
         dplyr::mutate(GFWregionID = rid) %>% # Add a column for the GFW region ID.
-        dplyr::rename(TimeRange = .data$`Time Range`,
-                      VesselID = .data$`Vessel IDs`,
-                      ApparentFishingHrs = .data$`Apparent Fishing Hours`)
+        dplyr::rename(
+          TimeRange = .data$`Time Range`,
+          VesselID = .data$`Vessel IDs`,
+          ApparentFishingHrs = .data$`Apparent Fishing Hours`
+        )
 
       return(data)
     }
@@ -183,18 +183,19 @@ splnr_get_gfw <- function(region,
       dplyr::bind_rows()
 
     # Check if the resulting data frame is empty and stop with an informative message if no data is found.
-    if(rlang::is_empty(data_df)){
+    if (rlang::is_empty(data_df)) {
       stop(paste0("No data found at all for the requested area of ", region, " between ", start_date, " and ", end_date))
     }
 
     # Process data based on the 'compress' parameter.
-    if (isTRUE(compress)){
-
+    if (isTRUE(compress)) {
       # Group data by Lon and Lat and summarise (sum) Apparent Fishing Hours for compression.
       data_df <- data_df %>%
         dplyr::group_by(.data$Lon, .data$Lat) %>%
-        dplyr::summarise("ApparentFishingHrs" = sum(.data$ApparentFishingHrs, na.rm = TRUE),
-                         GFWregionID = dplyr::first(.data$GFWregionID)) %>%
+        dplyr::summarise(
+          "ApparentFishingHrs" = sum(.data$ApparentFishingHrs, na.rm = TRUE),
+          GFWregionID = dplyr::first(.data$GFWregionID)
+        ) %>%
         dplyr::ungroup()
 
       # Convert the aggregated data frame to a 'terra' raster, then to polygons, and finally to an 'sf' object.
@@ -205,18 +206,16 @@ splnr_get_gfw <- function(region,
         dplyr::mutate(GFWregionID = as.factor(.data$GFWregionID)) # Ensure GFWregionID is a factor.
 
       # Verify that the dimensions of the data frame and sf object match after conversion.
-      if (dim(data_df)[1] != dim(data_sf)[1]){
+      if (dim(data_df)[1] != dim(data_sf)[1]) {
         stop("Data dimensions of data_df and data_sf do not match after conversion to polygon")
       }
-
-    } else if (isFALSE(compress)){
-
+    } else if (isFALSE(compress)) {
       # Process data without compression, separating 'TimeRange' based on temporal resolution.
       if (temp_res == "YEARLY") {
         # If temporal resolution is yearly, create a 'Year' column and convert to sf.
         data_sf <- data_df %>%
           dplyr::mutate(Year = .data$TimeRange) %>%
-          sf::st_as_sf(coords = c("Lon", "Lat"), crs ="EPSG:4326")
+          sf::st_as_sf(coords = c("Lon", "Lat"), crs = "EPSG:4326")
       } else {
         # Otherwise, separate 'TimeRange' into 'Year', 'Month', and/or 'Day' columns.
         if (temp_res == "MONTHLY") {
@@ -232,7 +231,7 @@ splnr_get_gfw <- function(region,
     }
 
     # Transform the CRS of the sf object if the requested cCRS is different from the default "EPSG:4326".
-    if (isFALSE(cCRS == "EPSG:4326")){
+    if (isFALSE(cCRS == "EPSG:4326")) {
       data_sf <- data_sf %>%
         sf::st_transform(crs = cCRS)
     }
@@ -243,18 +242,20 @@ splnr_get_gfw <- function(region,
   out <- purrr::map(region, function(x) get_gfw_byRegion(x))
 
   # Combine the results from multiple regions based on the 'compress' setting.
-  if (isFALSE(compress)){
+  if (isFALSE(compress)) {
     # If not compressed, simply bind rows of the sf objects.
     out <- out %>%
       dplyr::bind_rows()
-  } else if (isTRUE(compress)){
+  } else if (isTRUE(compress)) {
     # If compressed, bind rows and then re-summarise to handle duplicate cells on boundaries,
     # summing fishing hours and combining GFWregionIDs.
     out <- out %>%
       dplyr::bind_rows() %>%
       dplyr::group_by(.data$geometry) %>%
-      dplyr::summarise("ApparentFishingHrs" = sum(.data$ApparentFishingHrs, na.rm = TRUE),
-                       GFWregionID = toString(.data$GFWregionID)) %>%
+      dplyr::summarise(
+        "ApparentFishingHrs" = sum(.data$ApparentFishingHrs, na.rm = TRUE),
+        GFWregionID = toString(.data$GFWregionID)
+      ) %>%
       dplyr::ungroup()
   }
 

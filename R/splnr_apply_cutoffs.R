@@ -118,7 +118,6 @@
 #' df_inverse_cutoff <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = TRUE)
 #' print(df_inverse_cutoff)
 splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
-
   # --- Input Assertions ---
 
   assertthat::assert_that(
@@ -186,9 +185,7 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
   # col_name:   used only for error messages.
 
   resolve_cutoff <- function(entry, col_values, col_name) {
-
     if (is.numeric(entry)) {
-
       assertthat::assert_that(
         length(entry) == 1,
         msg = paste0(
@@ -197,9 +194,7 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
         )
       )
       threshold <- entry
-
     } else if (is.function(entry)) {
-
       # Strip NAs before passing to the user's function so that common
       # aggregation functions (quantile, mean, etc.) work without the user
       # needing to remember na.rm = TRUE.
@@ -224,7 +219,6 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
           "Got: ", deparse(threshold)
         )
       )
-
     } else {
       stop(
         "Each entry in 'Cutoffs' must be a numeric scalar or a function. ",
@@ -266,7 +260,6 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
         thresh
       }
     )
-
   } else if (is.numeric(Cutoffs) && is.null(names(Cutoffs)) && length(Cutoffs) == 1) {
     # Single numeric scalar: same threshold for every numeric column.
     # Validate once against the first column (value check only; column data
@@ -274,7 +267,6 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
     message("Applying single cutoff of ", Cutoffs, " to all numeric feature columns.")
     resolve_cutoff(Cutoffs, features_plain[[numeric_cols[1]]], numeric_cols[1])
     thresholds <- stats::setNames(rep(Cutoffs, length(numeric_cols)), numeric_cols)
-
   } else {
     # Named numeric vector or named list: per-column thresholds.
     # Convert a named numeric vector to a list so resolve_cutoff handles both
@@ -308,9 +300,9 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
     features_tbl <- features_tbl %>%
       dplyr::mutate(
         !!rlang::sym(col) := dplyr::case_when(
-          is.na(!!rlang::sym(col))    ~ 0,
+          is.na(!!rlang::sym(col)) ~ 0,
           !!rlang::sym(col) >= thresh ~ 1,
-          TRUE                        ~ 0
+          TRUE ~ 0
         )
       )
   }

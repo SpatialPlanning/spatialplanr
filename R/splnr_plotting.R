@@ -117,7 +117,6 @@ splnr_plot <- function(df,
                        legendTitle = NULL,
                        legendLabels = NULL,
                        base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.data.frame(df),
@@ -138,8 +137,10 @@ splnr_plot <- function(df,
   if (!is.null(colNames)) {
     assertthat::assert_that(
       all(colNames %in% colnames(df)),
-      msg = paste0("Not all specified 'colNames' exist in the input dataframe. Missing: ",
-                   paste(colNames[!colNames %in% colnames(df)], collapse = ", "))
+      msg = paste0(
+        "Not all specified 'colNames' exist in the input dataframe. Missing: ",
+        paste(colNames[!colNames %in% colnames(df)], collapse = ", ")
+      )
     )
   }
   assertthat::assert_that(
@@ -171,29 +172,27 @@ splnr_plot <- function(df,
   showFeatureSum <- FALSE
 
   # Determine data type based on 'colNames' presence and content.
-  if (!is.null(colNames)){ # If 'colNames' are provided.
+  if (!is.null(colNames)) { # If 'colNames' are provided.
 
-    if (length(colNames) == 1){ # If only one column name is specified.
+    if (length(colNames) == 1) { # If only one column name is specified.
 
-      if (is.logical(df[[colNames]])){ # Check if the column data is logical (TRUE/FALSE).
+      if (is.logical(df[[colNames]])) { # Check if the column data is logical (TRUE/FALSE).
         is_logi <- TRUE
       } else { # If not logical, check if it's binary (0/1).
         # Create a temporary dataframe, replacing NA with 0 in the target columns for binary check.
         df0 <- df %>%
-          dplyr::mutate(dplyr::across(tidyselect::all_of(colNames), ~tidyr::replace_na(., 0)))
+          dplyr::mutate(dplyr::across(tidyselect::all_of(colNames), ~ tidyr::replace_na(., 0)))
         # Check if all values in the column are exclusively 0 or 1.
         is_binary <- all(purrr::map_vec(colNames, function(x) all(df0[[x]] %in% c(0, 1))))
       }
 
       ## If not binary and not logical, assume it's continuous.
-      if (isFALSE(is_binary) & isFALSE(is_logi)){
+      if (isFALSE(is_binary) & isFALSE(is_logi)) {
         is_continuous <- TRUE # This assumption allows plotting, and issues would be visible.
       }
-
-    } else if (length(colNames) > 1){ # If multiple column names are specified.
+    } else if (length(colNames) > 1) { # If multiple column names are specified.
       showFeatureSum <- TRUE # Set flag to calculate and show the sum of features.
     }
-
   }
 
   # Initialize the base ggplot object with coordinate system and subtitle.
@@ -221,15 +220,16 @@ splnr_plot <- function(df,
         name = legendTitle,
         palette = paletteName,
         aesthetics = c("fill"),
-        oob = scales::squish) +
+        oob = scales::squish
+      ) +
       ggplot2::guides(fill = ggplot2::guide_colourbar(order = -1))
 
     return(gg)
   } else if (is_binary | is_logi) { # If data is binary or logical.
 
     # Set default legend labels if not provided.
-    if (is.null(legendLabels)){
-      legendLabels = c("Absence", "Presence")
+    if (is.null(legendLabels)) {
+      legendLabels <- c("Absence", "Presence")
     }
 
     # Add geom_sf for discrete fill based on the single column.
@@ -239,19 +239,22 @@ splnr_plot <- function(df,
     # Apply manual fill scale for binary (0/1) data.
     if (isTRUE(is_binary)) {
       gg <- gg +
-        ggplot2::scale_fill_manual(values = c("0" = colourVals[1], "1" = colourVals[2]),
-                                   labels = legendLabels,
-                                   name = legendTitle)
+        ggplot2::scale_fill_manual(
+          values = c("0" = colourVals[1], "1" = colourVals[2]),
+          labels = legendLabels,
+          name = legendTitle
+        )
     }
 
     # Apply manual fill scale for logical (FALSE/TRUE) data.
     if (isTRUE(is_logi)) {
       gg <- gg +
-        ggplot2::scale_fill_manual(values = c("FALSE" = colourVals[1], "TRUE" = colourVals[2]),
-                                   labels = legendLabels,
-                                   name = legendTitle)
+        ggplot2::scale_fill_manual(
+          values = c("FALSE" = colourVals[1], "TRUE" = colourVals[2]),
+          labels = legendLabels,
+          name = legendTitle
+        )
     }
-
   } else if (is_continuous) { # If data is continuous.
 
     # Add geom_sf for continuous fill and color based on the single column.
@@ -260,10 +263,11 @@ splnr_plot <- function(df,
       # Apply a viridis continuous color scale for fill and color.
       ggplot2::scale_fill_viridis_c(name = legendTitle, aesthetics = c("colour", "fill")) +
       # Configure guides to show color bar for fill and hide color legend for outline.
-      ggplot2::guides(fill = ggplot2::guide_colourbar(order = 1),
-                      colour = "none")
-
-  } else if (is.null(colNames)){ # If no column to plot by (only Planning Unit outlines).
+      ggplot2::guides(
+        fill = ggplot2::guide_colourbar(order = 1),
+        colour = "none"
+      )
+  } else if (is.null(colNames)) { # If no column to plot by (only Planning Unit outlines).
 
     # Add geom_sf to display Planning Unit outlines without fill.
     gg <- gg +
@@ -588,7 +592,6 @@ splnr_plot_costOverlay <- function(soln,
                                    legendTitle = "Cost",
                                    plotTitle = "Solution overlaid with cost",
                                    base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln, "sf"),
@@ -656,7 +659,7 @@ splnr_plot_costOverlay <- function(soln,
       oob = scales::squish, # Squish values outside the limits.
       guide = ggplot2::guide_colourbar(
         barwidth  = ggplot2::unit(20, "lines"), # Twice the width of the climate colourbar (10 lines).
-        barheight = ggplot2::unit(6, "lines")   # Twice the height of the climate colourbar (3 lines).
+        barheight = ggplot2::unit(6, "lines") # Twice the height of the climate colourbar (3 lines).
       )
     ) +
     # Set coordinate limits based on the bounding box of the cost data.
@@ -745,7 +748,6 @@ splnr_plot_costOverlay <- function(soln,
 #' }
 splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compared to Scenario 1:",
                                   base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln1, "sf"),
@@ -789,9 +791,9 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
     # Categorize differences into "Same", "Removed (-)", or "Added (+)".
     dplyr::mutate(
       Compare = dplyr::case_when(
-        Combined == 2 ~ "Same",                              # Both selected.
-        solution_1 == 1 & solution_2 == 0 ~ "Removed (-)",  # In soln1 only.
-        solution_1 == 0 & solution_2 == 1 ~ "Added (+)"     # In soln2 only.
+        Combined == 2 ~ "Same", # Both selected.
+        solution_1 == 1 & solution_2 == 0 ~ "Removed (-)", # In soln1 only.
+        solution_1 == 0 & solution_2 == 1 ~ "Added (+)" # In soln2 only.
       ),
       Compare = factor(.data$Compare, levels = c("Added (+)", "Same", "Removed (-)"))
     ) %>%
@@ -808,8 +810,10 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
     # Add sf layer for the comparison, filling by the 'Compare' factor.
     ggplot2::geom_sf(data = soln, ggplot2::aes(fill = .data$Compare), colour = NA, size = 0.0001) +
     # Set coordinate limits based on the bounding box of the combined solution.
-    ggplot2::coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]),
-                      ylim = c(bbox["ymin"], bbox["ymax"])) +
+    ggplot2::coord_sf(
+      xlim = c(bbox["xmin"], bbox["xmax"]),
+      ylim = c(bbox["ymin"], bbox["ymax"])
+    ) +
     # Manually set fill colors for each comparison category.
     ggplot2::scale_fill_manual(
       name = legendTitle, # Set legend title.
@@ -895,7 +899,6 @@ splnr_plot_selectionFreq <- function(selFreq,
                                      paletteName = "Greens",
                                      legendTitle = "Selection \nFrequency",
                                      base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(selFreq, "sf"), # Ensure selFreq is an sf object.
@@ -1060,7 +1063,6 @@ splnr_plot_importanceScore <- function(soln,
                                        decimals = 4,
                                        legendTitle = "Importance Score",
                                        base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln, "sf"), # soln should be an sf object as it contains geometry
@@ -1269,7 +1271,6 @@ splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#447
                                legendTitle = "Correlation \ncoefficient",
                                AxisLabels = NULL, plotTitle = "",
                                base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.matrix(x),
@@ -1297,7 +1298,7 @@ splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#447
   )
 
   # Check if ggcorrplot package is installed, if not, stop with an error.
-  if (requireNamespace("ggcorrplot", quietly = TRUE) == FALSE){
+  if (requireNamespace("ggcorrplot", quietly = TRUE) == FALSE) {
     stop("To run splnr_plot_corrMat you will need to install the package ggcorrplot.")
   }
 
@@ -1305,9 +1306,9 @@ splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#447
   # Pass theme_bw(base_size) so that ggcorrplot's internal theme inherits the
   # correct base font size rather than its own hardcoded default.
   gg <- ggcorrplot::ggcorrplot(x,
-                               outline.color = "black", # Set outline color for matrix cells.
-                               lab = TRUE, # Display correlation coefficients on the plot.
-                               ggtheme = ggplot2::theme_bw(base_size = base_size)
+    outline.color = "black", # Set outline color for matrix cells.
+    lab = TRUE, # Display correlation coefficients on the plot.
+    ggtheme = ggplot2::theme_bw(base_size = base_size)
   ) +
     # Apply a gradient fill for the correlation values.
     ggplot2::scale_fill_gradient2(

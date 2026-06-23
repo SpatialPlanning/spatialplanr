@@ -117,7 +117,6 @@ splnr_plot <- function(df,
                        legendTitle = NULL,
                        legendLabels = NULL,
                        base_size = 14) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.data.frame(df),
@@ -138,8 +137,10 @@ splnr_plot <- function(df,
   if (!is.null(colNames)) {
     assertthat::assert_that(
       all(colNames %in% colnames(df)),
-      msg = paste0("Not all specified 'colNames' exist in the input dataframe. Missing: ",
-                   paste(colNames[!colNames %in% colnames(df)], collapse = ", "))
+      msg = paste0(
+        "Not all specified 'colNames' exist in the input dataframe. Missing: ",
+        paste(colNames[!colNames %in% colnames(df)], collapse = ", ")
+      )
     )
   }
   assertthat::assert_that(
@@ -171,29 +172,27 @@ splnr_plot <- function(df,
   showFeatureSum <- FALSE
 
   # Determine data type based on 'colNames' presence and content.
-  if (!is.null(colNames)){ # If 'colNames' are provided.
+  if (!is.null(colNames)) { # If 'colNames' are provided.
 
-    if (length(colNames) == 1){ # If only one column name is specified.
+    if (length(colNames) == 1) { # If only one column name is specified.
 
-      if (is.logical(df[[colNames]])){ # Check if the column data is logical (TRUE/FALSE).
+      if (is.logical(df[[colNames]])) { # Check if the column data is logical (TRUE/FALSE).
         is_logi <- TRUE
       } else { # If not logical, check if it's binary (0/1).
         # Create a temporary dataframe, replacing NA with 0 in the target columns for binary check.
         df0 <- df %>%
-          dplyr::mutate(dplyr::across(tidyselect::all_of(colNames), ~tidyr::replace_na(., 0)))
+          dplyr::mutate(dplyr::across(tidyselect::all_of(colNames), ~ tidyr::replace_na(., 0)))
         # Check if all values in the column are exclusively 0 or 1.
         is_binary <- all(purrr::map_vec(colNames, function(x) all(df0[[x]] %in% c(0, 1))))
       }
 
       ## If not binary and not logical, assume it's continuous.
-      if (isFALSE(is_binary) & isFALSE(is_logi)){
+      if (isFALSE(is_binary) & isFALSE(is_logi)) {
         is_continuous <- TRUE # This assumption allows plotting, and issues would be visible.
       }
-
-    } else if (length(colNames) > 1){ # If multiple column names are specified.
+    } else if (length(colNames) > 1) { # If multiple column names are specified.
       showFeatureSum <- TRUE # Set flag to calculate and show the sum of features.
     }
-
   }
 
   # Initialize the base ggplot object with coordinate system and subtitle.
@@ -221,15 +220,16 @@ splnr_plot <- function(df,
         name = legendTitle,
         palette = paletteName,
         aesthetics = c("fill"),
-        oob = scales::squish) +
+        oob = scales::squish
+      ) +
       ggplot2::guides(fill = ggplot2::guide_colourbar(order = -1))
 
     return(gg)
   } else if (is_binary | is_logi) { # If data is binary or logical.
 
     # Set default legend labels if not provided.
-    if (is.null(legendLabels)){
-      legendLabels = c("Absence", "Presence")
+    if (is.null(legendLabels)) {
+      legendLabels <- c("Absence", "Presence")
     }
 
     # Add geom_sf for discrete fill based on the single column.
@@ -241,19 +241,22 @@ splnr_plot <- function(df,
     # whether one or both levels (0/1) are present in the data.
     if (isTRUE(is_binary)) {
       gg <- gg +
-        ggplot2::scale_fill_manual(values = c("0" = colourVals[1], "1" = colourVals[2]),
-                                   labels = c("0" = legendLabels[1], "1" = legendLabels[2]),
-                                   name = legendTitle)
+        ggplot2::scale_fill_manual(
+          values = c("0" = colourVals[1], "1" = colourVals[2]),
+          labels = c("0" = legendLabels[1], "1" = legendLabels[2]),
+          name = legendTitle
+        )
     }
 
     # Apply manual fill scale for logical (FALSE/TRUE) data.
     if (isTRUE(is_logi)) {
       gg <- gg +
-        ggplot2::scale_fill_manual(values = c("FALSE" = colourVals[1], "TRUE" = colourVals[2]),
-                                   labels = legendLabels,
-                                   name = legendTitle)
+        ggplot2::scale_fill_manual(
+          values = c("FALSE" = colourVals[1], "TRUE" = colourVals[2]),
+          labels = legendLabels,
+          name = legendTitle
+        )
     }
-
   } else if (is_continuous) { # If data is continuous.
 
     # Add geom_sf for continuous fill and color based on the single column.
@@ -262,10 +265,11 @@ splnr_plot <- function(df,
       # Apply a viridis continuous color scale for fill and color.
       ggplot2::scale_fill_viridis_c(name = legendTitle, aesthetics = c("colour", "fill")) +
       # Configure guides to show color bar for fill and hide color legend for outline.
-      ggplot2::guides(fill = ggplot2::guide_colourbar(order = 1),
-                      colour = "none")
-
-  } else if (is.null(colNames)){ # If no column to plot by (only planning unit outlines).
+      ggplot2::guides(
+        fill = ggplot2::guide_colourbar(order = 1),
+        colour = "none"
+      )
+  } else if (is.null(colNames)) { # If no column to plot by (only planning unit outlines).
 
     # Add geom_sf to display planning unit outlines without fill.
     gg <- gg +

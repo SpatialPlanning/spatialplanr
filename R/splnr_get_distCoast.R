@@ -59,7 +59,7 @@
 #' )
 #'
 #' if (exists("dat_sf") && exists("landmass")) {
-#'    # Transform landmass to the same CRS as the planning units
+#'   # Transform landmass to the same CRS as the planning units
 #'   landmass_proj <- sf::st_transform(landmass, sf::st_crs(dat_sf))
 #'   dat_sf_custom_coast <- splnr_get_distCoast(dat_sf, custom_coast = landmass_proj)
 #'   summary(dat_sf_custom_coast$coastDistance_km)
