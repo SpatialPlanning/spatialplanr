@@ -222,7 +222,11 @@ splnr_plot <- function(df,
         aesthetics = c("fill"),
         oob = scales::squish
       ) +
-      ggplot2::guides(fill = ggplot2::guide_colourbar(order = -1))
+      ggplot2::guides(fill = ggplot2::guide_colourbar(
+        order = -1,
+        title.position = "right",
+        title.theme = ggplot2::element_text(angle = 270)
+      ))
 
     return(gg)
   } else if (is_binary | is_logi) { # If data is binary or logical.
@@ -264,7 +268,11 @@ splnr_plot <- function(df,
       ggplot2::scale_fill_viridis_c(name = legendTitle, aesthetics = c("colour", "fill")) +
       # Configure guides to show color bar for fill and hide color legend for outline.
       ggplot2::guides(
-        fill = ggplot2::guide_colourbar(order = 1),
+        fill = ggplot2::guide_colourbar(
+          order = 1,
+          title.position = "right",
+          title.theme = ggplot2::element_text(angle = 270)
+        ),
         colour = "none"
       )
   } else if (is.null(colNames)) { # If no column to plot by (only Planning Unit outlines).
@@ -643,7 +651,7 @@ splnr_plot_costOverlay <- function(soln,
   gg <- ggplot2::ggplot() +
     ggplot2::theme_bw(base_size = base_size) +
     # Plot the selected solution units in black.
-    ggplot2::geom_sf(data = soln, fill = "grey30", colour = "grey30", size = 0.0001) +
+    ggplot2::geom_sf(data = soln, fill = "grey50", colour = "grey50", size = 0.0001) +
     # Overlay the cost data on top of the selected units with transparency.
     ggplot2::geom_sf(data = Cost, ggplot2::aes(fill = !!rlang::sym(costName)), alpha = 0.1, colour = NA, size = 0.0001) +
     # Apply a gradient fill for the cost, with specified low and high colors.
@@ -658,8 +666,10 @@ splnr_plot_costOverlay <- function(soln,
       ),
       oob = scales::squish, # Squish values outside the limits.
       guide = ggplot2::guide_colourbar(
-        barwidth  = ggplot2::unit(3, "lines"),
-        barheight = ggplot2::unit(10, "lines")
+        barwidth  = ggplot2::unit(2, "lines"),
+        barheight = ggplot2::unit(10, "lines"),
+        title.position = "right",
+        title.theme = ggplot2::element_text(angle = 270)
       )
     ) +
     # Set coordinate limits based on the bounding box of the cost data.
@@ -1154,7 +1164,9 @@ splnr_plot_importanceScore <- function(soln,
       breaks = seq95fs, # Set breaks for legend.
       labels = lab, # Apply custom labels.
       guide = ggplot2::guide_colourbar( # Configure color bar legend.
-        title = legendTitle # Set legend title.
+        title = legendTitle, # Set legend title.
+        title.position = "right",
+        title.theme = ggplot2::element_text(angle = 270)
       )
     ) +
     # Set coordinate limits based on the bounding box of the scored solution.
@@ -1318,7 +1330,9 @@ splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#447
       limits = c(-1, 1), # Set fixed limits for the color scale.
       guide = ggplot2::guide_colourbar( # Configure color bar legend.
         title = legendTitle, # Set legend title.
-        barwidth = 2, barheight = 10 # Set dimensions of the color bar.
+        barwidth = 2, barheight = 10, # Set dimensions of the color bar.
+        title.position = "right",
+        title.theme = ggplot2::element_text(angle = 270)
       )
     ) +
     # Rotate x-axis labels for better readability.
