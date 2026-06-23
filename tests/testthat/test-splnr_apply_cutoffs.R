@@ -202,3 +202,29 @@ testthat::test_that("non-logical inverse raises an error", {
     "must be a single logical value"
   )
 })
+
+# --- resolve_cutoff() internal error branches ---
+
+testthat::test_that("function-based cutoff that throws an error is re-raised with context", {
+  # The tryCatch inside resolve_cutoff() catches errors from the user's function
+  # and re-throws them with a more informative message.
+  expect_error(
+    splnr_apply_cutoffs(
+      dat_species_prob,
+      Cutoffs = \(x) stop("deliberate error in cutoff function")
+    ),
+    "raised an error"
+  )
+})
+
+testthat::test_that("named list entry that is neither numeric nor function raises an error", {
+  # The else branch in resolve_cutoff() handles entries that are not numeric
+  # scalars or functions (e.g. a character string).
+  expect_error(
+    splnr_apply_cutoffs(
+      dat_species_prob,
+      Cutoffs = list("Spp1" = "not_a_number_or_function")
+    ),
+    "must be a numeric scalar or a function"
+  )
+})

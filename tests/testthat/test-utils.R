@@ -116,3 +116,30 @@ testthat::test_that("Correct function output", {
     splnr_get_selFreq(solnMany = list(soln1, soln2), type = "list"), "sf"
   )
 })
+
+
+# ---------------------------------------------------------------------------
+# splnr_featureNames() with custom exclude argument (line 433 of utils.R)
+# ---------------------------------------------------------------------------
+# The default exclude = NA only strips columns starting with "Cost_".
+# When a non-NA character vector is supplied, those prefixes are also excluded.
+# This test exercises the else branch at line 430-434.
+
+testthat::test_that("splnr_featureNames() with custom exclude drops matching columns", {
+  # Add a column starting with "Spp1" and one starting with "Extra_" so we can
+  # verify that passing exclude = "Spp1" removes it while keeping the others.
+  dat_extra <- dat_species_prob %>%
+    dplyr::mutate(Extra_col = 1.0)
+
+  # Default: all species columns + Extra_col are returned (Cost_ prefix absent)
+  all_names <- splnr_featureNames(dat_extra)
+  expect_true("Extra_col" %in% all_names)
+
+  # With custom exclude: "Extra_" prefix columns should be dropped
+  filtered_names <- splnr_featureNames(dat_extra, exclude = "Extra_")
+  expect_false("Extra_col" %in% filtered_names)
+
+  # The remaining species columns should still be present
+  spp_cols <- grep("^Spp", all_names, value = TRUE)
+  expect_true(all(spp_cols %in% filtered_names))
+})

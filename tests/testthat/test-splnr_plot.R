@@ -231,3 +231,138 @@ testthat::test_that("splnr_gg_add() Full lock-out uses named labelLockOut vector
 })
 
 
+# ---------------------------------------------------------------------------
+# Local solution object for costOverlay and contours tests
+# (soln1 lives in test-splnr_plotting.R; each test file is independent)
+# ---------------------------------------------------------------------------
+dat_soln_with_cost <- dat_species_bin %>%
+  dplyr::mutate(Cost = runif(n = dplyr::n()))
+
+pDat_local <- prioritizr::problem(
+  dat_soln_with_cost,
+  features    = c("Spp1", "Spp2", "Spp3"),
+  cost_column = "Cost"
+) %>%
+  prioritizr::add_min_set_objective() %>%
+  prioritizr::add_relative_targets(0.3) %>%
+  prioritizr::add_binary_decisions() %>%
+  prioritizr::add_default_solver(verbose = FALSE)
+
+soln_local <- prioritizr::solve.ConservationProblem(pDat_local)
+
+
+# ---------------------------------------------------------------------------
+# splnr_gg_add() contours path (lines 294-325 of splnr_gg_add.R)
+# ---------------------------------------------------------------------------
+# The contours branch is entered when an sf object with a "Category" column
+# is passed.  It adds a geom_sf with a linetype aesthetic and a
+# scale_linetype_manual layer.  We verify the plot builds without error.
+
+testthat::test_that("splnr_gg_add() contours path produces a gg object", {
+  # Build a minimal contours sf: two categories so we exercise the
+  # seq_along(nameConts) path with length > 1.
+  contours_sf <- dat_mpas %>%
+    dplyr::mutate(Category = dplyr::if_else(.data$wdpa == 1L, "MPA", "Other"))
+
+  gg <- splnr_plot(dat_species_bin, colNames = "Spp1",
+                   legendTitle = "Spp1", legendLabels = c("Absent", "Present")) +
+    splnr_gg_add(
+      contours = contours_sf,
+      ggtheme  = FALSE
+    )
+
+  expect_s3_class(gg, "gg")
+
+  # Confirm a geom_sf layer whose data has a "Category" column was added
+  has_category_layer <- any(vapply(
+    gg$layers,
+    function(l) "Category" %in% names(l$data),
+    logical(1)
+  ))
+  expect_true(has_category_layer)
+})
+
+
+# ---------------------------------------------------------------------------
+# splnr_gg_add() list ggtheme path (line 481-482 of splnr_gg_add.R)
+# ---------------------------------------------------------------------------
+# When ggtheme is a list of ggplot2 theme elements, the list branch is taken
+# and each element is appended to ggList individually (not wrapped in list()).
+
+testthat::test_that("splnr_gg_add() list ggtheme path appends theme elements", {
+  list_theme <- list(
+    ggplot2::theme_bw(),
+    ggplot2::theme(legend.position = "right")
+  )
+
+  gg <- splnr_plot(dat_species_bin, colNames = "Spp1",
+                   legendTitle = "Spp1", legendLabels = c("Absent", "Present")) +
+    splnr_gg_add(ggtheme = list_theme)
+
+  expect_s3_class(gg, "gg")
+})
+
+
+# ---------------------------------------------------------------------------
+# splnr_plot_costOverlay() missing costName error (line 622 of splnr_plotting.R)
+# ---------------------------------------------------------------------------
+# When cost=NA (default) and costName is not a column in soln, the function
+# should stop with an informative error message.
+
+testthat::test_that("splnr_plot_costOverlay() errors when costName is absent from soln", {
+  expect_error(
+    splnr_plot_costOverlay(
+      soln     = soln_local,
+      costName = "NonExistentCostColumn"
+    ),
+    "not found in the solution data frame"
+  )
+})
+
+
+# ---------------------------------------------------------------------------
+# splnr_plot_costOverlay() external cost branches (fixed bug: cost vs Cost)
+# ---------------------------------------------------------------------------
+# Branch 2: cost is provided but is not an sf object → stop()
+# Branch 3: cost is an sf object but does not contain costName → stop()
+# Branch 4 (happy path): cost is a valid sf with the costName column → gg
+
+testthat::test_that("splnr_plot_costOverlay() errors when cost is not an sf object", {
+  # Pass a plain data.frame (not sf) as cost — triggers the !inherits(cost, "sf") branch.
+  plain_df <- sf::st_drop_geometry(soln_local)
+  expect_error(
+    splnr_plot_costOverlay(
+      soln     = soln_local,
+      cost     = plain_df,
+      costName = "Cost"
+    ),
+    "'cost' must be an 'sf' object"
+  )
+})
+
+testthat::test_that("splnr_plot_costOverlay() errors when cost sf lacks the costName column", {
+  # Pass a valid sf object that does NOT contain the requested costName column.
+  cost_sf_no_col <- soln_local %>% dplyr::select("solution_1")  # no "MyCost" column
+  expect_error(
+    splnr_plot_costOverlay(
+      soln     = soln_local,
+      cost     = cost_sf_no_col,
+      costName = "MyCost"
+    ),
+    "does not contain the specified cost column"
+  )
+})
+
+testthat::test_that("splnr_plot_costOverlay() works when a valid external cost sf is supplied", {
+  # Pass soln_local itself as the external cost object (it contains "Cost").
+  expect_s3_class(
+    splnr_plot_costOverlay(
+      soln     = soln_local,
+      cost     = soln_local,
+      costName = "Cost"
+    ),
+    "gg"
+  )
+})
+
+

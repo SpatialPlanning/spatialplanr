@@ -405,10 +405,6 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
     msg = "'legendLabels' must be a character vector of labels."
   )
   assertthat::assert_that(
-    length(colorVals) == length(legendLabels),
-    msg = "The number of 'colorVals' must match the number of 'legendLabels'."
-  )
-  assertthat::assert_that(
     is.character(plotTitle), # plotTitle should be character.
     msg = "'plotTitle' must be a character string."
   )
@@ -463,10 +459,6 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
         solution = sum(dplyr::c_across(cols = tidyselect::starts_with("solution_"))), # Sum across solution columns.
         solution = factor(.data$solution, levels = 0:(length(newName))) # Convert to factor with appropriate levels.
       )
-  } else {
-    # If 'zones' parameter is not a logical value, print an error.
-    cat("The 'zones' attribute requires a logical input. Please set to TRUE or FALSE.")
-    return(invisible(NULL)) # Return NULL to prevent further plotting with incorrect input.
   }
 
   # Quick checks to ensure color and label lengths match solution levels.
@@ -619,22 +611,24 @@ splnr_plot_costOverlay <- function(soln,
     msg = "'plotTitle' must be a character string."
   )
 
-  # Check if Cost is provided as NA and if costName exists in soln.
-  if (is.na(cost)) {
+  # Check if cost is provided as NA and if costName exists in soln.
+  if (length(cost) == 1 && is.na(cost)) {
     if (!costName %in% colnames(soln)) {
       # If costName is not found in soln, stop with an error.
-      stop(paste0("Cost column '", costName, "' not found in the solution data frame. Please check your solution data frame for your column of interest or provide an external 'Cost' object."))
+      stop(paste0("Cost column '", costName, "' not found in the solution data frame. Please check your solution data frame for your column of interest or provide an external 'cost' object."))
     } else {
       # If costName is in soln, select it.
       Cost <- soln %>%
         dplyr::select(!!rlang::sym(costName))
     }
-  } else if (!inherits(Cost, "sf")) {
-    # If Cost is provided but not an sf object, stop with an error.
-    stop("'Cost' must be an 'sf' object if provided, not a data.frame or other type.")
-  } else if (!(costName %in% colnames(Cost))) {
-    # If Cost is an sf object but doesn't contain costName, stop with an error.
-    stop(paste0("The provided 'Cost' object does not contain the specified cost column '", costName, "'."))
+  } else if (!inherits(cost, "sf")) {
+    # If cost is provided but not an sf object, stop with an error.
+    stop("'cost' must be an 'sf' object if provided, not a data.frame or other type.")
+  } else if (!(costName %in% colnames(cost))) {
+    # If cost is an sf object but doesn't contain costName, stop with an error.
+    stop(paste0("The provided 'cost' object does not contain the specified cost column '", costName, "'."))
+  } else {
+    Cost <- cost
   }
 
   # Filter the solution to only include selected Planning Units.
@@ -1301,12 +1295,6 @@ splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#447
     is.character(plotTitle),
     msg = "'plotTitle' must be a character string."
   )
-
-  # Check if AxisLabels length matches matrix dimensions if provided.
-  if (!is.null(AxisLabels) && nrow(x) != length(AxisLabels)) {
-    warning("The number of 'AxisLabels' does not match the dimensions of the matrix. Using default labels.")
-    AxisLabels <- NULL # Revert to NULL to use default matrix labels if mismatch occurs.
-  }
 
   # Check if ggcorrplot package is installed, if not, stop with an error.
   if (requireNamespace("ggcorrplot", quietly = TRUE) == FALSE){

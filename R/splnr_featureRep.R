@@ -293,7 +293,7 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
     # Climate Priority Area (CPA) approach: features were split into _CS and _NCS
     # components. Aggregate them back to the original feature name.
     s1 <- s1 %>%
-      dplyr::select(-.data$relative_held) %>%
+      dplyr::select(-"relative_held") %>%
       dplyr::mutate(
         feature = stringr::str_remove_all(.data$feature, "_CS"),
         feature = stringr::str_remove_all(.data$feature, "_NCS")
@@ -542,7 +542,7 @@ splnr_plot_featureRep <- function(df,
       )
     )
     category <- category %>%
-      dplyr::rename(feature = categoryFeatureCol)
+      dplyr::rename(feature = !!rlang::sym(categoryFeatureCol))
   }
 
 

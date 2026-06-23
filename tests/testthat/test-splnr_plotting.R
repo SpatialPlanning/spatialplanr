@@ -147,3 +147,38 @@ testthat::test_that("Correct function output", {
 })
 
 
+# ---------------------------------------------------------------------------
+# splnr_plot_solution() zones colorVals / legendLabels mismatch warnings
+# (lines 473-483 of splnr_plotting.R)
+# ---------------------------------------------------------------------------
+# When the number of colorVals or legendLabels does not match the number of
+# factor levels in the solution column, a warning is issued.  The zones=TRUE
+# path creates levels 0, 1, 2 (3 levels) for a two-zone problem.
+
+testthat::test_that("splnr_plot_solution() warns when colorVals length mismatches solution levels", {
+  expect_warning(
+    splnr_plot_solution(
+      soln_zone,
+      zones      = TRUE,
+      # Only 2 colours for 3 levels (0 = not selected, 1 = zone 1, 2 = zone 2)
+      colorVals  = c("#c6dbef", "#3182bd"),
+      legendLabels = c("Not selected", "Zone 1", "Zone 2")
+    ),
+    "colorVals"
+  )
+})
+
+testthat::test_that("splnr_plot_solution() warns when legendLabels length mismatches solution levels", {
+  expect_warning(
+    splnr_plot_solution(
+      soln_zone,
+      zones        = TRUE,
+      colorVals    = c("#c6dbef", "#3182bd", "black"),
+      # Only 2 labels for 3 levels
+      legendLabels = c("Not selected", "Zone 1")
+    ),
+    "legendLabels"
+  )
+})
+
+

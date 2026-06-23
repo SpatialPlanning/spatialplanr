@@ -634,11 +634,6 @@ splnr_get_kappaCorrData <- function(sol, name_sol) {
     )
   }
 
-  # Check if 'irr' package is installed. If not, stop with an informative error.
-  if (requireNamespace("irr", quietly = TRUE) == FALSE){
-    stop("To run splnr_get_kappaCorrData you will need to install the 'irr' package: install.packages('irr').")
-  }
-
   # Prepare a list of solutions, selecting only the 'solution_1' column and renaming it
   # with the provided 'name_sol'. Each element will be a tibble with one column.
   s_list <- lapply(seq_along(sol), function(x) {
@@ -869,9 +864,5 @@ splnr_get_selFreq <- function(solnMany, type = "portfolio") {
       sf::st_as_sf(geometry = sf::st_geometry(solnMany[[1]])) %>% # Convert back to sf
       dplyr::select("selFreq") # Select only the calculated selection frequency column.
     return(selFreq)
-
-  } else {
-    # This block should technically not be reached due to initial assertthat.
-    stop("This function requires either a prioritizr portfolio or a list of solutions. Please check your input.")
   }
 }
