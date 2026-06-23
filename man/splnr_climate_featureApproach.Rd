@@ -68,7 +68,7 @@ Feature_result <- splnr_climate_featureApproach(
   percentile    = 35,
   refugiaTarget = 0.3
 )
-out_sf_feature  <- Feature_result$Features
+out_sf_feature <- Feature_result$Features
 targets_feature <- Feature_result$Targets
 }
 }

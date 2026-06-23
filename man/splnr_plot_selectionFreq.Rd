@@ -8,7 +8,8 @@ splnr_plot_selectionFreq(
   selFreq,
   plotTitle = "",
   paletteName = "Greens",
-  legendTitle = "Selection \\nFrequency"
+  legendTitle = "Selection \\nFrequency",
+  base_size = 14
 )
 }
 \arguments{
@@ -24,6 +25,10 @@ Defaults to \code{"Greens"}.}
 
 \item{legendTitle}{A character string for the title of the legend.
 Defaults to \code{"Selection \\nFrequency"}.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \code{ggplot} object representing the plot of Planning Unit selection frequency.

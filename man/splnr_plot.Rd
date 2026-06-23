@@ -11,7 +11,8 @@ splnr_plot(
   colourVals = c("#c6dbef", "#3182bd"),
   plotTitle = "",
   legendTitle = NULL,
-  legendLabels = NULL
+  legendLabels = NULL,
+  base_size = 14
 )
 
 splnr_plot(
@@ -21,7 +22,8 @@ splnr_plot(
   colourVals = c("#c6dbef", "#3182bd"),
   plotTitle = "",
   legendTitle = NULL,
-  legendLabels = NULL
+  legendLabels = NULL,
+  base_size = 14
 )
 }
 \arguments{
@@ -51,6 +53,10 @@ a default title will be used based on the data type.}
 \item{legendLabels}{A character vector of strings to use for the legend labels,
 particularly useful for binary or logical data (e.g., \code{c("Absent", "Present")}).
 If \code{NULL}, default labels are used for binary/logical plots.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \code{ggplot} object representing the spatial plot.

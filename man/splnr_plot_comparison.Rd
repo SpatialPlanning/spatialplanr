@@ -7,7 +7,8 @@
 splnr_plot_comparison(
   soln1,
   soln2,
-  legendTitle = "Scenario 2 compared to Scenario 1:"
+  legendTitle = "Scenario 2 compared to Scenario 1:",
+  base_size = 14
 )
 }
 \arguments{
@@ -19,6 +20,10 @@ with a \code{solution_1} column. This is the solution being compared against \co
 
 \item{legendTitle}{A character string for the title of the legend.
 Defaults to \code{"Scenario 2 compared to Scenario 1:"}.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \code{ggplot} object representing the spatial comparison of the two solutions.

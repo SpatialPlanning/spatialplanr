@@ -68,7 +68,7 @@ CPA_result <- splnr_climate_priorityAreaApproach(
   percentile    = 5,
   refugiaTarget = 1
 )
-out_sf_cpa    <- CPA_result$Features
-targets_cpa   <- CPA_result$Targets
+out_sf_cpa <- CPA_result$Features
+targets_cpa <- CPA_result$Targets
 }
 }

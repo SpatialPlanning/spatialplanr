@@ -9,7 +9,8 @@ splnr_plot_costOverlay(
   cost = NA,
   costName = "Cost",
   legendTitle = "Cost",
-  plotTitle = "Solution overlaid with cost"
+  plotTitle = "Solution overlaid with cost",
+  base_size = 14
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ Defaults to \code{"Cost"}.}
 
 \item{plotTitle}{A character string for the subtitle of the plot.
 Defaults to \code{"Solution overlaid with cost"}.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \code{ggplot} object representing the solution with cost overlay.

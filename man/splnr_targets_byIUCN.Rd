@@ -57,8 +57,10 @@ single \code{IUCN_target} is provided) are: "EX" (Extinct), "EW" (Extinct in the
 # Example 1: Assigning specific targets to categories
 # Create a dummy dataframe resembling output from splnr_get_IUCNRedList
 df_species_iucn <- data.frame(
-  Species = c("Diomedea exulans", "Hippocampus kuda",
-              "Squatina squatina", "Common Dolphin"),
+  Species = c(
+    "Diomedea exulans", "Hippocampus kuda",
+    "Squatina squatina", "Common Dolphin"
+  ),
   IUCN_Category = c("VU", "EN", "CR", "LC")
 )
 

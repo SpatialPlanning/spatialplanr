@@ -643,7 +643,7 @@ splnr_plot_costOverlay <- function(soln,
   gg <- ggplot2::ggplot() +
     ggplot2::theme_bw(base_size = base_size) +
     # Plot the selected solution units in black.
-    ggplot2::geom_sf(data = soln, fill = "black", colour = "black", size = 0.0001) +
+    ggplot2::geom_sf(data = soln, fill = "grey30", colour = "grey30", size = 0.0001) +
     # Overlay the cost data on top of the selected units with transparency.
     ggplot2::geom_sf(data = Cost, ggplot2::aes(fill = !!rlang::sym(costName)), alpha = 0.1, colour = NA, size = 0.0001) +
     # Apply a gradient fill for the cost, with specified low and high colors.
@@ -658,8 +658,8 @@ splnr_plot_costOverlay <- function(soln,
       ),
       oob = scales::squish, # Squish values outside the limits.
       guide = ggplot2::guide_colourbar(
-        barwidth  = ggplot2::unit(20, "lines"), # Twice the width of the climate colourbar (10 lines).
-        barheight = ggplot2::unit(6, "lines") # Twice the height of the climate colourbar (3 lines).
+        barwidth  = ggplot2::unit(3, "lines"),
+        barheight = ggplot2::unit(10, "lines")
       )
     ) +
     # Set coordinate limits based on the bounding box of the cost data.

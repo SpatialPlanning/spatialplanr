@@ -81,7 +81,7 @@ inclusive in the data recovery.
 # Example: Retrieve yearly GFW data for Australia, transformed to a
 # Mollweide projection (ESRI:54009) and compressed (aggregated) by location.
 gfw_data <- splnr_get_gfw(
-  region = 'Australia',
+  region = "Australia",
   start_date = "2021-01-01",
   end_date = "2022-12-31",
   temp_res = "YEARLY",

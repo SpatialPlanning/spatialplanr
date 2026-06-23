@@ -11,7 +11,8 @@ splnr_plot_solution(
   legendLabels = c("Not selected", "Selected"),
   plotTitle = "Solution",
   legendTitle = "Planning Units",
-  zones = FALSE
+  zones = FALSE,
+  base_size = 14
 )
 }
 \arguments{
@@ -37,6 +38,10 @@ Defaults to \code{"Planning Units"}.}
 
 \item{zones}{A logical value. Set to \code{TRUE} if the \code{prioritizr} solution
 contains multiple zones (i.e., it's a multi-zone problem). Defaults to \code{FALSE}.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \code{ggplot} object representing the plot of the conservation solution.

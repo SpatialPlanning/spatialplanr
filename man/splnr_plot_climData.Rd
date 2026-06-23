@@ -9,7 +9,8 @@ splnr_plot_climData(
   colInterest,
   colorMap = "C",
   plotTitle = " ",
-  legendTitle = "Climate metric"
+  legendTitle = "Climate metric",
+  base_size = 14
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ Defaults to \code{" "} (a single space, effectively no subtitle).}
 
 \item{legendTitle}{A character string for the title of the legend.
 Defaults to \code{"Climate metric"}.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \code{ggplot} object representing the spatial plot of the climate metric.

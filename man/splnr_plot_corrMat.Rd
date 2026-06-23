@@ -9,7 +9,8 @@ splnr_plot_corrMat(
   colourGradient = c("#BB4444", "#FFFFFF", "#4477AA"),
   legendTitle = "Correlation \\ncoefficient",
   AxisLabels = NULL,
-  plotTitle = ""
+  plotTitle = "",
+  base_size = 14
 )
 }
 \arguments{
@@ -32,6 +33,10 @@ If \code{NULL} (default), the column names of \code{x} will be used. The length 
 this vector must match the number of rows/columns in \code{x}.}
 
 \item{plotTitle}{A character string for the title of the plot. Defaults to \code{""}.}
+
+\item{base_size}{A numeric value for the base font size (in points) passed to
+\code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
+Defaults to \code{14}.}
 }
 \value{
 A \code{ggplot} object representing the correlation matrix plot.
