@@ -384,7 +384,7 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
       option = colorMap,
       guide = ggplot2::guide_colorbar(
         barheight = ggplot2::unit(10, "lines"),
-        barwidth  = ggplot2::unit(3, "lines")
+        barwidth  = ggplot2::unit(2, "lines")
       )
     ) +
     # Grey dotted ridge for unselected planning units.
