@@ -659,7 +659,11 @@ splnr_plot_costOverlay <- function(soln,
         0,
         as.numeric(stats::quantile(dplyr::pull(Cost, costName), 0.99, na.rm = TRUE))
       ),
-      oob = scales::squish # Squish values outside the limits.
+      oob = scales::squish, # Squish values outside the limits.
+      guide = ggplot2::guide_colourbar(
+        barwidth  = ggplot2::unit(20, "lines"), # Twice the width of the climate colourbar (10 lines).
+        barheight = ggplot2::unit(6, "lines")   # Twice the height of the climate colourbar (3 lines).
+      )
     ) +
     # Set coordinate limits based on the bounding box of the cost data.
     ggplot2::coord_sf(xlim = sf::st_bbox(Cost)$xlim, ylim = sf::st_bbox(Cost)$ylim) +
