@@ -313,8 +313,8 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     msg = "'colorMap' must be a character string for a 'viridis' palette option."
   )
   assertthat::assert_that(
-    is.vector(legendTitle) || is.expression(legendTitle),
-    msg = "'legendTitle' must be a character string or an expression."
+    is.null(legendTitle) || is.vector(legendTitle) || is.expression(legendTitle),
+    msg = "'legendTitle' must be a character string, an expression, or NULL."
   )
   assertthat::assert_that(
     is.vector(xAxisLab) || is.expression(xAxisLab),
@@ -614,8 +614,8 @@ splnr_plot_climKernelDensity <- function(soln,
     msg = "'colorMap' must be a character string for a 'viridis' palette option."
   )
   assertthat::assert_that(
-    is.vector(legendTitle) || is.expression(legendTitle),
-    msg = "'legendTitle' must be a character string or an expression."
+    is.null(legendTitle) || is.vector(legendTitle) || is.expression(legendTitle),
+    msg = "'legendTitle' must be a character string, an expression, or NULL."
   )
   assertthat::assert_that(
     is.vector(xAxisLab) || is.expression(xAxisLab),
