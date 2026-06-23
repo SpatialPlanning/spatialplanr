@@ -213,7 +213,7 @@ splnr_plot_climKernelDensity_Basic <- function(soln) {
       axis.text.y = ggplot2::element_blank(), # Hide y-axis text.
       axis.text.x = ggplot2::element_text(size = 20),
       axis.title = ggplot2::element_text(size = 20),
-      legend.title = ggplot2::element_text(color = "black", angle = 270, hjust = 0.5), # Rotate legend title.
+      legend.title = ggplot2::element_text(color = "black", angle = 90, hjust = 0.5), # Rotate legend title.
       legend.position = "bottom",
       legend.text = ggplot2::element_text(size = 20)
     ) +
@@ -375,7 +375,14 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
       scale = 1
     ) +
     # Viridis colour scale for the gradient fill (continuous legend).
-    ggplot2::scale_fill_viridis_c(name = legendTitle, option = colorMap) +
+    ggplot2::scale_fill_viridis_c(name = legendTitle,
+                                  option = colorMap) +
+    ggplot2::guides(
+      colour = ggplot2::guide_colorbar(
+        barheight = ggplot2::unit(10, "lines"),
+        barwidth  = ggplot2::unit(3, "lines")
+      )
+    ) +
     # Grey dotted ridge for unselected planning units.
     ggridges::geom_density_ridges(
       data = df %>% dplyr::filter(.data$solution_1 == 0),
@@ -435,7 +442,8 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
       axis.title.y    = ggplot2::element_blank(),
       axis.text.y     = ggplot2::element_blank(),
       legend.text     = ggplot2::element_text(size = 15, color = "black"),
-      legend.title    = ggplot2::element_text(size = 15, color = "black")
+      legend.title    = ggplot2::element_text(size = 15, color = "black"),
+      legend.title.position = "right"
     )
 
   return(ggRidge)
