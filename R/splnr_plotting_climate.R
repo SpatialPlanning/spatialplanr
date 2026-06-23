@@ -378,7 +378,7 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     ggplot2::scale_fill_viridis_c(name = legendTitle,
                                   option = colorMap) +
     ggplot2::guides(
-      colour = ggplot2::guide_colorbar(
+      fill = ggplot2::guide_colorbar(
         barheight = ggplot2::unit(10, "lines"),
         barwidth  = ggplot2::unit(3, "lines")
       )
