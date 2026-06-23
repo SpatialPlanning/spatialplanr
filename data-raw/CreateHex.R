@@ -35,12 +35,11 @@ create_hexagon <- function(center_x, center_y, size, top_type) {
 
   out <- list()
   for (i in 1:length(angles)) {
-    int <- sf::st_linestring(vertices[i:(i+1),]) %>%
+    int <- sf::st_linestring(vertices[i:(i + 1), ]) %>%
       sf::st_segmentize(units::set_units(0.1, km)) %>%
       sf::st_coordinates()
 
-    out[[i]] <- int[,1:2]
-
+    out[[i]] <- int[, 1:2]
   }
 
   out2 <- list(do.call(rbind, out))
@@ -51,7 +50,7 @@ create_hexagon <- function(center_x, center_y, size, top_type) {
   return(polygon)
 }
 
-Bndry <- create_hexagon(70, -5, 70*1.1547, "pointed") %>%
+Bndry <- create_hexagon(70, -5, 70 * 1.1547, "pointed") %>%
   sf::st_polygon() %>%
   sf::st_sfc(crs = "EPSG:4326") %>%
   sf::st_sf() %>%
@@ -75,35 +74,36 @@ PUs <- PUs %>%
   dplyr::mutate(Prob = runif(dim(PUs)[1]))
 
 (gg <- ggplot2::ggplot() +
-    ggplot2::geom_sf(data = PUs, colour = "#4F4F51", fill = "#46718C", linewidth = 0.1, show.legend = FALSE) +
-    ggplot2::geom_sf(data = landmass, colour = "grey70", fill = "#4F4F51", alpha = 1, linewidth = 0.05, show.legend = FALSE) +
-    ggplot2::coord_sf(xlim = sf::st_bbox(PUs)$xlim, ylim = sf::st_bbox(PUs)$ylim) +
-    ggplot2::theme_void())
+  ggplot2::geom_sf(data = PUs, colour = "#4F4F51", fill = "#46718C", linewidth = 0.1, show.legend = FALSE) +
+  ggplot2::geom_sf(data = landmass, colour = "grey70", fill = "#4F4F51", alpha = 1, linewidth = 0.05, show.legend = FALSE) +
+  ggplot2::coord_sf(xlim = sf::st_bbox(PUs)$xlim, ylim = sf::st_bbox(PUs)$ylim) +
+  ggplot2::theme_void())
 
 
 hexSticker::sticker(gg,
-                    package = "spatialplanr",
-                    p_x = 1,
-                    p_y = 0.98,
-                    p_color = "white",
-                    p_family = "Aller_Rg",
-                    p_fontface = "bold",
-                    p_size = 80,
-                    s_x = 1,
-                    s_y = 1,
-                    s_width = 2.2,
-                    s_height = 2.2,
-                    # h_fill = "#9FE2BF",
-                    h_color = "black", # "grey40",
-                    url = "spatialplanning.github.io/spatialplanr",
-                    u_color = "grey90",
-                    # u_family = "sans",
-                    u_size = 15,
-                    u_x = 0.98,
-                    u_y = 0.055,
-                    dpi = 1000,
-                    asp = 1,
-                    filename = file.path("data-raw", "spatialplanr.png"))
+  package = "spatialplanr",
+  p_x = 1,
+  p_y = 0.98,
+  p_color = "white",
+  p_family = "Aller_Rg",
+  p_fontface = "bold",
+  p_size = 80,
+  s_x = 1,
+  s_y = 1,
+  s_width = 2.2,
+  s_height = 2.2,
+  # h_fill = "#9FE2BF",
+  h_color = "black", # "grey40",
+  url = "spatialplanning.github.io/spatialplanr",
+  u_color = "grey90",
+  # u_family = "sans",
+  u_size = 15,
+  u_x = 0.98,
+  u_y = 0.055,
+  dpi = 1000,
+  asp = 1,
+  filename = file.path("data-raw", "spatialplanr.png")
+)
 
 usethis::use_logo(img = file.path("data-raw", "spatialplanr.png"))
 

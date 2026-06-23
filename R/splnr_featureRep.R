@@ -193,7 +193,6 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
                                  climsmartApproach = 0,
                                  solnCol = "solution_1",
                                  incidental_features = character(0)) {
-
   # --- Input Assertions ---
   # Ensure 'soln' is an sf object and not empty.
   assertthat::assert_that(
@@ -293,14 +292,14 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
     # Climate Priority Area (CPA) approach: features were split into _CS and _NCS
     # components. Aggregate them back to the original feature name.
     s1 <- s1 %>%
-      dplyr::select(-.data$relative_held) %>%
+      dplyr::select(-"relative_held") %>%
       dplyr::mutate(
         feature = stringr::str_remove_all(.data$feature, "_CS"),
         feature = stringr::str_remove_all(.data$feature, "_NCS")
       ) %>%
       dplyr::group_by(.data$feature) %>%
       dplyr::summarise(
-        total_amount  = sum(.data$total_amount,  na.rm = TRUE),
+        total_amount  = sum(.data$total_amount, na.rm = TRUE),
         absolute_held = sum(.data$absolute_held, na.rm = TRUE)
       ) %>%
       dplyr::ungroup() %>%
@@ -310,12 +309,10 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
         0
       )) %>%
       dplyr::left_join(targets, by = "feature")
-
   } else if (climsmart == TRUE && climsmartApproach == 3) {
     # Percentile approach: join with pre-adjusted targets dataframe.
     s1 <- s1 %>%
       dplyr::left_join(targets, by = "feature")
-
   } else {
     # Standard (non-climate-smart) approach: targets from the problem object.
     s1 <- s1 %>%
@@ -368,7 +365,7 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
           .data$absolute_held / .data$total_amount,
           0
         ),
-        target     = 0,
+        target = 0,
         incidental = TRUE
       )
   } else {
@@ -438,6 +435,9 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
 #'   by which to sort the features on the x-axis. Accepted values include:
 #'   `"category"`, `"feature"`, `"target"`, `"representation"` (`relative_held`),
 #'   or `"difference"` (between representation and target).
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #' @param ... Other arguments passed on to [ggplot2::theme()] to customize the plot's theme.
 #'
 #' @return A [ggplot2::ggplot] object representing the feature representation bar plot.
@@ -500,8 +500,8 @@ splnr_plot_featureRep <- function(df,
                                   showTarget = NA,
                                   plotTitle = "",
                                   sort_by = "category",
+                                  base_size = 14,
                                   ...) {
-
   assertthat::assert_that(
     inherits(df, c("data.frame", "tbl_df")),
     is.logical(renameFeatures),
@@ -538,7 +538,7 @@ splnr_plot_featureRep <- function(df,
       )
     )
     category <- category %>%
-      dplyr::rename(feature = categoryFeatureCol)
+      dplyr::rename(feature = !!rlang::sym(categoryFeatureCol))
   }
 
 
@@ -629,7 +629,7 @@ splnr_plot_featureRep <- function(df,
       fill = "NA", colour = "black"
     ) +
     ggplot2::labs(title = plotTitle, x = "Feature", y = "Representation of features \nin total selected area (%)") +
-    ggplot2::theme_bw() +
+    ggplot2::theme_bw(base_size = base_size) +
     # Ensure ymax is calculated correctly and handled for empty df
     ggplot2::scale_y_continuous(
       limits = c(0, max(df$relative_held, na.rm = TRUE, 0) + 10), # Ensure at least 0 if all NA
@@ -642,16 +642,13 @@ splnr_plot_featureRep <- function(df,
     ) +
     ggplot2::guides(colour = "none") +
     ggplot2::theme(
-      axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16, colour = "black"),
-      axis.text.y = ggplot2::element_text(size = 16, colour = "black"),
+      axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5, colour = "black"),
+      axis.text.y = ggplot2::element_text(colour = "black"),
       axis.title.x = ggplot2::element_blank(),
-      axis.title.y = ggplot2::element_text(size = 16),
       legend.title = ggplot2::element_blank(),
-      legend.text = ggplot2::element_text(size = 16),
       legend.position = "top",
       legend.direction = "horizontal",
       legend.background = ggplot2::element_rect(fill = "NA"),
-      title = ggplot2::element_text(size = 16),
       ...
     )
 
@@ -699,6 +696,9 @@ splnr_plot_featureRep <- function(df,
 #'   percentage for 'representative' features. Required if `indicateTargets` is `TRUE`.
 #' @param colTarget A [character][base::character] string specifying the color
 #'   for the target indicator lines.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_minimal()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A [ggplot2::ggplot] object of the circular bar plot.
 #' @export
@@ -769,8 +769,8 @@ splnr_plot_featureRep <- function(df,
 #' }
 splnr_plot_circBplot <- function(df, legend_color, legend_list,
                                  indicateTargets = TRUE, impTarget = NA,
-                                 repTarget = NA, colTarget = "red") {
-
+                                 repTarget = NA, colTarget = "red",
+                                 base_size = 14) {
   # assertthat checks for initial inputs
   assertthat::assert_that(
     inherits(df, c("data.frame", "tbl_df")),
@@ -902,19 +902,19 @@ splnr_plot_circBplot <- function(df, legend_color, legend_list,
       inherit.aes = FALSE
     ) +
     ggplot2::annotate("text",
-                      x = rep(max(data$id - 1), 4),
-                      y = c(25, 50, 75, 100),
-                      label = c(25, 50, 75, 100),
-                      color = "grey50",
-                      size = 4,
-                      angle = 0, # -5
-                      fontface = "bold",
-                      hjust = 0.5
+      x = rep(max(data$id - 1), 4),
+      y = c(25, 50, 75, 100),
+      label = c(25, 50, 75, 100),
+      color = "grey50",
+      size = 4,
+      angle = 0, # -5
+      fontface = "bold",
+      hjust = 0.5
     ) +
 
     # setting limitations of actual plot
     ggplot2::ylim(-130, 130) + # -140, 130
-    ggplot2::theme_minimal() +
+    ggplot2::theme_minimal(base_size = base_size) +
     ggplot2::coord_polar() +
     ggplot2::geom_text(
       data = label_data, ggplot2::aes(
@@ -924,7 +924,6 @@ splnr_plot_circBplot <- function(df, legend_color, legend_list,
       fontface = "bold", alpha = 0.6, size = 2.5, angle = label_data$angle,
       inherit.aes = FALSE
     ) +
-
     ggplot2::theme(
       legend.position = "bottom",
       axis.text = ggplot2::element_blank(),

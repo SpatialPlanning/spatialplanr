@@ -1,4 +1,3 @@
-
 targets <- dat_species_bin %>%
   sf::st_drop_geometry() %>%
   colnames() %>%
@@ -39,9 +38,9 @@ testthat::test_that("splnr_climate_priorityAreaApproach() returns correct struct
   expect_equal(nrow(result$Features), nrow(dat_species_bin))
 
   # Features contains _CS and _NCS columns for every input feature
-  cs_cols  <- paste0(feat_names, "_CS")
+  cs_cols <- paste0(feat_names, "_CS")
   ncs_cols <- paste0(feat_names, "_NCS")
-  expect_true(all(cs_cols  %in% names(result$Features)))
+  expect_true(all(cs_cols %in% names(result$Features)))
   expect_true(all(ncs_cols %in% names(result$Features)))
 
   # Targets is a data.frame with feature and target columns
@@ -63,9 +62,9 @@ testthat::test_that("splnr_climate_priorityAreaApproach() produces no NA targets
   result <- splnr_climate_priorityAreaApproach(
     features      = dat_species_bin,
     metric        = dat_clim,
-    targets       = targets_tbl,   # tibble, not plain data.frame
+    targets       = targets_tbl, # tibble, not plain data.frame
     direction     = -1,
-    percentile    = 5              # small percentile → prop_cs > trgt for most features
+    percentile    = 5 # small percentile → prop_cs > trgt for most features
   )
 
   # The target column must be a plain numeric vector with no NA values.
@@ -133,5 +132,54 @@ testthat::test_that("splnr_climate_percentileApproach() returns correct structur
   expect_true(all(c("feature", "target") %in% names(result$Targets)))
 
   # Targets has one row per input feature
+  expect_equal(nrow(result$Targets), length(feat_names))
+})
+
+
+# ---------------------------------------------------------------------------
+# splnr_climate_percentile_preprocess() NA metric warning (line 1004-1009)
+# ---------------------------------------------------------------------------
+# When the metric column contains NAs, a warning is issued before the
+# per-feature percentile loop.  We inject NAs into a copy of dat_clim.
+
+testthat::test_that("splnr_climate_percentileApproach() warns when metric contains NAs", {
+  # Introduce NAs into the metric column for a handful of planning units.
+  dat_clim_na <- dat_clim %>%
+    dplyr::mutate(metric = dplyr::if_else(dplyr::row_number() <= 10L, NA_real_, .data$metric))
+
+  expect_warning(
+    splnr_climate_percentileApproach(
+      features  = dat_species_bin,
+      metric    = dat_clim_na,
+      targets   = targets,
+      direction = 1
+    ),
+    "NAs present in the metric data"
+  )
+})
+
+
+# ---------------------------------------------------------------------------
+# splnr_climate_percentile_preprocess() direction = -1 branch (lines 1047-1048)
+# ---------------------------------------------------------------------------
+# When direction = -1, the climate-smart filter keeps planning units whose
+# metric value is <= the percentile threshold (cold/low-stress refugia).
+# The existing test only uses direction = 1; this test exercises direction = -1.
+
+testthat::test_that("splnr_climate_percentileApproach() works with direction = -1", {
+  result <- splnr_climate_percentileApproach(
+    features   = dat_species_bin,
+    metric     = dat_clim,
+    targets    = targets,
+    direction  = -1,
+    percentile = 35
+  )
+
+  # Basic structure checks
+  expect_true(rlang::is_list(result))
+  expect_named(result, c("Features", "Targets"))
+  expect_s3_class(result$Features, "sf")
+  expect_equal(nrow(result$Features), nrow(dat_species_bin))
+  expect_true(all(feat_names %in% names(result$Features)))
   expect_equal(nrow(result$Targets), length(feat_names))
 })

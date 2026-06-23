@@ -103,13 +103,12 @@
 #' print(gg)
 #' }
 splnr_get_MPAs <- function(PlanUnits = NULL,
-                            Countries,
-                            Status = c("Designated", "Established", "Inscribed"),
-                            Desig = c("National", "Regional", "International", "Not Applicable"),
-                            Category = c("Ia", "Ib", "II", "III", "IV"),
-                            Raw = FALSE,
-                            ...) {
-
+                           Countries,
+                           Status = c("Designated", "Established", "Inscribed"),
+                           Desig = c("National", "Regional", "International", "Not Applicable"),
+                           Category = c("Ia", "Ib", "II", "III", "IV"),
+                           Raw = FALSE,
+                           ...) {
   # Validate Raw argument first so subsequent guards can branch on it.
   assertthat::assert_that(
     is.logical(Raw) && length(Raw) == 1L && !is.na(Raw),
@@ -171,9 +170,10 @@ splnr_get_MPAs <- function(PlanUnits = NULL,
       # Use purrr::map to fetch WDPA data for each country in the 'Countries' vector.
       # 'wait = TRUE' ensures sequential downloads, and 'download_dir' specifies where to cache the data.
       purrr::map(wdpar::wdpa_fetch,
-                 wait = TRUE,
-                 download_dir = rappdirs::user_data_dir("wdpar"),
-                 ...) %>%
+        wait = TRUE,
+        download_dir = rappdirs::user_data_dir("wdpar"),
+        ...
+      ) %>%
       # Bind all fetched data frames into a single data frame.
       dplyr::bind_rows() %>%
       # Filter for marine and coastal protected areas only
@@ -212,12 +212,16 @@ splnr_get_MPAs <- function(PlanUnits = NULL,
   # spatially constant" warning whenever an sf object with non-geometry columns
   # is intersected. We suppress only that specific message here.
   wdpa_data <- withCallingHandlers(
-    spatialgridr::get_data_in_grid(spatial_grid = PlanUnits,
-                                   dat = wdpa_data,
-                                   cutoff = 0.5),
+    spatialgridr::get_data_in_grid(
+      spatial_grid = PlanUnits,
+      dat = wdpa_data,
+      cutoff = 0.5
+    ),
     warning = function(w) {
       if (grepl("attribute variables are assumed to be spatially constant",
-                conditionMessage(w), fixed = TRUE)) {
+        conditionMessage(w),
+        fixed = TRUE
+      )) {
         invokeRestart("muffleWarning")
       }
     }

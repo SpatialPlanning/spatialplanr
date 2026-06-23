@@ -1,4 +1,3 @@
-
 ##### Utility Functions ####
 
 #' @title Create Spatial Polygon from Coordinates
@@ -48,7 +47,6 @@
 #' print(transformed_polygon)
 #' }
 splnr_create_polygon <- function(x, cCRS = "EPSG:4326") {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(x, "data.frame") && !is.null(x$x) && !is.null(x$y),
@@ -135,7 +133,6 @@ splnr_create_polygon <- function(x, cCRS = "EPSG:4326") {
 #' print(sum(is.na(df_no_na$Spp2))) # Should be 0 if successful
 #' }
 splnr_replace_NAs <- function(df, vari) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(df, "sf"), # Ensure df is an sf object.
@@ -156,7 +153,6 @@ splnr_replace_NAs <- function(df, vari) {
 
   # Check if there are any NA values in the specified variable.
   if (sum(is.na(dplyr::pull(df, !!rlang::sym(vari)))) > 0) {
-
     # Add a unique row ID and a logical column 'isna' to identify NA rows.
     # This 'cellID' is crucial for reordering the dataframe correctly at the end.
     gp <- df %>%
@@ -229,7 +225,6 @@ splnr_replace_NAs <- function(df, vari) {
 #' df_named_regions <- splnr_match_names(dat = dat_region, nam = region_names)
 #' print(df_named_regions)
 splnr_match_names <- function(dat, nam) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(dat, "sf"),
@@ -304,6 +299,8 @@ splnr_match_names <- function(dat, nam) {
 #'
 #' @examples
 #' \dontrun{
+#'
+#' }
 
 #' # Scale the 'Spp1' column.
 #' df_scaled_spp1 <- splnr_scale_01(dat = dat_species_prob, col_name = "Spp1")
@@ -315,7 +312,6 @@ splnr_match_names <- function(dat, nam) {
 #' print(df_no_change) # Spp1 values should remain unchanged
 #' }
 splnr_scale_01 <- function(dat, col_name) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(dat, "sf"), # Ensure dat is an sf object.
@@ -409,7 +405,6 @@ splnr_scale_01 <- function(dat, col_name) {
 #' # This function's primary use is to remove cost columns and potentially others.
 #' }
 splnr_featureNames <- function(dat, exclude = NA) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(dat, "sf"),
@@ -474,6 +469,8 @@ splnr_featureNames <- function(dat, exclude = NA) {
 #'
 #' @examples
 #' \dontrun{
+#'
+#' }
 
 #' print("Original order:")
 #' print(dat_species_prob)
@@ -484,7 +481,6 @@ splnr_featureNames <- function(dat, exclude = NA) {
 #' print(df_arranged)
 #' }
 splnr_arrangeFeatures <- function(df) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(df, "sf"),
@@ -604,7 +600,6 @@ splnr_arrangeFeatures <- function(df) {
 #' # splnr_plot_corrMat(corrMat, AxisLabels = c("Sol A (30%)", "Sol B (50%)"))
 #' }
 splnr_get_kappaCorrData <- function(sol, name_sol) {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.list(sol),
@@ -632,11 +627,6 @@ splnr_get_kappaCorrData <- function(sol, name_sol) {
       "solution_1" %in% names(sol[[i]]),
       msg = paste0("Solution ", i, " in 'sol' is missing the 'solution_1' column.")
     )
-  }
-
-  # Check if 'irr' package is installed. If not, stop with an informative error.
-  if (requireNamespace("irr", quietly = TRUE) == FALSE){
-    stop("To run splnr_get_kappaCorrData you will need to install the 'irr' package: install.packages('irr').")
   }
 
   # Prepare a list of solutions, selecting only the 'solution_1' column and renaming it
@@ -792,7 +782,6 @@ splnr_get_kappaCorrData <- function(sol, name_sol) {
 #' # You can then plot this: splnr_plot_selectionFreq(selFreq_list)
 #' }
 splnr_get_selFreq <- function(solnMany, type = "portfolio") {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.character(type) && length(type) == 1,
@@ -817,14 +806,15 @@ splnr_get_selFreq <- function(solnMany, type = "portfolio") {
     # Calculate selection frequency for a portfolio (sf object with multiple solution columns).
     selFreq <- solnMany %>%
       # Convert to tibble for dplyr operations on columns, ensuring unique names.
-      dplyr::mutate(selFreq = as.factor(rowSums(dplyr::select(tibble::as_tibble(solnMany),
-                                                              dplyr::starts_with("solution_")), na.rm = TRUE))) %>%
+      dplyr::mutate(selFreq = as.factor(rowSums(dplyr::select(
+        tibble::as_tibble(solnMany),
+        dplyr::starts_with("solution_")
+      ), na.rm = TRUE))) %>%
       # Convert back to sf, explicitly retaining the original geometry.
       sf::st_as_sf(geometry = sf::st_geometry(solnMany)) %>%
       # Select only the calculated selection frequency column.
       dplyr::select("selFreq")
     return(selFreq)
-
   } else if (type == "list") {
     # If type is "list", expected input is a list of sf objects (individual solutions).
     assertthat::assert_that(
@@ -869,9 +859,5 @@ splnr_get_selFreq <- function(solnMany, type = "portfolio") {
       sf::st_as_sf(geometry = sf::st_geometry(solnMany[[1]])) %>% # Convert back to sf
       dplyr::select("selFreq") # Select only the calculated selection frequency column.
     return(selFreq)
-
-  } else {
-    # This block should technically not be reached due to initial assertthat.
-    stop("This function requires either a prioritizr portfolio or a list of solutions. Please check your input.")
   }
 }

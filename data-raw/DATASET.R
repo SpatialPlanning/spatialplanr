@@ -73,7 +73,7 @@ dat_mpas <- dat_PUs %>%
   dplyr::mutate(wdpa = ifelse((cellID > 33 & cellID < 38) |
     (cellID > 63 & cellID < 68) |
     (cellID > 93 & cellID < 98), 1, 0)) %>%
-    dplyr::select(-"cellID")
+  dplyr::select(-"cellID")
 
 
 # Add a problem object
@@ -121,10 +121,11 @@ dat_clim <- dat_PUs %>%
   sf::st_sf() %>%
   dplyr::mutate(metric = climVec)
 
-dat_bathy <- oceandatr::get_bathymetry(spatial_grid = dat_PUs,
-                                        keep = FALSE,
-                                        classify_bathymetry = FALSE)
-
+dat_bathy <- oceandatr::get_bathymetry(
+  spatial_grid = dat_PUs,
+  keep = FALSE,
+  classify_bathymetry = FALSE
+)
 
 
 # The three datasets below are loaded from pre-existing .rda files rather than

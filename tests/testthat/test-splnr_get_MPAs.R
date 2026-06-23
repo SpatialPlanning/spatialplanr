@@ -1,4 +1,3 @@
-
 testthat::test_that("Raw = FALSE (default) returns an sf object of planning units", {
   testthat::expect_s3_class(
     splnr_get_MPAs(dat_PUs, "Australia"), "sf"

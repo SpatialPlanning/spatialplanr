@@ -92,6 +92,9 @@
 #'   labels (e.g. `c(Shipping_Lane = "Shipping Lane")`).
 #'   When a single string is supplied it is used as the label for all areas.
 #'   Defaults to `""`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()` when `ggtheme = "Default"`. All text elements scale
+#'   proportionally from this value. Defaults to `14`.
 #' @param ggtheme The `ggplot2` theme to apply. Can be:
 #'   \itemize{
 #'     \item `NA` or `FALSE`: No theme is applied, using `ggplot2` defaults.
@@ -186,39 +189,59 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
                          lockOut = NULL, typeLockOut = "Full", nameLockOut = NULL,
                          alphaLockOut = 1, colorLockOut = "black", legendLockOut = "",
                          labelLockOut = "",
+                         base_size = 14,
                          ggtheme = "Default") {
-
   # Assertions to validate input parameters are of the correct 'sf' class if not NULL.
-  if(!is.null(PUs)){assertthat::assert_that(inherits(PUs, "sf"), msg = "'PUs' must be an 'sf' object or NULL.")}
-  if(!is.null(Bndry)){assertthat::assert_that(inherits(Bndry, "sf"), msg = "'Bndry' must be an 'sf' object or NULL.")}
-  if(!is.null(overlay)){assertthat::assert_that(inherits(overlay, "sf"), msg = "'overlay' must be an 'sf' object or NULL.")}
-  if(!is.null(overlay2)){assertthat::assert_that(inherits(overlay2, "sf"), msg = "'overlay2' must be an 'sf' object or NULL.")}
-  if(!is.null(overlay3)){assertthat::assert_that(inherits(overlay3, "sf"), msg = "'overlay3' must be an 'sf' object or NULL.")}
-  if(!is.null(contours)){assertthat::assert_that(inherits(contours, "sf"), msg = "'contours' must be an 'sf' object or NULL.")}
-  if(!is.null(cropOverlay)){assertthat::assert_that(inherits(cropOverlay, "sf"), msg = "'cropOverlay' must be an 'sf' object or NULL.")}
-  
+  if (!is.null(PUs)) {
+    assertthat::assert_that(inherits(PUs, "sf"), msg = "'PUs' must be an 'sf' object or NULL.")
+  }
+  if (!is.null(Bndry)) {
+    assertthat::assert_that(inherits(Bndry, "sf"), msg = "'Bndry' must be an 'sf' object or NULL.")
+  }
+  if (!is.null(overlay)) {
+    assertthat::assert_that(inherits(overlay, "sf"), msg = "'overlay' must be an 'sf' object or NULL.")
+  }
+  if (!is.null(overlay2)) {
+    assertthat::assert_that(inherits(overlay2, "sf"), msg = "'overlay2' must be an 'sf' object or NULL.")
+  }
+  if (!is.null(overlay3)) {
+    assertthat::assert_that(inherits(overlay3, "sf"), msg = "'overlay3' must be an 'sf' object or NULL.")
+  }
+  if (!is.null(contours)) {
+    assertthat::assert_that(inherits(contours, "sf"), msg = "'contours' must be an 'sf' object or NULL.")
+  }
+  if (!is.null(cropOverlay)) {
+    assertthat::assert_that(inherits(cropOverlay, "sf"), msg = "'cropOverlay' must be an 'sf' object or NULL.")
+  }
+
   # Validate lockIn parameters
-  if(!is.null(lockIn)){
+  if (!is.null(lockIn)) {
     assertthat::assert_that(inherits(lockIn, "sf"), msg = "'lockIn' must be an 'sf' object or NULL.")
     assertthat::assert_that(is.character(nameLockIn) && !is.null(nameLockIn) && all(nameLockIn %in% names(lockIn)),
-                            msg = "If 'lockIn' is provided, 'nameLockIn' must be a character string specifying an existing column in 'lockIn'.")
+      msg = "If 'lockIn' is provided, 'nameLockIn' must be a character string specifying an existing column in 'lockIn'."
+    )
     assertthat::assert_that(typeLockIn %in% c("Full", "Contours"),
-                            msg = "'typeLockIn' must be either 'Full' or 'Contours'.")
+      msg = "'typeLockIn' must be either 'Full' or 'Contours'."
+    )
     assertthat::assert_that(is.numeric(alphaLockIn) && alphaLockIn >= 0 && alphaLockIn <= 1,
-                            msg = "'alphaLockIn' must be a numeric value between 0 and 1.")
+      msg = "'alphaLockIn' must be a numeric value between 0 and 1."
+    )
   }
-  
+
   # Validate lockOut parameters
-  if(!is.null(lockOut)){
+  if (!is.null(lockOut)) {
     assertthat::assert_that(inherits(lockOut, "sf"), msg = "'lockOut' must be an 'sf' object or NULL.")
     assertthat::assert_that(is.character(nameLockOut) && !is.null(nameLockOut) && all(nameLockOut %in% names(lockOut)),
-                            msg = "If 'lockOut' is provided, 'nameLockOut' must be a character string specifying an existing column in 'lockOut'.")
+      msg = "If 'lockOut' is provided, 'nameLockOut' must be a character string specifying an existing column in 'lockOut'."
+    )
     assertthat::assert_that(typeLockOut %in% c("Full", "Contours"),
-                            msg = "'typeLockOut' must be either 'Full' or 'Contours'.")
+      msg = "'typeLockOut' must be either 'Full' or 'Contours'."
+    )
     assertthat::assert_that(is.numeric(alphaLockOut) && alphaLockOut >= 0 && alphaLockOut <= 1,
-                            msg = "'alphaLockOut' must be a numeric value between 0 and 1.")
+      msg = "'alphaLockOut' must be a numeric value between 0 and 1."
+    )
   }
-  
+
   # Validate color parameters
   assertthat::assert_that(is.character(colorPUs), msg = "'colorPUs' must be a character string for a color.")
   assertthat::assert_that(is.character(colorBndry), msg = "'colorBndry' must be a character string for a color.")
@@ -228,13 +251,13 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
   assertthat::assert_that(is.character(colorConts), msg = "'colorConts' must be a character string for a color.")
   assertthat::assert_that(is.character(colorLockIn), msg = "'colorLockIn' must be a character string for a color.")
   assertthat::assert_that(is.character(colorLockOut), msg = "'colorLockOut' must be a character string for a color.")
-  
+
   # Validate legend and label parameters
   assertthat::assert_that(is.character(legendLockIn), msg = "'legendLockIn' must be a character string.")
   assertthat::assert_that(is.character(labelLockIn), msg = "'labelLockIn' must be a character string.")
   assertthat::assert_that(is.character(legendLockOut), msg = "'legendLockOut' must be a character string.")
   assertthat::assert_that(is.character(labelLockOut), msg = "'labelLockOut' must be a character string.")
-  
+
   # Validate ggtheme parameter
   assertthat::assert_that(
     inherits(ggtheme, "character") || inherits(ggtheme, "theme") || inherits(ggtheme, "list") || inherits(ggtheme, "logical"),
@@ -464,13 +487,10 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
     ggList <- c(
       ggList,
       list(
-        ggplot2::theme_bw(),
+        ggplot2::theme_bw(base_size = base_size),
         ggplot2::theme(
           legend.position = "bottom",
           legend.direction = "horizontal",
-          text = ggplot2::element_text(size = 20, colour = "black"),
-          axis.text = ggplot2::element_text(size = 16, colour = "black"),
-          plot.title = ggplot2::element_text(size = 16),
           axis.title = ggplot2::element_blank()
         )
       )

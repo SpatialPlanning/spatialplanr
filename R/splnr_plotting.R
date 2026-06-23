@@ -41,6 +41,9 @@
 #' @param legendLabels A character vector of strings to use for the legend labels,
 #'   particularly useful for binary or logical data (e.g., `c("Absent", "Present")`).
 #'   If `NULL`, default labels are used for binary/logical plots.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the spatial plot.
 #'
@@ -112,8 +115,8 @@ splnr_plot <- function(df,
                        colourVals = c("#c6dbef", "#3182bd"),
                        plotTitle = "",
                        legendTitle = NULL,
-                       legendLabels = NULL) {
-
+                       legendLabels = NULL,
+                       base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.data.frame(df),
@@ -134,8 +137,10 @@ splnr_plot <- function(df,
   if (!is.null(colNames)) {
     assertthat::assert_that(
       all(colNames %in% colnames(df)),
-      msg = paste0("Not all specified 'colNames' exist in the input dataframe. Missing: ",
-                   paste(colNames[!colNames %in% colnames(df)], collapse = ", "))
+      msg = paste0(
+        "Not all specified 'colNames' exist in the input dataframe. Missing: ",
+        paste(colNames[!colNames %in% colnames(df)], collapse = ", ")
+      )
     )
   }
   assertthat::assert_that(
@@ -167,33 +172,32 @@ splnr_plot <- function(df,
   showFeatureSum <- FALSE
 
   # Determine data type based on 'colNames' presence and content.
-  if (!is.null(colNames)){ # If 'colNames' are provided.
+  if (!is.null(colNames)) { # If 'colNames' are provided.
 
-    if (length(colNames) == 1){ # If only one column name is specified.
+    if (length(colNames) == 1) { # If only one column name is specified.
 
-      if (is.logical(df[[colNames]])){ # Check if the column data is logical (TRUE/FALSE).
+      if (is.logical(df[[colNames]])) { # Check if the column data is logical (TRUE/FALSE).
         is_logi <- TRUE
       } else { # If not logical, check if it's binary (0/1).
         # Create a temporary dataframe, replacing NA with 0 in the target columns for binary check.
         df0 <- df %>%
-          dplyr::mutate(dplyr::across(tidyselect::all_of(colNames), ~tidyr::replace_na(., 0)))
+          dplyr::mutate(dplyr::across(tidyselect::all_of(colNames), ~ tidyr::replace_na(., 0)))
         # Check if all values in the column are exclusively 0 or 1.
         is_binary <- all(purrr::map_vec(colNames, function(x) all(df0[[x]] %in% c(0, 1))))
       }
 
       ## If not binary and not logical, assume it's continuous.
-      if (isFALSE(is_binary) & isFALSE(is_logi)){
+      if (isFALSE(is_binary) & isFALSE(is_logi)) {
         is_continuous <- TRUE # This assumption allows plotting, and issues would be visible.
       }
-
-    } else if (length(colNames) > 1){ # If multiple column names are specified.
+    } else if (length(colNames) > 1) { # If multiple column names are specified.
       showFeatureSum <- TRUE # Set flag to calculate and show the sum of features.
     }
-
   }
 
   # Initialize the base ggplot object with coordinate system and subtitle.
   gg <- ggplot2::ggplot() +
+    ggplot2::theme_bw(base_size = base_size) +
     ggplot2::coord_sf(xlim = sf::st_bbox(df)$xlim, ylim = sf::st_bbox(df)$ylim) +
     ggplot2::labs(subtitle = plotTitle)
 
@@ -216,15 +220,16 @@ splnr_plot <- function(df,
         name = legendTitle,
         palette = paletteName,
         aesthetics = c("fill"),
-        oob = scales::squish) +
+        oob = scales::squish
+      ) +
       ggplot2::guides(fill = ggplot2::guide_colourbar(order = -1))
 
     return(gg)
   } else if (is_binary | is_logi) { # If data is binary or logical.
 
     # Set default legend labels if not provided.
-    if (is.null(legendLabels)){
-      legendLabels = c("Absence", "Presence")
+    if (is.null(legendLabels)) {
+      legendLabels <- c("Absence", "Presence")
     }
 
     # Add geom_sf for discrete fill based on the single column.
@@ -234,19 +239,22 @@ splnr_plot <- function(df,
     # Apply manual fill scale for binary (0/1) data.
     if (isTRUE(is_binary)) {
       gg <- gg +
-        ggplot2::scale_fill_manual(values = c("0" = colourVals[1], "1" = colourVals[2]),
-                                   labels = legendLabels,
-                                   name = legendTitle)
+        ggplot2::scale_fill_manual(
+          values = c("0" = colourVals[1], "1" = colourVals[2]),
+          labels = legendLabels,
+          name = legendTitle
+        )
     }
 
     # Apply manual fill scale for logical (FALSE/TRUE) data.
     if (isTRUE(is_logi)) {
       gg <- gg +
-        ggplot2::scale_fill_manual(values = c("FALSE" = colourVals[1], "TRUE" = colourVals[2]),
-                                   labels = legendLabels,
-                                   name = legendTitle)
+        ggplot2::scale_fill_manual(
+          values = c("FALSE" = colourVals[1], "TRUE" = colourVals[2]),
+          labels = legendLabels,
+          name = legendTitle
+        )
     }
-
   } else if (is_continuous) { # If data is continuous.
 
     # Add geom_sf for continuous fill and color based on the single column.
@@ -255,10 +263,11 @@ splnr_plot <- function(df,
       # Apply a viridis continuous color scale for fill and color.
       ggplot2::scale_fill_viridis_c(name = legendTitle, aesthetics = c("colour", "fill")) +
       # Configure guides to show color bar for fill and hide color legend for outline.
-      ggplot2::guides(fill = ggplot2::guide_colourbar(order = 1),
-                      colour = "none")
-
-  } else if (is.null(colNames)){ # If no column to plot by (only Planning Unit outlines).
+      ggplot2::guides(
+        fill = ggplot2::guide_colourbar(order = 1),
+        colour = "none"
+      )
+  } else if (is.null(colNames)) { # If no column to plot by (only Planning Unit outlines).
 
     # Add geom_sf to display Planning Unit outlines without fill.
     gg <- gg +
@@ -304,6 +313,9 @@ splnr_plot <- function(df,
 #'   Defaults to `"Planning Units"`.
 #' @param zones A logical value. Set to `TRUE` if the `prioritizr` solution
 #'   contains multiple zones (i.e., it's a multi-zone problem). Defaults to `FALSE`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the plot of the conservation solution.
 #' @export
@@ -378,7 +390,7 @@ splnr_plot <- function(df,
 splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
                                 showLegend = TRUE, legendLabels = c("Not selected", "Selected"),
                                 plotTitle = "Solution", legendTitle = "Planning Units",
-                                zones = FALSE) {
+                                zones = FALSE, base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln, "sf"), # Ensure soln is an sf object.
@@ -395,10 +407,6 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
   assertthat::assert_that(
     is.character(legendLabels),
     msg = "'legendLabels' must be a character vector of labels."
-  )
-  assertthat::assert_that(
-    length(colorVals) == length(legendLabels),
-    msg = "The number of 'colorVals' must match the number of 'legendLabels'."
   )
   assertthat::assert_that(
     is.character(plotTitle), # plotTitle should be character.
@@ -455,10 +463,6 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
         solution = sum(dplyr::c_across(cols = tidyselect::starts_with("solution_"))), # Sum across solution columns.
         solution = factor(.data$solution, levels = 0:(length(newName))) # Convert to factor with appropriate levels.
       )
-  } else {
-    # If 'zones' parameter is not a logical value, print an error.
-    cat("The 'zones' attribute requires a logical input. Please set to TRUE or FALSE.")
-    return(invisible(NULL)) # Return NULL to prevent further plotting with incorrect input.
   }
 
   # Quick checks to ensure color and label lengths match solution levels.
@@ -476,6 +480,7 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
 
   # Generate the ggplot object.
   gg <- ggplot2::ggplot() +
+    ggplot2::theme_bw(base_size = base_size) +
     # Add sf layer for the solution, filling by the 'solution' factor.
     ggplot2::geom_sf(data = soln, ggplot2::aes(fill = .data$solution), colour = NA, size = 0.1, show.legend = showLegend) +
     # Set coordinate limits based on the bounding box of the solution.
@@ -531,6 +536,9 @@ splnr_plot_solution <- function(soln, colorVals = c("#c6dbef", "#3182bd"),
 #'   Defaults to `"Cost"`.
 #' @param plotTitle A character string for the subtitle of the plot.
 #'   Defaults to `"Solution overlaid with cost"`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the solution with cost overlay.
 #' @export
@@ -582,8 +590,8 @@ splnr_plot_costOverlay <- function(soln,
                                    cost = NA,
                                    costName = "Cost",
                                    legendTitle = "Cost",
-                                   plotTitle = "Solution overlaid with cost") {
-
+                                   plotTitle = "Solution overlaid with cost",
+                                   base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln, "sf"),
@@ -606,22 +614,24 @@ splnr_plot_costOverlay <- function(soln,
     msg = "'plotTitle' must be a character string."
   )
 
-  # Check if Cost is provided as NA and if costName exists in soln.
-  if (is.na(cost)) {
+  # Check if cost is provided as NA and if costName exists in soln.
+  if (length(cost) == 1 && is.na(cost)) {
     if (!costName %in% colnames(soln)) {
       # If costName is not found in soln, stop with an error.
-      stop(paste0("Cost column '", costName, "' not found in the solution data frame. Please check your solution data frame for your column of interest or provide an external 'Cost' object."))
+      stop(paste0("Cost column '", costName, "' not found in the solution data frame. Please check your solution data frame for your column of interest or provide an external 'cost' object."))
     } else {
       # If costName is in soln, select it.
       Cost <- soln %>%
         dplyr::select(!!rlang::sym(costName))
     }
-  } else if (!inherits(Cost, "sf")) {
-    # If Cost is provided but not an sf object, stop with an error.
-    stop("'Cost' must be an 'sf' object if provided, not a data.frame or other type.")
-  } else if (!(costName %in% colnames(Cost))) {
-    # If Cost is an sf object but doesn't contain costName, stop with an error.
-    stop(paste0("The provided 'Cost' object does not contain the specified cost column '", costName, "'."))
+  } else if (!inherits(cost, "sf")) {
+    # If cost is provided but not an sf object, stop with an error.
+    stop("'cost' must be an 'sf' object if provided, not a data.frame or other type.")
+  } else if (!(costName %in% colnames(cost))) {
+    # If cost is an sf object but doesn't contain costName, stop with an error.
+    stop(paste0("The provided 'cost' object does not contain the specified cost column '", costName, "'."))
+  } else {
+    Cost <- cost
   }
 
   # Filter the solution to only include selected Planning Units.
@@ -631,6 +641,7 @@ splnr_plot_costOverlay <- function(soln,
 
   # Initialize the ggplot object.
   gg <- ggplot2::ggplot() +
+    ggplot2::theme_bw(base_size = base_size) +
     # Plot the selected solution units in black.
     ggplot2::geom_sf(data = soln, fill = "black", colour = "black", size = 0.0001) +
     # Overlay the cost data on top of the selected units with transparency.
@@ -645,7 +656,11 @@ splnr_plot_costOverlay <- function(soln,
         0,
         as.numeric(stats::quantile(dplyr::pull(Cost, costName), 0.99, na.rm = TRUE))
       ),
-      oob = scales::squish # Squish values outside the limits.
+      oob = scales::squish, # Squish values outside the limits.
+      guide = ggplot2::guide_colourbar(
+        barwidth  = ggplot2::unit(20, "lines"), # Twice the width of the climate colourbar (10 lines).
+        barheight = ggplot2::unit(6, "lines") # Twice the height of the climate colourbar (3 lines).
+      )
     ) +
     # Set coordinate limits based on the bounding box of the cost data.
     ggplot2::coord_sf(xlim = sf::st_bbox(Cost)$xlim, ylim = sf::st_bbox(Cost)$ylim) +
@@ -681,6 +696,9 @@ splnr_plot_costOverlay <- function(soln,
 #'   with a `solution_1` column. This is the solution being compared against `soln1`.
 #' @param legendTitle A character string for the title of the legend.
 #'   Defaults to `"Scenario 2 compared to Scenario 1:"`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the spatial comparison of the two solutions.
 #' @export
@@ -728,8 +746,8 @@ splnr_plot_costOverlay <- function(soln,
 #' plot_comparison <- splnr_plot_comparison(dat_soln, dat_soln2)
 #' print(plot_comparison)
 #' }
-splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compared to Scenario 1:") {
-
+splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compared to Scenario 1:",
+                                  base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln1, "sf"),
@@ -773,9 +791,9 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
     # Categorize differences into "Same", "Removed (-)", or "Added (+)".
     dplyr::mutate(
       Compare = dplyr::case_when(
-        Combined == 2 ~ "Same",                              # Both selected.
-        solution_1 == 1 & solution_2 == 0 ~ "Removed (-)",  # In soln1 only.
-        solution_1 == 0 & solution_2 == 1 ~ "Added (+)"     # In soln2 only.
+        Combined == 2 ~ "Same", # Both selected.
+        solution_1 == 1 & solution_2 == 0 ~ "Removed (-)", # In soln1 only.
+        solution_1 == 0 & solution_2 == 1 ~ "Added (+)" # In soln2 only.
       ),
       Compare = factor(.data$Compare, levels = c("Added (+)", "Same", "Removed (-)"))
     ) %>%
@@ -788,11 +806,14 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
 
   # Initialize the ggplot object.
   gg <- ggplot2::ggplot() +
+    ggplot2::theme_bw(base_size = base_size) +
     # Add sf layer for the comparison, filling by the 'Compare' factor.
     ggplot2::geom_sf(data = soln, ggplot2::aes(fill = .data$Compare), colour = NA, size = 0.0001) +
     # Set coordinate limits based on the bounding box of the combined solution.
-    ggplot2::coord_sf(xlim = c(bbox["xmin"], bbox["xmax"]),
-                      ylim = c(bbox["ymin"], bbox["ymax"])) +
+    ggplot2::coord_sf(
+      xlim = c(bbox["xmin"], bbox["xmax"]),
+      ylim = c(bbox["ymin"], bbox["ymax"])
+    ) +
     # Manually set fill colors for each comparison category.
     ggplot2::scale_fill_manual(
       name = legendTitle, # Set legend title.
@@ -834,6 +855,9 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
 #'   Defaults to `"Greens"`.
 #' @param legendTitle A character string for the title of the legend.
 #'   Defaults to `"Selection \nFrequency"`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the plot of Planning Unit selection frequency.
 #' @export
@@ -873,8 +897,8 @@ splnr_plot_comparison <- function(soln1, soln2, legendTitle = "Scenario 2 compar
 splnr_plot_selectionFreq <- function(selFreq,
                                      plotTitle = "",
                                      paletteName = "Greens",
-                                     legendTitle = "Selection \nFrequency") {
-
+                                     legendTitle = "Selection \nFrequency",
+                                     base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(selFreq, "sf"), # Ensure selFreq is an sf object.
@@ -918,12 +942,11 @@ splnr_plot_selectionFreq <- function(selFreq,
       expand = TRUE
     ) +
     # Customize the plot theme.
+    ggplot2::theme_bw(base_size = base_size) +
     ggplot2::theme(
-      axis.text.y = ggplot2::element_text(size = 12, colour = "black"),
-      axis.text.x = ggplot2::element_text(size = 12, colour = "black"),
+      axis.text.y = ggplot2::element_text(colour = "black"),
+      axis.text.x = ggplot2::element_text(colour = "black"),
       axis.title.x = ggplot2::element_blank(), # Remove x-axis title.
-      legend.title = ggplot2::element_text(size = 12),
-      legend.text = ggplot2::element_text(size = 12),
       panel.grid = ggplot2::element_blank(), # Remove panel grid lines.
       panel.border = ggplot2::element_blank(), # Remove panel border.
       axis.ticks = ggplot2::element_blank(), # Remove axis ticks.
@@ -978,6 +1001,9 @@ splnr_plot_selectionFreq <- function(selFreq,
 #'   Defaults to `4`.
 #' @param legendTitle A character string for the title of the legend.
 #'   Defaults to `"Importance Score"`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the plot of importance scores.
 #' @export
@@ -1035,8 +1061,8 @@ splnr_plot_importanceScore <- function(soln,
                                        plotTitle = "",
                                        colorMap = "A",
                                        decimals = 4,
-                                       legendTitle = "Importance Score") {
-
+                                       legendTitle = "Importance Score",
+                                       base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln, "sf"), # soln should be an sf object as it contains geometry
@@ -1118,6 +1144,7 @@ splnr_plot_importanceScore <- function(soln,
 
   # Initialize the ggplot object.
   gg <- ggplot2::ggplot() +
+    ggplot2::theme_bw(base_size = base_size) +
     # Add sf layer, filling by the 'score' column.
     ggplot2::geom_sf(data = scored_soln, ggplot2::aes(fill = .data$score), colour = NA) +
     # Apply a viridis color scale for fill.
@@ -1186,6 +1213,9 @@ splnr_plot_importanceScore <- function(soln,
 #'   If `NULL` (default), the column names of `x` will be used. The length of
 #'   this vector must match the number of rows/columns in `x`.
 #' @param plotTitle A character string for the title of the plot. Defaults to `""`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the correlation matrix plot.
 #' @export
@@ -1239,8 +1269,8 @@ splnr_plot_importanceScore <- function(soln,
 #' }
 splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#4477AA"),
                                legendTitle = "Correlation \ncoefficient",
-                               AxisLabels = NULL, plotTitle = "") {
-
+                               AxisLabels = NULL, plotTitle = "",
+                               base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.matrix(x),
@@ -1267,21 +1297,18 @@ splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#447
     msg = "'plotTitle' must be a character string."
   )
 
-  # Check if AxisLabels length matches matrix dimensions if provided.
-  if (!is.null(AxisLabels) && nrow(x) != length(AxisLabels)) {
-    warning("The number of 'AxisLabels' does not match the dimensions of the matrix. Using default labels.")
-    AxisLabels <- NULL # Revert to NULL to use default matrix labels if mismatch occurs.
-  }
-
   # Check if ggcorrplot package is installed, if not, stop with an error.
-  if (requireNamespace("ggcorrplot", quietly = TRUE) == FALSE){
+  if (requireNamespace("ggcorrplot", quietly = TRUE) == FALSE) {
     stop("To run splnr_plot_corrMat you will need to install the package ggcorrplot.")
   }
 
   # Generate the correlation plot using ggcorrplot.
+  # Pass theme_bw(base_size) so that ggcorrplot's internal theme inherits the
+  # correct base font size rather than its own hardcoded default.
   gg <- ggcorrplot::ggcorrplot(x,
-                               outline.color = "black", # Set outline color for matrix cells.
-                               lab = TRUE # Display correlation coefficients on the plot.
+    outline.color = "black", # Set outline color for matrix cells.
+    lab = TRUE, # Display correlation coefficients on the plot.
+    ggtheme = ggplot2::theme_bw(base_size = base_size)
   ) +
     # Apply a gradient fill for the correlation values.
     ggplot2::scale_fill_gradient2(
@@ -1296,17 +1323,16 @@ splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#447
     ) +
     # Rotate x-axis labels for better readability.
     ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(angle = 45)) +
-    ggplot2::theme_bw() + # Apply a black and white theme.
-    # Customize the plot theme.
+    # Customize the plot theme — colour overrides only; sizes inherit from base_size.
     ggplot2::theme(
       legend.title = ggplot2::element_text(), # Keep default legend title text element.
-      legend.text = ggplot2::element_text(color = "black", size = 10), # Customize legend text.
+      legend.text = ggplot2::element_text(color = "black"),
       panel.grid = ggplot2::element_blank(), # Remove panel grid lines.
       panel.border = ggplot2::element_blank(), # Remove panel border.
       axis.ticks = ggplot2::element_blank(), # Remove axis ticks.
-      axis.text.y = ggplot2::element_text(color = "black", size = 12), # Customize y-axis text.
+      axis.text.y = ggplot2::element_text(color = "black"),
       axis.title = ggplot2::element_blank(), # Remove axis titles.
-      axis.text.x = ggplot2::element_text(color = "black", size = 12) # Customize x-axis text.
+      axis.text.x = ggplot2::element_text(color = "black")
     ) +
     ggplot2::labs(title = plotTitle) # Set plot title.
 

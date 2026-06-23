@@ -21,9 +21,7 @@
 #' df <- splnr_convert_regionalisation(dat, PUs)
 #' }
 splnr_convert_regionalisation <- function(dat, PUs, cat_name = NA, col_name = NA) {
-
   lifecycle::deprecate_stop("0.6.2", "splnr_convert_regionalisation()", "spatialgridr::get_data_in_grid()")
-
 }
 
 
@@ -49,12 +47,8 @@ splnr_convert_regionalisation <- function(dat, PUs, cat_name = NA, col_name = NA
 #' df <- splnr_convert_toPUs(dat, PlanUnits)
 #' }
 splnr_convert_toPUs <- function(dat, PlanUnits) {
-
   lifecycle::deprecate_stop("0.6.2", "splnr_convert_toPUs()", "spatialgridr::get_data_in_grid()")
-
 }
-
-
 
 
 #' Plot MPAs
@@ -78,9 +72,7 @@ splnr_convert_toPUs <- function(dat, PlanUnits) {
 #' }
 splnr_plot_MPAs <- function(df, colorVals = c("TRUE" = "blue", "FALSE" = "white"),
                             showLegend = TRUE, plotTitle = "Locked In Areas", legendTitle = "") {
-
   lifecycle::deprecate_stop("0.6.2", "splnr_plot_MPAs()", "splnr_plot()")
-
 }
 
 
@@ -120,11 +112,8 @@ splnr_plot_MPAs <- function(df, colorVals = c("TRUE" = "blue", "FALSE" = "white"
 #' }
 splnr_plot_cost <- function(cost, costName = "Cost", legendTitle = "Cost",
                             paletteName = "YlGnBu", plotTitle = "") {
-
   lifecycle::deprecate_stop("0.6.2", "splnr_plot_MPAs()", "splnr_plot()")
-
 }
-
 
 
 #' Plot binary feature
@@ -150,9 +139,7 @@ splnr_plot_cost <- function(cost, costName = "Cost", legendTitle = "Cost",
 splnr_plot_binFeature <- function(df, colInterest,
                                   colorVals = c("Suitable" = "#3182bd", "Not Suitable" = "#c6dbef"),
                                   showLegend = TRUE, plotTitle = " ", legendTitle = "Habitat") {
-
   lifecycle::deprecate_stop("0.6.2", "splnr_plot_binFeature()", "splnr_plot()")
-
 }
 
 
@@ -180,10 +167,5 @@ splnr_plot_binFeature <- function(df, colInterest,
 #' }
 splnr_plot_featureNo <- function(df, showLegend = TRUE, paletteName = "YlGnBu",
                                  plotTitle = "Number of Features", legendTitle = "Features") {
-
   lifecycle::deprecate_stop("0.6.2", "splnr_plot_featureNo()", "splnr_plot()")
-
 }
-
-
-

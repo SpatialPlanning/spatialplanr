@@ -56,9 +56,11 @@
 #' # For example: Sys.setenv(IUCN_REDLIST_KEY = "YOUR_API_KEY_HERE")
 #'
 #' # Example: Create a dataframe with species names and retrieve their IUCN Red List categories.
-#' df_species_redlist <- data.frame(Species = c("Diomedea exulans",
-#'                                               "Hippocampus kuda",
-#'                                               "Squatina squatina")) %>%
+#' df_species_redlist <- data.frame(Species = c(
+#'   "Diomedea exulans",
+#'   "Hippocampus kuda",
+#'   "Squatina squatina"
+#' )) %>%
 #'   splnr_get_IUCNRedList()
 #' print(df_species_redlist)
 #'
@@ -68,7 +70,6 @@
 #' print(df_alt_col)
 #' }
 splnr_get_IUCNRedList <- function(df, species_col = "Species") {
-
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(df, "data.frame"),
@@ -110,7 +111,7 @@ splnr_get_IUCNRedList <- function(df, species_col = "Species") {
     # Rename the selected columns to match the input dataframe's species column name
     # and a new column for the IUCN category for clarity.
     dplyr::rename(!!species_col := .data$result.scientific_name,
-                  IUCN_Category = .data$category
+      IUCN_Category = .data$category
     )
 
   # Perform a left join to link the species in the input dataframe to their

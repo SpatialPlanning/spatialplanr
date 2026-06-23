@@ -9,12 +9,12 @@ vignette: >
   
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-collapse = TRUE,
-comment = "#>",
-warning = FALSE,
-cache = FALSE,
-message = FALSE,
-eval = TRUE
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  cache = FALSE,
+  message = FALSE,
+  eval = TRUE
 )
 ```
 
@@ -62,11 +62,12 @@ landmass <- rnaturalearth::ne_countries(
 
 ## Create Planning Units 
 ```{r}
-PUs <- spatialgridr::get_grid(boundary = Bndry,
-                              crs = cCRS,
-                              output = "sf_hex",
-                              resolution = PU_size)
-
+PUs <- spatialgridr::get_grid(
+  boundary = Bndry,
+  crs = cCRS,
+  output = "sf_hex",
+  resolution = PU_size
+)
 ```
 
 We can also use a customised `ggplot` theme that can be passed as a list to `splnr_gg_add()` and that can then be used for all plots. For example:
@@ -90,22 +91,22 @@ splnr_theme <- list(
 For our example, we will use a small subset of charismatic megafauna species of the Coral Sea to inform the conservation plan. We filtered the Aquamaps (Aquamaps.org) species distribution models for our study area for the following species: 
 ```{r}
 Dict <- tibble::tribble(
-  ~nameCommon, ~nameVariable, ~category, 
-  "Green sea turtle", "Chelonia_mydas", "Reptiles", 
-  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles", 
-  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles", 
-  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles", 
-  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles", 
-  "Humpback whale", "Megaptera_novaeangliae", "Mammals", 
+  ~nameCommon, ~nameVariable, ~category,
+  "Green sea turtle", "Chelonia_mydas", "Reptiles",
+  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles",
+  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles",
+  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles",
+  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles",
+  "Humpback whale", "Megaptera_novaeangliae", "Mammals",
   "Common Minke whale", "Balaenoptera_acutorostrata",
-  "Mammals", 
-  "Dugong", "Dugong_dugon", "Mammals", 
-  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays", 
-  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays", 
+  "Mammals",
+  "Dugong", "Dugong_dugon", "Mammals",
+  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays",
+  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays",
   "Great hammerhead shark", "Sphyrna_mokarran",
-  "Sharks and rays", 
-  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays", 
-  "Reef manta ray", "Mobula_alfredi", "Sharks and rays", 
+  "Sharks and rays",
+  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays",
+  "Reef manta ray", "Mobula_alfredi", "Sharks and rays",
   "Whitetip reef shark", "Triaenodon_obesus", "Sharks and rays",
   "Red-footed booby", "Sula_sula", "Birds"
 )
@@ -151,8 +152,7 @@ s1 <- p1 %>%
   prioritizr::solve.ConservationProblem()
 
 (ggSoln <- splnr_plot_solution(s1) +
-    splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
-
+  splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
 ```
 
 We can also have a look at how well the set target was met.
@@ -370,10 +370,10 @@ s4 <- p4 %>%
   colorVals = c("#c6dbef", "#3182bd", "black"),
   legendLabels = c("Not selected", "Zone 1", "Zone 2")
 ) +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 #### Across zones
@@ -409,10 +409,10 @@ s5 <- p5 %>%
   colorVals = c("#c6dbef", "#3182bd", "black"),
   legendLabels = c("Not selected", "Zone 1", "Zone 2")
 ) +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ### Adding constraints
@@ -425,7 +425,7 @@ When using zones with constraints, we use the `prioritizr` function `add_manual_
 mpas <- MPAsCoralSea %>%
   dplyr::mutate(zone = "zone 1") %>%
   dplyr::rename(status = wdpa) %>%
-  tibble::rowid_to_column("pu") %>% 
+  tibble::rowid_to_column("pu") %>%
   sf::st_drop_geometry() %>%
   tibble::tibble() %>%
   dplyr::filter(status == 1)
@@ -504,10 +504,10 @@ s7 <- p7 %>%
   colorVals = c("#c6dbef", "#3182bd", "black"),
   legendLabels = c("Not selected", "Zone 1", "Zone 2")
 ) +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ### Alternative: linear constraints
@@ -539,7 +539,7 @@ p8 <- prioritizr::problem(
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_relative_targets(target8) %>%
   prioritizr::add_linear_constraints(sum(costRandom$CostR) * 0.1,
-                                     sense = "<=", costRandom$CostR
+    sense = "<=", costRandom$CostR
   ) %>%
   prioritizr::add_binary_decisions() %>%
   prioritizr::add_default_solver(verbose = FALSE)
@@ -554,7 +554,7 @@ We can visualise the solution again:
 
 ```{r, fig.width = 9}
 (gg_s8 <- splnr_plot_solution(s8) +
-   splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
+  splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
 ```
 
 
@@ -613,8 +613,8 @@ We can see here that we defined to (random) cost layers with the cost layer for 
 
 ```{r}
 p10 <- prioritizr::problem(out_sf,
-                           z10,
-                           cost_column = c("Cost1", "Cost2")
+  z10,
+  cost_column = c("Cost1", "Cost2")
 ) %>%
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_manual_targets(targetAcross) %>%
@@ -641,9 +641,9 @@ The overall summary shows that every feature's suitable habitat was represented 
 
 ```{r, fig.width=9}
 (gg_s10 <- splnr_plot_solution(s10,
-                               zones = TRUE,
-                               colorVals = c("#c6dbef", "#3182bd", "black"),
-                               legendLabels = c("Not selected", "Zone 1", "Zone 2")
+  zones = TRUE,
+  colorVals = c("#c6dbef", "#3182bd", "black"),
+  legendLabels = c("Not selected", "Zone 1", "Zone 2")
 ) +
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
@@ -673,12 +673,12 @@ We then define the conservation problem and add a linear constraint for 30% of t
 
 ```{r}
 p11 <- prioritizr::problem(out_sf,
-                           z10,
-                           cost_column = c("Cost1", "Cost2")
+  z10,
+  cost_column = c("Cost1", "Cost2")
 ) %>%
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_linear_constraints(sum(CostArea[, 1]) * 0.3,
-                                     sense = "<=", CostArea
+    sense = "<=", CostArea
   ) %>%
   prioritizr::add_manual_targets(targetAcross) %>%
   prioritizr::add_binary_decisions() %>%
@@ -791,8 +791,8 @@ out_sf <- datSpecZone1 %>%
 
 ```{r}
 p12 <- prioritizr::problem(out_sf,
-                           z12,
-                           cost_column = c("Cost1", "Cost2", "Cost3")
+  z12,
+  cost_column = c("Cost1", "Cost2", "Cost3")
 ) %>%
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_manual_targets(targetAcrossSome) %>%

@@ -1,4 +1,3 @@
-
 # Helper used across multiple tests: get numeric column names from an sf result,
 # excluding geometry. Uses the same purrr::map_lgl approach as the function itself.
 get_numeric_cols <- function(sf_obj) {
@@ -35,25 +34,25 @@ testthat::test_that("named numeric vector cutoff returns an sf object", {
 # --- Single numeric scalar: correct binarisation ---
 
 testthat::test_that("single numeric cutoff produces only 0/1 values", {
-  result      <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5)
-  num_cols    <- get_numeric_cols(result)
-  vals        <- unlist(sf::st_drop_geometry(result)[num_cols])
+  result <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5)
+  num_cols <- get_numeric_cols(result)
+  vals <- unlist(sf::st_drop_geometry(result)[num_cols])
   expect_true(all(vals %in% c(0, 1)))
 })
 
 testthat::test_that("single numeric cutoff: values >= threshold become 1", {
   # Cutoff of 0 means every non-NA value (>= 0) becomes 1.
-  result   <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0)
+  result <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0)
   num_cols <- get_numeric_cols(result)
-  vals     <- unlist(sf::st_drop_geometry(result)[num_cols])
+  vals <- unlist(sf::st_drop_geometry(result)[num_cols])
   expect_true(all(vals == 1))
 })
 
 testthat::test_that("single numeric cutoff: values < threshold become 0", {
   # Cutoff of 1 means only values exactly equal to 1 become 1; all others become 0.
-  result   <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 1)
+  result <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 1)
   num_cols <- get_numeric_cols(result)
-  vals     <- unlist(sf::st_drop_geometry(result)[num_cols])
+  vals <- unlist(sf::st_drop_geometry(result)[num_cols])
   expect_true(all(vals %in% c(0, 1)))
 })
 
@@ -61,14 +60,14 @@ testthat::test_that("inverse flips 0 and 1 for non-NA values", {
   # NA values become 0 in normal mode and 1 in inverse mode (0 is binarised
   # first, then flipped), so they do not sum to 1. We therefore test only on
   # non-NA cells in the original data.
-  normal   <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = FALSE)
+  normal <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = FALSE)
   inverted <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = TRUE)
   num_cols <- get_numeric_cols(normal)
 
   for (col in num_cols) {
-    orig_vals    <- sf::st_drop_geometry(dat_species_prob)[[col]]
-    non_na_idx   <- !is.na(orig_vals)
-    normal_vals  <- sf::st_drop_geometry(normal)[[col]][non_na_idx]
+    orig_vals <- sf::st_drop_geometry(dat_species_prob)[[col]]
+    non_na_idx <- !is.na(orig_vals)
+    normal_vals <- sf::st_drop_geometry(normal)[[col]][non_na_idx]
     inverse_vals <- sf::st_drop_geometry(inverted)[[col]][non_na_idx]
     expect_equal(normal_vals + inverse_vals, rep(1, sum(non_na_idx)))
   }
@@ -84,9 +83,9 @@ testthat::test_that("single function cutoff returns an sf object", {
 })
 
 testthat::test_that("single function cutoff produces only 0/1 values", {
-  result   <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = \(x) quantile(x, 0.99))
+  result <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = \(x) quantile(x, 0.99))
   num_cols <- get_numeric_cols(result)
-  vals     <- unlist(sf::st_drop_geometry(result)[num_cols])
+  vals <- unlist(sf::st_drop_geometry(result)[num_cols])
   expect_true(all(vals %in% c(0, 1)))
 })
 
@@ -98,9 +97,9 @@ testthat::test_that("single function cutoff with inverse returns an sf object", 
 })
 
 testthat::test_that("single function cutoff: median threshold produces only 0/1 values", {
-  result   <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = \(x) median(x))
+  result <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = \(x) median(x))
   num_cols <- get_numeric_cols(result)
-  vals     <- unlist(sf::st_drop_geometry(result)[num_cols])
+  vals <- unlist(sf::st_drop_geometry(result)[num_cols])
   expect_true(all(vals %in% c(0, 1)))
 })
 
@@ -120,7 +119,7 @@ testthat::test_that("named list with mixed numeric and function entries returns 
 })
 
 testthat::test_that("named list cutoff produces only 0/1 values in targeted columns", {
-  result     <- splnr_apply_cutoffs(
+  result <- splnr_apply_cutoffs(
     dat_species_prob,
     Cutoffs = list(
       "Spp1" = 0.5,
@@ -140,7 +139,7 @@ testthat::test_that("named list: untargeted columns are unchanged", {
   )
   # Spp2 should be unchanged (still continuous)
   original_spp2 <- sf::st_drop_geometry(dat_species_prob)[["Spp2"]]
-  result_spp2   <- sf::st_drop_geometry(result)[["Spp2"]]
+  result_spp2 <- sf::st_drop_geometry(result)[["Spp2"]]
   expect_equal(original_spp2, result_spp2)
 })
 
@@ -200,5 +199,31 @@ testthat::test_that("non-logical inverse raises an error", {
   expect_error(
     splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = "yes"),
     "must be a single logical value"
+  )
+})
+
+# --- resolve_cutoff() internal error branches ---
+
+testthat::test_that("function-based cutoff that throws an error is re-raised with context", {
+  # The tryCatch inside resolve_cutoff() catches errors from the user's function
+  # and re-throws them with a more informative message.
+  expect_error(
+    splnr_apply_cutoffs(
+      dat_species_prob,
+      Cutoffs = \(x) stop("deliberate error in cutoff function")
+    ),
+    "raised an error"
+  )
+})
+
+testthat::test_that("named list entry that is neither numeric nor function raises an error", {
+  # The else branch in resolve_cutoff() handles entries that are not numeric
+  # scalars or functions (e.g. a character string).
+  expect_error(
+    splnr_apply_cutoffs(
+      dat_species_prob,
+      Cutoffs = list("Spp1" = "not_a_number_or_function")
+    ),
+    "must be a numeric scalar or a function"
   )
 })

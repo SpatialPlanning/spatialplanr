@@ -1,4 +1,3 @@
-
 #' @title Plot Climate Metric Data
 #'
 #' @description
@@ -28,6 +27,9 @@
 #'   Defaults to `" "` (a single space, effectively no subtitle).
 #' @param legendTitle A character string for the title of the legend.
 #'   Defaults to `"Climate metric"`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the spatial plot of the climate metric.
 #' @export
@@ -65,8 +67,8 @@ splnr_plot_climData <- function(df,
                                 colInterest,
                                 colorMap = "C",
                                 plotTitle = " ",
-                                legendTitle = "Climate metric") {
-
+                                legendTitle = "Climate metric",
+                                base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(df, "sf"),
@@ -95,6 +97,7 @@ splnr_plot_climData <- function(df,
 
   # Initialize the ggplot object.
   gg <- ggplot2::ggplot() +
+    ggplot2::theme_bw(base_size = base_size) +
     # Add sf layer, filling by the specified climate metric column.
     ggplot2::geom_sf(data = df %>% sf::st_as_sf(), ggplot2::aes(fill = !!rlang::sym(colInterest)), colour = NA) +
     # Apply a viridis continuous color scale for fill.
@@ -142,8 +145,7 @@ splnr_plot_climData <- function(df,
 #' @importFrom ggplot2 aes element_blank element_line element_text ggplot labs scale_fill_manual scale_x_continuous scale_y_discrete theme theme_bw guide_legend
 #' @importFrom rlang .data :=
 #'
-splnr_plot_climKernelDensity_Basic <- function(soln) {
-
+splnr_plot_climKernelDensity_Basic <- function(soln, base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     inherits(soln, "data.frame"),
@@ -167,7 +169,7 @@ splnr_plot_climKernelDensity_Basic <- function(soln) {
   )
 
   # Check if ggridges package is installed, if not, stop with an error.
-  if (requireNamespace("ggridges", quietly = TRUE) == FALSE){
+  if (requireNamespace("ggridges", quietly = TRUE) == FALSE) {
     stop("To run splnr_plot_climKernelDensity you will need to install the package ggridges.")
   }
 
@@ -204,18 +206,16 @@ splnr_plot_climKernelDensity_Basic <- function(soln) {
       x = "Climate resilience metric",
       y = "Proportion of planning units"
     ) +
-    ggplot2::theme_bw() + # Apply black and white theme.
-    # Customize theme elements.
+    ggplot2::theme_bw(base_size = base_size) + # Apply black and white theme.
+    # Customize theme elements — colour/layout overrides only; sizes inherit from base_size.
     ggplot2::theme(
       axis.ticks = ggplot2::element_line(color = "black", linewidth = 1),
-      text = ggplot2::element_text(size = 20),
       axis.line = ggplot2::element_line(colour = "black", linewidth = 1),
       axis.text.y = ggplot2::element_blank(), # Hide y-axis text.
-      axis.text.x = ggplot2::element_text(size = 20),
-      axis.title = ggplot2::element_text(size = 20),
+      axis.text.x = ggplot2::element_text(colour = "black"),
       legend.title = ggplot2::element_text(color = "black", angle = 90, hjust = 0.5), # Rotate legend title.
       legend.position = "bottom",
-      legend.text = ggplot2::element_text(size = 20)
+      legend.text = ggplot2::element_text(colour = "black")
     ) +
     # Manually set fill colors for "Not Selected" and "Selected" in the legend.
     ggplot2::scale_fill_manual(
@@ -276,8 +276,8 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
                                                climate_name = "metric",
                                                colorMap = "C",
                                                legendTitle = expression(" \u00B0C y"^"-1" * ""),
-                                               xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")")) {
-
+                                               xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")"),
+                                               base_size = 14) {
   # --- Input validation -------------------------------------------------------
 
   assertthat::assert_that(
@@ -313,8 +313,8 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     msg = "'colorMap' must be a character string for a 'viridis' palette option."
   )
   assertthat::assert_that(
-    is.vector(legendTitle) || is.expression(legendTitle),
-    msg = "'legendTitle' must be a character string or an expression."
+    is.null(legendTitle) || is.vector(legendTitle) || is.expression(legendTitle),
+    msg = "'legendTitle' must be a character string, an expression, or NULL."
   )
   assertthat::assert_that(
     is.vector(xAxisLab) || is.expression(xAxisLab),
@@ -339,8 +339,10 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
   df <- soln %>%
     tibble::as_tibble() %>%
     dplyr::select(tidyselect::all_of(c(solution_name, climate_name))) %>%
-    dplyr::rename(solution_1 = tidyselect::all_of(solution_name),
-                  metric     = tidyselect::all_of(climate_name)) %>%
+    dplyr::rename(
+      solution_1 = tidyselect::all_of(solution_name),
+      metric = tidyselect::all_of(climate_name)
+    ) %>%
     # A single-solution plot still needs a y-axis grouping variable for ggridges.
     # We use the climate column name as the label so the y-axis is informative
     # when the user inspects the raw plot object.
@@ -351,10 +353,12 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
   # remains self-contained and the lines always reflect the actual distribution.
   medians <- df %>%
     dplyr::group_by(.data$solution_1) %>%
-    dplyr::summarise(med = stats::median(.data$metric, na.rm = TRUE),
-                     .groups = "drop")
+    dplyr::summarise(
+      med = stats::median(.data$metric, na.rm = TRUE),
+      .groups = "drop"
+    )
 
-  med_selected   <- medians$med[medians$solution_1 == 1]
+  med_selected <- medians$med[medians$solution_1 == 1]
   med_unselected <- medians$med[medians$solution_1 == 0]
 
   # Middle colour of the viridis palette — used as the representative fill
@@ -376,9 +380,9 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     ) +
     # Viridis colour scale for the gradient fill (continuous legend).
     ggplot2::scale_fill_viridis_c(
-      name   = legendTitle,
+      name = legendTitle,
       option = colorMap,
-      guide  = ggplot2::guide_colorbar(
+      guide = ggplot2::guide_colorbar(
         barheight = ggplot2::unit(10, "lines"),
         barwidth  = ggplot2::unit(3, "lines")
       )
@@ -417,13 +421,13 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
       alpha = 0, na.rm = TRUE
     ) +
     ggplot2::scale_colour_manual(
-      name   = NULL,
+      name = NULL,
       values = c("Selected PUs" = mid_colour, "Unselected PUs" = "grey70"),
-      guide  = ggplot2::guide_legend(
+      guide = ggplot2::guide_legend(
         override.aes = list(
           fill     = c(mid_colour, "grey70"),
-          colour   = c("black",    "black"),
-          linetype = c("solid",    "dotted"),
+          colour   = c("black", "black"),
+          linetype = c("solid", "dotted"),
           shape    = 22,
           size     = 8,
           alpha    = 1
@@ -433,16 +437,16 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_discrete(expand = ggplot2::expansion(mult = c(0.01, 0))) +
     ggplot2::labs(x = xAxisLab) +
-    ggplot2::theme_bw() +
+    ggplot2::theme_bw(base_size = base_size) +
+    # Colour/layout overrides only; sizes inherit from base_size.
     ggplot2::theme(
-      axis.ticks      = ggplot2::element_line(color = "black", linewidth = 1),
-      axis.line       = ggplot2::element_line(colour = "black", linewidth = 1),
-      axis.text       = ggplot2::element_text(color = "black", size = 14),
-      axis.title.x    = ggplot2::element_text(size = 14),
-      axis.title.y    = ggplot2::element_blank(),
-      axis.text.y     = ggplot2::element_blank(),
-      legend.text     = ggplot2::element_text(size = 15, color = "black"),
-      legend.title    = ggplot2::element_text(size = 15, color = "black"),
+      axis.ticks = ggplot2::element_line(color = "black", linewidth = 1),
+      axis.line = ggplot2::element_line(colour = "black", linewidth = 1),
+      axis.text = ggplot2::element_text(color = "black"),
+      axis.title.y = ggplot2::element_blank(),
+      axis.text.y = ggplot2::element_blank(),
+      legend.text = ggplot2::element_text(color = "black"),
+      legend.title = ggplot2::element_text(color = "black"),
       legend.title.position = "right"
     )
 
@@ -494,6 +498,9 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
 #'   `expression(" \u00B0C y"^"-1" * "")`, representing "°C year⁻¹".
 #' @param xAxisLab A character string or `expression` for the x-axis label.
 #'   Defaults to `expression("Climate warming ( \u00B0C y"^"-1" * ")")`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the kernel density plot.
 #' @export
@@ -566,10 +573,14 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
 #'   dplyr::mutate(solution_1 = sample(c(0L, 1L), dplyr::n(), replace = TRUE))
 #'
 #' plot_compare <- patchwork::wrap_plots(
-#'   splnr_plot_climKernelDensity(soln = dat_solnClim,   type = "Normal",
-#'                                legendTitle = "Scenario 1", xAxisLab = "Climate metric"),
-#'   splnr_plot_climKernelDensity(soln = dat_solnClim_2, type = "Normal",
-#'                                legendTitle = "Scenario 2", xAxisLab = "Climate metric"),
+#'   splnr_plot_climKernelDensity(
+#'     soln = dat_solnClim, type = "Normal",
+#'     legendTitle = "Scenario 1", xAxisLab = "Climate metric"
+#'   ),
+#'   splnr_plot_climKernelDensity(
+#'     soln = dat_solnClim_2, type = "Normal",
+#'     legendTitle = "Scenario 2", xAxisLab = "Climate metric"
+#'   ),
 #'   ncol = 1
 #' )
 #' print(plot_compare)
@@ -590,8 +601,8 @@ splnr_plot_climKernelDensity <- function(soln,
                                          type = "Normal",
                                          colorMap = "C",
                                          legendTitle = expression(" \u00B0C y"^"-1" * ""),
-                                         xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")")) {
-
+                                         xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")"),
+                                         base_size = 14) {
   # Assertions to validate input parameters.
   assertthat::assert_that(
     is.character(type),
@@ -614,8 +625,8 @@ splnr_plot_climKernelDensity <- function(soln,
     msg = "'colorMap' must be a character string for a 'viridis' palette option."
   )
   assertthat::assert_that(
-    is.vector(legendTitle) || is.expression(legendTitle),
-    msg = "'legendTitle' must be a character string or an expression."
+    is.null(legendTitle) || is.vector(legendTitle) || is.expression(legendTitle),
+    msg = "'legendTitle' must be a character string, an expression, or NULL."
   )
   assertthat::assert_that(
     is.vector(xAxisLab) || is.expression(xAxisLab),
@@ -636,14 +647,15 @@ splnr_plot_climKernelDensity <- function(soln,
       climate_name  = climate_name,
       colorMap      = colorMap,
       legendTitle   = legendTitle,
-      xAxisLab      = xAxisLab
+      xAxisLab      = xAxisLab,
+      base_size     = base_size
     )
   } else if (type == "Basic") {
     # If type is "Basic", expect a single sf object.
     if (!inherits(soln, "sf")) {
       stop("For 'type = \"Basic\"', 'soln' must be a single sf object.")
     }
-    ggclimDens <- splnr_plot_climKernelDensity_Basic(soln = soln)
+    ggclimDens <- splnr_plot_climKernelDensity_Basic(soln = soln, base_size = base_size)
   } else {
     # This case should ideally be caught by initial assertthat, but kept as a fallback.
     stop("Invalid 'type' specified. Must be 'Normal' or 'Basic'.")

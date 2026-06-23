@@ -1,4 +1,3 @@
-
 # Create one polygon that we can use to populate with PUs
 #
 # splnr_Create_SinglePolygon <- function (df, res){
@@ -19,4 +18,3 @@
 #     dplyr::select(.data$layer) %>%
 #     dplyr::summarise(total_layer = sum(.data$layer, do_union = TRUE))
 # }
-
