@@ -375,10 +375,10 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
       scale = 1
     ) +
     # Viridis colour scale for the gradient fill (continuous legend).
-    ggplot2::scale_fill_viridis_c(name = legendTitle,
-                                  option = colorMap) +
-    ggplot2::guides(
-      fill = ggplot2::guide_colorbar(
+    ggplot2::scale_fill_viridis_c(
+      name   = legendTitle,
+      option = colorMap,
+      guide  = ggplot2::guide_colorbar(
         barheight = ggplot2::unit(10, "lines"),
         barwidth  = ggplot2::unit(3, "lines")
       )
