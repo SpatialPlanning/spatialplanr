@@ -314,7 +314,7 @@ splnr_climate_priorityArea_assignTargets <- function(targets,
     cs_name  <- paste0(feat, "_CS")
     ncs_name <- paste0(feat, "_NCS")
 
-    trgt <- targets[targets$feature == feat, "target"]
+    trgt <- targets %>% dplyr::filter(.data$feature == feat) %>% dplyr::pull("target")
 
     # Use exact equality (not str_ends) to avoid substring-matching bugs
     # where e.g. "fish" would match "bluefish".
