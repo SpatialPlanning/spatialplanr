@@ -28,6 +28,9 @@
 #'   Defaults to `" "` (a single space, effectively no subtitle).
 #' @param legendTitle A character string for the title of the legend.
 #'   Defaults to `"Climate metric"`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the spatial plot of the climate metric.
 #' @export
@@ -65,7 +68,8 @@ splnr_plot_climData <- function(df,
                                 colInterest,
                                 colorMap = "C",
                                 plotTitle = " ",
-                                legendTitle = "Climate metric") {
+                                legendTitle = "Climate metric",
+                                base_size = 14) {
 
   # Assertions to validate input parameters.
   assertthat::assert_that(
@@ -95,6 +99,7 @@ splnr_plot_climData <- function(df,
 
   # Initialize the ggplot object.
   gg <- ggplot2::ggplot() +
+    ggplot2::theme_bw(base_size = base_size) +
     # Add sf layer, filling by the specified climate metric column.
     ggplot2::geom_sf(data = df %>% sf::st_as_sf(), ggplot2::aes(fill = !!rlang::sym(colInterest)), colour = NA) +
     # Apply a viridis continuous color scale for fill.
@@ -142,7 +147,7 @@ splnr_plot_climData <- function(df,
 #' @importFrom ggplot2 aes element_blank element_line element_text ggplot labs scale_fill_manual scale_x_continuous scale_y_discrete theme theme_bw guide_legend
 #' @importFrom rlang .data :=
 #'
-splnr_plot_climKernelDensity_Basic <- function(soln) {
+splnr_plot_climKernelDensity_Basic <- function(soln, base_size = 14) {
 
   # Assertions to validate input parameters.
   assertthat::assert_that(
@@ -204,18 +209,16 @@ splnr_plot_climKernelDensity_Basic <- function(soln) {
       x = "Climate resilience metric",
       y = "Proportion of planning units"
     ) +
-    ggplot2::theme_bw() + # Apply black and white theme.
-    # Customize theme elements.
+    ggplot2::theme_bw(base_size = base_size) + # Apply black and white theme.
+    # Customize theme elements — colour/layout overrides only; sizes inherit from base_size.
     ggplot2::theme(
       axis.ticks = ggplot2::element_line(color = "black", linewidth = 1),
-      text = ggplot2::element_text(size = 20),
       axis.line = ggplot2::element_line(colour = "black", linewidth = 1),
       axis.text.y = ggplot2::element_blank(), # Hide y-axis text.
-      axis.text.x = ggplot2::element_text(size = 20),
-      axis.title = ggplot2::element_text(size = 20),
+      axis.text.x = ggplot2::element_text(colour = "black"),
       legend.title = ggplot2::element_text(color = "black", angle = 90, hjust = 0.5), # Rotate legend title.
       legend.position = "bottom",
-      legend.text = ggplot2::element_text(size = 20)
+      legend.text = ggplot2::element_text(colour = "black")
     ) +
     # Manually set fill colors for "Not Selected" and "Selected" in the legend.
     ggplot2::scale_fill_manual(
@@ -276,7 +279,8 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
                                                climate_name = "metric",
                                                colorMap = "C",
                                                legendTitle = expression(" \u00B0C y"^"-1" * ""),
-                                               xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")")) {
+                                               xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")"),
+                                               base_size = 14) {
 
   # --- Input validation -------------------------------------------------------
 
@@ -433,16 +437,16 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_discrete(expand = ggplot2::expansion(mult = c(0.01, 0))) +
     ggplot2::labs(x = xAxisLab) +
-    ggplot2::theme_bw() +
+    ggplot2::theme_bw(base_size = base_size) +
+    # Colour/layout overrides only; sizes inherit from base_size.
     ggplot2::theme(
       axis.ticks      = ggplot2::element_line(color = "black", linewidth = 1),
       axis.line       = ggplot2::element_line(colour = "black", linewidth = 1),
-      axis.text       = ggplot2::element_text(color = "black", size = 14),
-      axis.title.x    = ggplot2::element_text(size = 14),
+      axis.text       = ggplot2::element_text(color = "black"),
       axis.title.y    = ggplot2::element_blank(),
       axis.text.y     = ggplot2::element_blank(),
-      legend.text     = ggplot2::element_text(size = 15, color = "black"),
-      legend.title    = ggplot2::element_text(size = 15, color = "black"),
+      legend.text     = ggplot2::element_text(color = "black"),
+      legend.title    = ggplot2::element_text(color = "black"),
       legend.title.position = "right"
     )
 
@@ -494,6 +498,9 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
 #'   `expression(" \u00B0C y"^"-1" * "")`, representing "°C year⁻¹".
 #' @param xAxisLab A character string or `expression` for the x-axis label.
 #'   Defaults to `expression("Climate warming ( \u00B0C y"^"-1" * ")")`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the kernel density plot.
 #' @export
@@ -590,7 +597,8 @@ splnr_plot_climKernelDensity <- function(soln,
                                          type = "Normal",
                                          colorMap = "C",
                                          legendTitle = expression(" \u00B0C y"^"-1" * ""),
-                                         xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")")) {
+                                         xAxisLab = expression("Climate warming ( \u00B0C y"^"-1" * ")"),
+                                         base_size = 14) {
 
   # Assertions to validate input parameters.
   assertthat::assert_that(
@@ -636,14 +644,15 @@ splnr_plot_climKernelDensity <- function(soln,
       climate_name  = climate_name,
       colorMap      = colorMap,
       legendTitle   = legendTitle,
-      xAxisLab      = xAxisLab
+      xAxisLab      = xAxisLab,
+      base_size     = base_size
     )
   } else if (type == "Basic") {
     # If type is "Basic", expect a single sf object.
     if (!inherits(soln, "sf")) {
       stop("For 'type = \"Basic\"', 'soln' must be a single sf object.")
     }
-    ggclimDens <- splnr_plot_climKernelDensity_Basic(soln = soln)
+    ggclimDens <- splnr_plot_climKernelDensity_Basic(soln = soln, base_size = base_size)
   } else {
     # This case should ideally be caught by initial assertthat, but kept as a fallback.
     stop("Invalid 'type' specified. Must be 'Normal' or 'Basic'.")

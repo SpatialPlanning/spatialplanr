@@ -92,6 +92,9 @@
 #'   labels (e.g. `c(Shipping_Lane = "Shipping Lane")`).
 #'   When a single string is supplied it is used as the label for all areas.
 #'   Defaults to `""`.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()` when `ggtheme = "Default"`. All text elements scale
+#'   proportionally from this value. Defaults to `14`.
 #' @param ggtheme The `ggplot2` theme to apply. Can be:
 #'   \itemize{
 #'     \item `NA` or `FALSE`: No theme is applied, using `ggplot2` defaults.
@@ -186,6 +189,7 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
                          lockOut = NULL, typeLockOut = "Full", nameLockOut = NULL,
                          alphaLockOut = 1, colorLockOut = "black", legendLockOut = "",
                          labelLockOut = "",
+                         base_size = 14,
                          ggtheme = "Default") {
 
   # Assertions to validate input parameters are of the correct 'sf' class if not NULL.
@@ -464,13 +468,10 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
     ggList <- c(
       ggList,
       list(
-        ggplot2::theme_bw(),
+        ggplot2::theme_bw(base_size = base_size),
         ggplot2::theme(
           legend.position = "bottom",
           legend.direction = "horizontal",
-          text = ggplot2::element_text(size = 20, colour = "black"),
-          axis.text = ggplot2::element_text(size = 16, colour = "black"),
-          plot.title = ggplot2::element_text(size = 16),
           axis.title = ggplot2::element_blank()
         )
       )

@@ -41,6 +41,9 @@
 #' @param legendLabels A character vector of strings to use for the legend labels,
 #'   particularly useful for binary or logical data (e.g., `c("Absent", "Present")`).
 #'   If `NULL`, default labels are used for binary/logical plots.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A `ggplot` object representing the spatial plot.
 #'
@@ -112,7 +115,8 @@ splnr_plot <- function(df,
                        colourVals = c("#c6dbef", "#3182bd"),
                        plotTitle = "",
                        legendTitle = NULL,
-                       legendLabels = NULL) {
+                       legendLabels = NULL,
+                       base_size = 14) {
 
   # Assertions to validate input parameters.
   assertthat::assert_that(
@@ -194,6 +198,7 @@ splnr_plot <- function(df,
 
   # Initialize the base ggplot object with coordinate system and subtitle.
   gg <- ggplot2::ggplot() +
+    ggplot2::theme_bw(base_size = base_size) +
     ggplot2::coord_sf(xlim = sf::st_bbox(df)$xlim, ylim = sf::st_bbox(df)$ylim) +
     ggplot2::labs(subtitle = plotTitle)
 

@@ -438,6 +438,9 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
 #'   by which to sort the features on the x-axis. Accepted values include:
 #'   `"category"`, `"feature"`, `"target"`, `"representation"` (`relative_held`),
 #'   or `"difference"` (between representation and target).
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_bw()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #' @param ... Other arguments passed on to [ggplot2::theme()] to customize the plot's theme.
 #'
 #' @return A [ggplot2::ggplot] object representing the feature representation bar plot.
@@ -500,6 +503,7 @@ splnr_plot_featureRep <- function(df,
                                   showTarget = NA,
                                   plotTitle = "",
                                   sort_by = "category",
+                                  base_size = 14,
                                   ...) {
 
   assertthat::assert_that(
@@ -629,7 +633,7 @@ splnr_plot_featureRep <- function(df,
       fill = "NA", colour = "black"
     ) +
     ggplot2::labs(title = plotTitle, x = "Feature", y = "Representation of features \nin total selected area (%)") +
-    ggplot2::theme_bw() +
+    ggplot2::theme_bw(base_size = base_size) +
     # Ensure ymax is calculated correctly and handled for empty df
     ggplot2::scale_y_continuous(
       limits = c(0, max(df$relative_held, na.rm = TRUE, 0) + 10), # Ensure at least 0 if all NA
@@ -642,16 +646,13 @@ splnr_plot_featureRep <- function(df,
     ) +
     ggplot2::guides(colour = "none") +
     ggplot2::theme(
-      axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16, colour = "black"),
-      axis.text.y = ggplot2::element_text(size = 16, colour = "black"),
+      axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5, colour = "black"),
+      axis.text.y = ggplot2::element_text(colour = "black"),
       axis.title.x = ggplot2::element_blank(),
-      axis.title.y = ggplot2::element_text(size = 16),
       legend.title = ggplot2::element_blank(),
-      legend.text = ggplot2::element_text(size = 16),
       legend.position = "top",
       legend.direction = "horizontal",
       legend.background = ggplot2::element_rect(fill = "NA"),
-      title = ggplot2::element_text(size = 16),
       ...
     )
 
@@ -699,6 +700,9 @@ splnr_plot_featureRep <- function(df,
 #'   percentage for 'representative' features. Required if `indicateTargets` is `TRUE`.
 #' @param colTarget A [character][base::character] string specifying the color
 #'   for the target indicator lines.
+#' @param base_size A numeric value for the base font size (in points) passed to
+#'   `ggplot2::theme_minimal()`. All text elements scale proportionally from this value.
+#'   Defaults to `14`.
 #'
 #' @return A [ggplot2::ggplot] object of the circular bar plot.
 #' @export
@@ -769,7 +773,8 @@ splnr_plot_featureRep <- function(df,
 #' }
 splnr_plot_circBplot <- function(df, legend_color, legend_list,
                                  indicateTargets = TRUE, impTarget = NA,
-                                 repTarget = NA, colTarget = "red") {
+                                 repTarget = NA, colTarget = "red",
+                                 base_size = 14) {
 
   # assertthat checks for initial inputs
   assertthat::assert_that(
@@ -914,7 +919,7 @@ splnr_plot_circBplot <- function(df, legend_color, legend_list,
 
     # setting limitations of actual plot
     ggplot2::ylim(-130, 130) + # -140, 130
-    ggplot2::theme_minimal() +
+    ggplot2::theme_minimal(base_size = base_size) +
     ggplot2::coord_polar() +
     ggplot2::geom_text(
       data = label_data, ggplot2::aes(
