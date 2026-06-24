@@ -413,12 +413,12 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
     ggplot2::geom_point(
       data = data.frame(x = NA_real_, group = "Selected PUs"),
       ggplot2::aes(x = .data$x, y = 1, colour = .data$group),
-      alpha = 0.5, na.rm = TRUE
+      alpha = 0, na.rm = TRUE
     ) +
     ggplot2::geom_point(
       data = data.frame(x = NA_real_, group = "Unselected PUs"),
       ggplot2::aes(x = .data$x, y = 1, colour = .data$group),
-      alpha = 0.5, na.rm = TRUE
+      alpha = 0, na.rm = TRUE
     ) +
     ggplot2::scale_colour_manual(
       name = NULL,
@@ -430,7 +430,7 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
           linetype = c("solid", "dotted"),
           shape    = 22,
           size     = 8,
-          alpha    = 1
+          alpha    = 0.5
         )
       )
     ) +
