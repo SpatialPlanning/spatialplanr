@@ -26,7 +26,6 @@ Roxygen: list(markdown = TRUE)
 Suggests:
     gfwr,
     ggcorrplot,
-    ggridges,
     irr,
     knitr,
     oceandatr,
@@ -47,6 +46,7 @@ Imports:
     forcats,
     ggnewscale,
     ggplot2,
+    ggridges,
     lifecycle,
     magrittr,
     prioritizr,
