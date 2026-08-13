@@ -18,6 +18,7 @@ splnr_plot_featureRep(
   showTarget = NA,
   plotTitle = "",
   sort_by = "category",
+  base_size = 14,
   ...
 )
 ```
@@ -89,6 +90,13 @@ splnr_plot_featureRep(
   `"representation"` (`relative_held`), or `"difference"` (between
   representation and target).
 
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
+
 - ...:
 
   Other arguments passed on to
@@ -124,8 +132,6 @@ df <- splnr_get_featureRep( # Assuming splnr_get_featureRep is available
   soln = soln,
   pDat = pDat
 )
-#> No non-selected features to process.
-#> No specific climate-smart approach detected or standard approach used. Using targets from 'pDat'.
 
 # Basic plot with categories and targets shown
 (splnr_plot_featureRep(df, category = dat_category, showTarget = TRUE))

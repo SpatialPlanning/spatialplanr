@@ -12,7 +12,8 @@ splnr_climate_percentileApproach(
   metric,
   targets,
   direction,
-  percentile = 35
+  percentile = 35,
+  metric_col = "metric"
 )
 ```
 
@@ -37,6 +38,13 @@ splnr_climate_percentileApproach(
 - percentile:
 
   Numeric (0-100). Defaults to `35`.
+
+- metric_col:
+
+  A single character string giving the name of the column in `metric`
+  that contains the climate metric values. Defaults to `"metric"` for
+  backwards compatibility. Use this argument when your climate data
+  column has a different name (e.g. `"sst_trend"`).
 
 ## Value
 
@@ -73,7 +81,7 @@ Percentile_result <- splnr_climate_percentileApproach(
   direction  = 1,
   percentile = 35
 )
-out_sf_percentile  <- Percentile_result$Features
+out_sf_percentile <- Percentile_result$Features
 targets_percentile <- Percentile_result$Targets
 } # }
 ```

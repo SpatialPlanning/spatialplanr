@@ -16,7 +16,8 @@ splnr_get_featureRep(
   targets = NA,
   climsmart = FALSE,
   climsmartApproach = 0,
-  solnCol = "solution_1"
+  solnCol = "solution_1",
+  incidental_features = character(0)
 )
 ```
 
@@ -26,6 +27,8 @@ splnr_get_featureRep(
 
   An `sf` object representing the `prioritizr` solution, containing a
   column indicating selected planning units (default: `solution_1`).
+  When `incidental_features` is supplied, `soln` must also contain those
+  columns.
 
 - pDat:
 
@@ -68,6 +71,15 @@ splnr_get_featureRep(
   contains the binary solution (1 for selected, 0 for not selected).
   Defaults to `"solution_1"`.
 
+- incidental_features:
+
+  A character vector of column names present in `soln` that are NOT
+  features in `pDat` but for which incidental protection should be
+  calculated. These features were excluded from the prioritizr problem
+  (e.g., no target was set), but their representation in the solution is
+  still of interest. All names must exist as columns in `soln`. Defaults
+  to `character(0)` (no incidental calculation).
+
 ## Value
 
 A `tibble` dataframe containing the `feature` names, their
@@ -102,6 +114,15 @@ The function calculates:
 - `incidental`: A logical flag indicating if a feature's representation
   was 'incidental' (i.e., its target was 0 or NA, but it was still
   partially or fully captured in the solution).
+
+**Incidental features (`incidental_features`):** Features that exist in
+`soln` but were deliberately excluded from the prioritizr problem (e.g.,
+because no target was set for them) can be evaluated for incidental
+protection by passing their column names via `incidental_features`.
+Their representation is calculated identically to primary features, but
+they are flagged with `target = 0` and `incidental = TRUE`. All names
+supplied must be present as columns in `soln` and must not already be
+features in `pDat`.
 
 **Climate-Smart Considerations (`climsmart = TRUE`):** If `climsmart` is
 `TRUE`, the function adjusts its calculations based on the
@@ -153,6 +174,16 @@ df_basic_rep <- splnr_get_featureRep(
   pDat = pDat_basic
 )
 print(df_basic_rep)
+
+# Example with incidental features: Spp1-Spp3 are in the problem,
+# Spp4 and Spp5 were excluded but we want to know their incidental protection.
+# soln_basic already contains Spp4 and Spp5 columns (they were in dat_species_bin).
+df_with_incidental <- splnr_get_featureRep(
+  soln = soln_basic,
+  pDat = pDat_basic,
+  incidental_features = c("Spp4", "Spp5")
+)
+print(df_with_incidental)
 
 # Example with Climate Priority Area (CPA) approach
 # Assuming 'dat_clim' is an sf object with a 'metric' column.

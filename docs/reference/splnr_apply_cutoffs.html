@@ -13,7 +13,7 @@ or invert this logic to keep values below a cutoff as 1."><meta property="og:ima
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.2</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,15 +66,23 @@ at least one numeric column to which cutoffs will be applied.</p></dd>
 
 
 <dt id="arg-cutoffs">Cutoffs<a class="anchor" aria-label="anchor" href="#arg-cutoffs"></a></dt>
-<dd><p>A numeric value or a named numeric vector of cutoffs.</p><ul><li><p>If a single unnamed numeric value, it's applied to all numeric columns.</p></li>
-<li><p>If a named numeric vector, names must correspond to numeric column names in <code>features</code>.</p></li>
-</ul><p>All cutoff values must be between <code>0</code> and <code>1</code>.</p></dd>
+<dd><p>One of:</p><ul><li><p>A single unnamed numeric value in <code>[0, 1]</code> — applied to all
+numeric columns.</p></li>
+<li><p>A single unnamed function that accepts a numeric vector and returns
+a single numeric in <code>[0, 1]</code> — called independently per column
+with the non-<code>NA</code> values of that column.</p></li>
+<li><p>A named numeric vector — names must match numeric column names in
+<code>features</code>; each value is applied to its named column only.</p></li>
+<li><p>A named list of numerics and/or functions — names must match
+numeric column names in <code>features</code>; each entry is applied to its
+named column only.</p></li>
+</ul></dd>
 
 
 <dt id="arg-inverse">inverse<a class="anchor" aria-label="anchor" href="#arg-inverse"></a></dt>
 <dd><p>A logical value (<code>TRUE</code> or <code>FALSE</code>). If <code>TRUE</code>, values below
-the <code>Cutoffs</code> are converted to <code>1</code> (and others to <code>0</code>). If <code>FALSE</code> (default),
-values at or above the <code>Cutoffs</code> are converted to <code>1</code>.</p></dd>
+the threshold are converted to <code>1</code> (and others to <code>0</code>). If <code>FALSE</code>
+(default), values at or above the threshold are converted to <code>1</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -89,31 +97,38 @@ values at or above the <code>Cutoffs</code> are converted to <code>1</code>.</p>
 probability distributions or habitat suitability scores, into a binary format
 often required for conservation planning and spatial analysis (e.g., in
 <code>prioritizr</code>).</p>
-<p>The function operates in two primary modes based on the <code>Cutoffs</code> parameter:</p><ul><li><p><strong>Single Cutoff:</strong> If <code>Cutoffs</code> is a single numeric value (e.g., <code>0.5</code>),
-this value is applied uniformly to <strong>all numeric columns</strong> in the
-<code>features</code> dataframe, excluding the <code>geometry</code> column.
-For each numeric cell:
-- If <code>value &gt;= Cutoffs</code>, it becomes <code>1</code>.
-- If <code>value &lt; Cutoffs</code>, it becomes <code>0</code>.
-- <code>NA</code> values are always converted to <code>0</code>.</p></li>
-<li><p><strong>Named Vector of Cutoffs:</strong> If <code>Cutoffs</code> is a named numeric vector
-(e.g., <code>c("feature1" = 0.5, "feature2" = 0.3)</code>), each specified cutoff
-is applied individually to its corresponding named column in <code>features</code>.
-This allows for different thresholds for different features. The same
-transformation rules as above apply to each specified column.</p></li>
-</ul><p>The <code>inverse</code> parameter provides additional control over the binarization:</p><ul><li><p><code>inverse = FALSE</code> (default): Values <strong>at or above</strong> the cutoff become <code>1</code>.</p></li>
-<li><p><code>inverse = TRUE</code>: Values <strong>below</strong> the cutoff become <code>1</code>. After initial
-binarization (where values &gt;= cutoff are 1), the binary results are
-flipped (0s become 1s, and 1s become 0s) to achieve the inverse effect.</p></li>
-</ul><p>All <code>NA</code> values in the numeric columns are consistently converted to <code>0</code> during
-the binarization process, regardless of the <code>inverse</code> setting.</p>
+<p>The function operates in four modes based on the <code>Cutoffs</code> parameter:</p><ul><li><p><strong>Single numeric scalar:</strong> A single unnamed numeric value (e.g., <code>0.5</code>)
+is applied uniformly to <strong>all numeric columns</strong> in <code>features</code>,
+excluding the <code>geometry</code> column.</p></li>
+<li><p><strong>Single function:</strong> A single unnamed function (e.g.,
+<code>\(x) quantile(x, 0.99)</code>) is called independently for each numeric
+column, with <code>x</code> being the non-<code>NA</code> values of that column. The
+returned scalar is then used as the threshold for that column.
+Because the function is evaluated per-column, different columns may
+receive different thresholds even though the same function is supplied.</p></li>
+<li><p><strong>Named numeric vector:</strong> A named numeric vector
+(e.g., <code>c("feature1" = 0.5, "feature2" = 0.3)</code>) applies each value
+to its corresponding named column only.</p></li>
+<li><p><strong>Named list of numerics and/or functions:</strong> A named list
+(e.g., <code>list("feature1" = 0.5, "feature2" = \(x) quantile(x, 0.99))</code>)
+applies each entry to its corresponding named column. Numeric entries
+are used directly; function entries are called with the non-<code>NA</code>
+values of that column and must return a single numeric in <code>[0, 1]</code>.</p></li>
+</ul><p>For all modes, the binarisation rules are:</p><ul><li><p>If <code>value &gt;= threshold</code>, it becomes <code>1</code>.</p></li>
+<li><p>If <code>value &lt; threshold</code>, it becomes <code>0</code>.</p></li>
+<li><p><code>NA</code> values are always converted to <code>0</code>.</p></li>
+</ul><p>The <code>inverse</code> parameter flips the result after binarisation:</p><ul><li><p><code>inverse = FALSE</code> (default): values <strong>at or above</strong> the threshold
+become <code>1</code>.</p></li>
+<li><p><code>inverse = TRUE</code>: values <strong>below</strong> the threshold become <code>1</code>.</p></li>
+</ul><p>All resolved threshold values (whether supplied directly or returned by a
+function) must lie in <code>[0, 1]</code>. <code>NA</code> values are stripped from the column
+vector before it is passed to a function-based cutoff.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 1: Single cutoff (0.5) applied to all numeric feature columns</span></span></span>
-<span class="r-in"><span><span class="co"># (Spp1_Prob, Spp2_Prob, and Cost will be binarized based on 0.5)</span></span></span>
+<span class="r-in"><span><span class="co"># Example 1: Single numeric cutoff applied to all numeric feature columns</span></span></span>
 <span class="r-in"><span><span class="va">df_single_cutoff</span> <span class="op">&lt;-</span> <span class="fu">splnr_apply_cutoffs</span><span class="op">(</span><span class="va">dat_species_prob</span>, Cutoffs <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Applying single cutoff of 0.5 to all numeric feature columns.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_single_cutoff</span><span class="op">)</span></span></span>
@@ -137,15 +152,48 @@ the binarization process, regardless of the <code>inverse</code> setting.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> ((118 -50, 120 -50, 120 -48, 118 -48, 118 -50))     1     0     1     0     1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 770 more rows</span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 2: Named cutoffs for specific columns</span></span></span>
-<span class="r-in"><span><span class="co"># Spp1_Prob &gt;= 0.6 becomes 1, Spp2_Prob &gt;= 0.4 becomes 1</span></span></span>
+<span class="r-in"><span><span class="co"># Example 2: Single function cutoff applied to all numeric feature columns</span></span></span>
+<span class="r-in"><span><span class="co"># Each column independently receives the 99th-percentile of its own values</span></span></span>
+<span class="r-in"><span><span class="co"># as its threshold.</span></span></span>
+<span class="r-in"><span><span class="va">df_fn_cutoff</span> <span class="op">&lt;-</span> <span class="fu">splnr_apply_cutoffs</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">dat_species_prob</span>,</span></span>
+<span class="r-in"><span>  Cutoffs <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">x</span>, <span class="fl">0.99</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Applying function-based cutoff independently to each numeric feature column.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp1': resolved threshold = 0.985033159928862</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp2': resolved threshold = 0.993628154252656</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp3': resolved threshold = 0.992002531981561</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp4': resolved threshold = 0.987106560785323</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp5': resolved threshold = 0.986841972519178</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_fn_cutoff</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Simple feature collection with 780 features and 5 fields</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Geometry type: POLYGON</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Dimension:     XY</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Bounding box:  xmin: 100 ymin: -50 xmax: 160 ymax: 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Geodetic CRS:  WGS 84</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 780 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                           geometry  Spp1  Spp2  Spp3  Spp4  Spp5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                      <span style="color: #949494; font-style: italic;">&lt;POLYGON [°]&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> ((100 -50, 102 -50, 102 -48, 100 -48, 100 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> ((102 -50, 104 -50, 104 -48, 102 -48, 102 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> ((104 -50, 106 -50, 106 -48, 104 -48, 104 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> ((106 -50, 108 -50, 108 -48, 106 -48, 106 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> ((108 -50, 110 -50, 110 -48, 108 -48, 108 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> ((110 -50, 112 -50, 112 -48, 110 -48, 110 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> ((112 -50, 114 -50, 114 -48, 112 -48, 112 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> ((114 -50, 116 -50, 116 -48, 114 -48, 114 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> ((116 -50, 118 -50, 118 -48, 116 -48, 116 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> ((118 -50, 120 -50, 120 -48, 118 -48, 118 -50))     0     0     0     0     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 770 more rows</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 3: Named numeric cutoffs for specific columns</span></span></span>
 <span class="r-in"><span><span class="va">df_named_cutoffs</span> <span class="op">&lt;-</span> <span class="fu">splnr_apply_cutoffs</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">dat_species_prob</span>,</span></span>
 <span class="r-in"><span>  Cutoffs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Spp1"</span> <span class="op">=</span> <span class="fl">0.6</span>, <span class="st">"Spp2"</span> <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Applying named cutoffs to specific feature columns.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Applying cutoff 0.6 to column 'Spp1'.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Applying cutoff 0.4 to column 'Spp2'.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp1': resolved threshold = 0.6</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp2': resolved threshold = 0.4</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_named_cutoffs</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Simple feature collection with 780 features and 5 fields</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Geometry type: POLYGON</span>
@@ -167,11 +215,42 @@ the binarization process, regardless of the <code>inverse</code> setting.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> ((118 -50, 120 -50, 120 -48, 118 -48, 118…     1     1 0.695   0.006<span style="text-decoration: underline;">87</span> 0.815 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 770 more rows</span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 3: Single cutoff (0.5) with inverse logic</span></span></span>
-<span class="r-in"><span><span class="co"># Values BELOW 0.5 become 1.</span></span></span>
+<span class="r-in"><span><span class="co"># Example 4: Named list mixing fixed and function-based cutoffs</span></span></span>
+<span class="r-in"><span><span class="va">df_mixed_cutoffs</span> <span class="op">&lt;-</span> <span class="fu">splnr_apply_cutoffs</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">dat_species_prob</span>,</span></span>
+<span class="r-in"><span>  Cutoffs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="st">"Spp1"</span> <span class="op">=</span> <span class="fl">0.5</span>,</span></span>
+<span class="r-in"><span>    <span class="st">"Spp2"</span> <span class="op">=</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">x</span>, <span class="fl">0.99</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Applying named cutoffs to specific feature columns.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp1': resolved threshold = 0.5</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Column 'Spp2': resolved threshold = 0.993628154252656</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_mixed_cutoffs</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Simple feature collection with 780 features and 5 fields</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Geometry type: POLYGON</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Dimension:     XY</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Bounding box:  xmin: 100 ymin: -50 xmax: 160 ymax: 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Geodetic CRS:  WGS 84</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 780 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                      geometry  Spp1  Spp2    Spp3    Spp4   Spp5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                 <span style="color: #949494; font-style: italic;">&lt;POLYGON [°]&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> ((100 -50, 102 -50, 102 -48, 100 -48, 100…     1     0 0.096<span style="text-decoration: underline;">9</span>  0.435   0.041<span style="text-decoration: underline;">8</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> ((102 -50, 104 -50, 104 -48, 102 -48, 102…     1     0 0.504   0.503   0.360 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> ((104 -50, 106 -50, 106 -48, 104 -48, 104…     0     0 0.285   0.755   0.653 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> ((106 -50, 108 -50, 108 -48, 106 -48, 106…     1     0 0.564   0.503   0.529 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> ((108 -50, 110 -50, 110 -48, 108 -48, 108…     0     0 0.150   0.863   0.753 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> ((110 -50, 112 -50, 112 -48, 110 -48, 110…     1     0 0.807   0.458   0.374 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> ((112 -50, 114 -50, 114 -48, 112 -48, 112…     0     0 0.009<span style="text-decoration: underline;">63</span> 0.102   0.114 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> ((114 -50, 116 -50, 116 -48, 114 -48, 114…     0     0 0.481   0.231   0.764 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> ((116 -50, 118 -50, 118 -48, 116 -48, 116…     0     0 0.552   0.009<span style="text-decoration: underline;">78</span> 0.552 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> ((118 -50, 120 -50, 120 -48, 118 -48, 118…     1     0 0.695   0.006<span style="text-decoration: underline;">87</span> 0.815 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 770 more rows</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example 5: Single numeric cutoff with inverse logic</span></span></span>
 <span class="r-in"><span><span class="va">df_inverse_cutoff</span> <span class="op">&lt;-</span> <span class="fu">splnr_apply_cutoffs</span><span class="op">(</span><span class="va">dat_species_prob</span>, Cutoffs <span class="op">=</span> <span class="fl">0.5</span>, inverse <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Applying single cutoff of 0.5 to all numeric feature columns.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Inverse logic applied: values below cutoff will be 1.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Inverse logic applied: values below threshold will be 1.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_inverse_cutoff</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Simple feature collection with 780 features and 5 fields</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Geometry type: POLYGON</span>
@@ -192,38 +271,6 @@ the binarization process, regardless of the <code>inverse</code> setting.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> ((116 -50, 118 -50, 118 -48, 116 -48, 116 -50))     1     0     0     1     0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> ((118 -50, 120 -50, 120 -48, 118 -48, 118 -50))     0     1     0     1     0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 770 more rows</span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 4: Named cutoffs with inverse logic</span></span></span>
-<span class="r-in"><span><span class="va">df_named_inverse</span> <span class="op">&lt;-</span> <span class="fu">splnr_apply_cutoffs</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  <span class="va">dat_species_prob</span>,</span></span>
-<span class="r-in"><span>  Cutoffs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Spp1"</span> <span class="op">=</span> <span class="fl">0.7</span>, <span class="st">"Spp2"</span> <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  inverse <span class="op">=</span> <span class="cn">TRUE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Applying named cutoffs to specific feature columns.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Applying cutoff 0.7 to column 'Spp1'.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Inverse logic applied for column 'Spp1': values below cutoff will be 1.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Applying cutoff 0.3 to column 'Spp2'.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   Inverse logic applied for column 'Spp2': values below cutoff will be 1.</span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_named_inverse</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Simple feature collection with 780 features and 5 fields</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Geometry type: POLYGON</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Dimension:     XY</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Bounding box:  xmin: 100 ymin: -50 xmax: 160 ymax: 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Geodetic CRS:  WGS 84</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 780 × 6</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                      geometry  Spp1  Spp2    Spp3    Spp4   Spp5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                 <span style="color: #949494; font-style: italic;">&lt;POLYGON [°]&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> ((100 -50, 102 -50, 102 -48, 100 -48, 100…     1     1 0.096<span style="text-decoration: underline;">9</span>  0.435   0.041<span style="text-decoration: underline;">8</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> ((102 -50, 104 -50, 104 -48, 102 -48, 102…     1     0 0.504   0.503   0.360 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> ((104 -50, 106 -50, 106 -48, 104 -48, 104…     1     0 0.285   0.755   0.653 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> ((106 -50, 108 -50, 108 -48, 106 -48, 106…     1     0 0.564   0.503   0.529 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> ((108 -50, 110 -50, 110 -48, 108 -48, 108…     1     0 0.150   0.863   0.753 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> ((110 -50, 112 -50, 112 -48, 110 -48, 110…     0     0 0.807   0.458   0.374 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> ((112 -50, 114 -50, 114 -48, 112 -48, 112…     1     0 0.009<span style="text-decoration: underline;">63</span> 0.102   0.114 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> ((114 -50, 116 -50, 116 -48, 114 -48, 114…     1     1 0.481   0.231   0.764 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> ((116 -50, 118 -50, 118 -48, 116 -48, 116…     1     0 0.552   0.009<span style="text-decoration: underline;">78</span> 0.552 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> ((118 -50, 120 -50, 120 -48, 118 -48, 118…     1     0 0.695   0.006<span style="text-decoration: underline;">87</span> 0.815 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 770 more rows</span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -235,7 +282,7 @@ the binarization process, regardless of the <code>inverse</code> setting.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

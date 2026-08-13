@@ -1,21 +1,22 @@
 # Kernel Density Plots for Climate-Smart Spatial Plans
 
-`splnr_plot_climKernelDensity()` generates kernel density plots for
-climate-smart spatial plans, offering two distinct plotting styles:
-"Normal" (for publication-quality comparison of multiple solutions) and
-"Basic" (for simplified visualization for stakeholders).
+`splnr_plot_climKernelDensity()` generates kernel density plots for a
+single climate-smart spatial plan, offering two distinct plotting
+styles: "Normal" (for publication-quality visualisation) and "Basic"
+(for simplified visualisation for stakeholders).
 
 ## Usage
 
 ``` r
 splnr_plot_climKernelDensity(
   soln,
-  solution_names = "solution_1",
-  climate_names = "metric",
+  solution_name = "solution_1",
+  climate_name = "metric",
   type = "Normal",
   colorMap = "C",
   legendTitle = expression(" °C y"^"-1" * ""),
-  xAxisLab = expression("Climate warming ( °C y"^"-1" * ")")
+  xAxisLab = expression("Climate warming ( °C y"^"-1" * ")"),
+  base_size = 14
 )
 ```
 
@@ -23,20 +24,21 @@ splnr_plot_climKernelDensity(
 
 - soln:
 
-  For `type = "Normal"`: A `list` of `prioritizr` solution objects
-  (e.g., `list(s1, s2)`). Each solution must contain a `metric` column
-  and a `solution_1` column. For `type = "Basic"`: A single `prioritizr`
-  solution `sf` object.
+  A single `prioritizr` solution object (`sf` or `data.frame`). For
+  `type = "Normal"`: must contain the columns named by `solution_name`
+  and `climate_name`. For `type = "Basic"`: must be an `sf` object with
+  `solution_1` and `metric` columns.
 
-- solution_names:
+- solution_name:
 
-  A character vector of names corresponding to each solution in `soln`
-  when `type = "Normal"`. Not used for `type = "Basic"`. Defaults to
-  `NA`.
+  A scalar character string naming the solution column (0/1 or logical)
+  in `soln`. Used only for `type = "Normal"`. Defaults to
+  `"solution_1"`.
 
-- climate_names:
+- climate_name:
 
-  A character string of the name of the climate
+  A scalar character string naming the climate metric column (numeric)
+  in `soln`. Used only for `type = "Normal"`. Defaults to `"metric"`.
 
 - type:
 
@@ -52,15 +54,21 @@ splnr_plot_climKernelDensity(
 
 - legendTitle:
 
-  A character string or `expression` for the title of the legend.
-  Defaults to `expression(" \u00B0C y"^"-1" * "")`, representing "°C
-  year⁻¹".
+  A character string or `expression` for the title of the viridis colour
+  bar legend. Defaults to `expression(" \u00B0C y"^"-1" * "")`,
+  representing "°C year⁻¹".
 
 - xAxisLab:
 
-  A character string or `expression` for the x-axis label, depending on
-  the climate metric input. Defaults to
+  A character string or `expression` for the x-axis label. Defaults to
   `expression("Climate warming ( \u00B0C y"^"-1" * ")")`.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
 
 ## Value
 
@@ -68,19 +76,19 @@ A `ggplot` object representing the kernel density plot.
 
 ## Details
 
-This wrapper function intelligently dispatches to either
+This wrapper function dispatches to either
 `splnr_plot_climKernelDensity_Fancy()` (for `type = "Normal"`) or
 `splnr_plot_climKernelDensity_Basic()` (for `type = "Basic"`) based on
 the `type` parameter.
 
-The "Normal" (Fancy) style is suitable for detailed comparisons,
-accommodating a list of solutions and custom axis labels, while the
-"Basic" style is streamlined for clarity and quick interpretation, ideal
-for stakeholder engagement.
+The "Normal" style produces a ridge plot with a viridis gradient fill
+for selected planning units, a grey dotted ridge for unselected units,
+vertical median lines, and a categorical legend. The "Basic" style is
+streamlined for clarity and quick interpretation.
 
-Both underlying functions require a `prioritizr` solution containing a
-climate metric column with climate metric information and a prioritizr
-solution column indicating selected planning units.
+To compare two solutions side-by-side, call this function once per
+solution and combine the results with
+[`patchwork::wrap_plots()`](https://patchwork.data-imaginist.com/reference/wrap_plots.html).
 
 ## Examples
 
@@ -105,10 +113,15 @@ CPA <- splnr_climate_priorityAreaApproach(
   refugiaTarget = 1
 )
 
-# Join climate metric to features for the problem
 out_sf <- CPA$Features %>%
-  dplyr::mutate(Cost_None = rep(1, dim(.)[[1]])) %>% # Ensure enough costs for PUs
-  sf::st_join(dat_clim, join = sf::st_equals)
+  dplyr::mutate(Cost_None = 1, .row_id = dplyr::row_number()) %>%
+  dplyr::left_join(
+    dat_clim %>%
+      sf::st_drop_geometry() %>%
+      dplyr::mutate(.row_id = dplyr::row_number()),
+    by = ".row_id"
+  ) %>%
+  dplyr::select(-".row_id")
 
 # Define features for the prioritizr problem
 usedFeatures <- out_sf %>%
@@ -129,28 +142,38 @@ dat_solnClim <- prioritizr::solve.ConservationProblem(p1)
 plot_basic_kde <- splnr_plot_climKernelDensity(soln = dat_solnClim, type = "Basic")
 print(plot_basic_kde)
 
-# Example 2: Normal (Fancy) kernel density plot for a single solution
-plot_normal_kde_single <- splnr_plot_climKernelDensity(
-  soln = list(dat_solnClim),
-  solution_names = c("Solution 1"),
+# Example 2: Normal (Fancy) kernel density plot
+plot_normal_kde <- splnr_plot_climKernelDensity(
+  soln = dat_solnClim,
   type = "Normal"
 )
-print(plot_normal_kde_single)
+print(plot_normal_kde)
 
-# Example 3: Normal (Fancy) plot comparing two solutions (create a dummy second solution)
-# For demonstration, let's create another dummy solution
+# Example 3: Compare two solutions side-by-side using patchwork
 dat_solnClim_2 <- dat_solnClim %>%
-  dplyr::mutate(solution_1 = sample(c(0, 1), n(), replace = TRUE)) # Randomize selection
+  dplyr::mutate(solution_1 = sample(c(0L, 1L), dplyr::n(), replace = TRUE))
 
-plot_normal_kde_multi <- splnr_plot_climKernelDensity(
-  soln = list(dat_solnClim, dat_solnClim_2),
-  solution_names = c("Solution A", "Solution B"),
-  climate_names = "metric",
+plot_compare <- patchwork::wrap_plots(
+  splnr_plot_climKernelDensity(
+    soln = dat_solnClim, type = "Normal",
+    legendTitle = "Scenario 1", xAxisLab = "Climate metric"
+  ),
+  splnr_plot_climKernelDensity(
+    soln = dat_solnClim_2, type = "Normal",
+    legendTitle = "Scenario 2", xAxisLab = "Climate metric"
+  ),
+  ncol = 1
+)
+print(plot_compare)
+
+# Example 4: Custom colour map and labels
+plot_custom <- splnr_plot_climKernelDensity(
+  soln = dat_solnClim,
   type = "Normal",
   colorMap = "plasma",
   legendTitle = "Climate Value",
   xAxisLab = "Climate Metric (units)"
 )
-print(plot_normal_kde_multi)
+print(plot_custom)
 } # }
 ```

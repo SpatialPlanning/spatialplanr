@@ -245,8 +245,7 @@ However, we are also interested how climate-smart the selected planning units in
 
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
-  soln = list(dat_solnClim),
-  # names = c("Input 1"),
+  soln = dat_solnClim,
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"
@@ -326,7 +325,7 @@ However, we are also interested how climate-smart the selected planning units in
 
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
-  soln = list(dat_solnClimPercentile),
+  soln = dat_solnClimPercentile,
   # names = c("Input 1"),
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",
@@ -400,7 +399,7 @@ However, we are also interested how climate-smart the selected planning units in
 
 ```{r, fig.width = 9}
 (ggClimDens <- splnr_plot_climKernelDensity(
-  soln = list(dat_solnClimFeature),
+  soln = dat_solnClimFeature,
   # names = c("Input 1"),
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",

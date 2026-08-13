@@ -14,7 +14,8 @@ splnr_climate_featureApproach(
   targets,
   direction,
   percentile = 35,
-  refugiaTarget = 0.3
+  refugiaTarget = 0.3,
+  metric_col = "metric"
 )
 ```
 
@@ -43,6 +44,13 @@ splnr_climate_featureApproach(
 - refugiaTarget:
 
   Numeric (0-1). Defaults to `0.3`.
+
+- metric_col:
+
+  A single character string giving the name of the column in `metric`
+  that contains the climate metric values. Defaults to `"metric"` for
+  backwards compatibility. Use this argument when your climate data
+  column has a different name (e.g. `"sst_trend"`).
 
 ## Value
 
@@ -80,7 +88,7 @@ Feature_result <- splnr_climate_featureApproach(
   percentile    = 35,
   refugiaTarget = 0.3
 )
-out_sf_feature  <- Feature_result$Features
+out_sf_feature <- Feature_result$Features
 targets_feature <- Feature_result$Targets
 } # }
 ```

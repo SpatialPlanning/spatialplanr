@@ -12,7 +12,8 @@ splnr_plot_selectionFreq(
   selFreq,
   plotTitle = "",
   paletteName = "Greens",
-  legendTitle = "Selection \nFrequency"
+  legendTitle = "Selection \nFrequency",
+  base_size = 14
 )
 ```
 
@@ -39,6 +40,13 @@ splnr_plot_selectionFreq(
 
   A character string for the title of the legend. Defaults to
   `"Selection \nFrequency"`.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
 
 ## Value
 

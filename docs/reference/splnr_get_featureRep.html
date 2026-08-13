@@ -15,7 +15,7 @@ It can also account for different climate-smart planning approaches."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.2</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,8 @@ It can also account for different climate-smart planning approaches.</p>
 <span>  targets <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  climsmart <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  climsmartApproach <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  solnCol <span class="op">=</span> <span class="st">"solution_1"</span></span>
+<span>  solnCol <span class="op">=</span> <span class="st">"solution_1"</span>,</span>
+<span>  incidental_features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -72,7 +73,8 @@ It can also account for different climate-smart planning approaches.</p>
 
 <dl><dt id="arg-soln">soln<a class="anchor" aria-label="anchor" href="#arg-soln"></a></dt>
 <dd><p>An <code>sf</code> object representing the <code>prioritizr</code> solution, containing
-a column indicating selected planning units (default: <code>solution_1</code>).</p></dd>
+a column indicating selected planning units (default: <code>solution_1</code>). When
+<code>incidental_features</code> is supplied, <code>soln</code> must also contain those columns.</p></dd>
 
 
 <dt id="arg-pdat">pDat<a class="anchor" aria-label="anchor" href="#arg-pdat"></a></dt>
@@ -107,6 +109,15 @@ climate-smart approach used:</p><ul><li><p><code>0</code>: No climate-smart appr
 that contains the binary solution (1 for selected, 0 for not selected).
 Defaults to <code>"solution_1"</code>.</p></dd>
 
+
+<dt id="arg-incidental-features">incidental_features<a class="anchor" aria-label="anchor" href="#arg-incidental-features"></a></dt>
+<dd><p>A character vector of column names present in
+<code>soln</code> that are NOT features in <code>pDat</code> but for which incidental protection
+should be calculated. These features were excluded from the prioritizr
+problem (e.g., no target was set), but their representation in the solution
+is still of interest. All names must exist as columns in <code>soln</code>. Defaults
+to <code>character(0)</code> (no incidental calculation).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -132,7 +143,15 @@ indicating the percentage representation of the feature in the solution.</p></li
 <li><p><code>incidental</code>: A logical flag indicating if a feature's representation
 was 'incidental' (i.e., its target was 0 or NA, but it was still
 partially or fully captured in the solution).</p></li>
-</ul><p><strong>Climate-Smart Considerations (<code>climsmart = TRUE</code>):</strong>
+</ul><p><strong>Incidental features (<code>incidental_features</code>):</strong>
+Features that exist in <code>soln</code> but were deliberately excluded from the
+prioritizr problem (e.g., because no target was set for them) can be
+evaluated for incidental protection by passing their column names via
+<code>incidental_features</code>. Their representation is calculated identically to
+primary features, but they are flagged with <code>target = 0</code> and
+<code>incidental = TRUE</code>. All names supplied must be present as columns in
+<code>soln</code> and must not already be features in <code>pDat</code>.</p>
+<p><strong>Climate-Smart Considerations (<code>climsmart = TRUE</code>):</strong>
 If <code>climsmart</code> is <code>TRUE</code>, the function adjusts its calculations based on the
 <code>climsmartApproach</code> parameter:</p><ul><li><p><code>climsmartApproach = 1</code> (Climate Priority Area): The function sums the
 <code>absolute_held</code> and <code>total_amount</code> for features that were split into
@@ -175,6 +194,16 @@ like <code><a href="splnr_plot_featureRep.html">splnr_plot_featureRep()</a></cod
 <span class="r-in"><span>  pDat <span class="op">=</span> <span class="va">pDat_basic</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_basic_rep</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Example with incidental features: Spp1-Spp3 are in the problem,</span></span></span>
+<span class="r-in"><span><span class="co"># Spp4 and Spp5 were excluded but we want to know their incidental protection.</span></span></span>
+<span class="r-in"><span><span class="co"># soln_basic already contains Spp4 and Spp5 columns (they were in dat_species_bin).</span></span></span>
+<span class="r-in"><span><span class="va">df_with_incidental</span> <span class="op">&lt;-</span> <span class="fu">splnr_get_featureRep</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  soln <span class="op">=</span> <span class="va">soln_basic</span>,</span></span>
+<span class="r-in"><span>  pDat <span class="op">=</span> <span class="va">pDat_basic</span>,</span></span>
+<span class="r-in"><span>  incidental_features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Spp4"</span>, <span class="st">"Spp5"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_with_incidental</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Example with Climate Priority Area (CPA) approach</span></span></span>
 <span class="r-in"><span><span class="co"># Assuming 'dat_clim' is an sf object with a 'metric' column.</span></span></span>
@@ -234,7 +263,7 @@ like <code><a href="splnr_plot_featureRep.html">splnr_plot_featureRep()</a></cod
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

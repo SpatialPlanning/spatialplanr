@@ -15,7 +15,8 @@ splnr_plot_solution(
   legendLabels = c("Not selected", "Selected"),
   plotTitle = "Solution",
   legendTitle = "Planning Units",
-  zones = FALSE
+  zones = FALSE,
+  base_size = 14
 )
 ```
 
@@ -58,6 +59,13 @@ splnr_plot_solution(
 
   A logical value. Set to `TRUE` if the `prioritizr` solution contains
   multiple zones (i.e., it's a multi-zone problem). Defaults to `FALSE`.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
 
 ## Value
 

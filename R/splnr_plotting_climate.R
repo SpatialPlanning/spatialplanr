@@ -103,7 +103,14 @@ splnr_plot_climData <- function(df,
     # Apply a viridis continuous color scale for fill.
     ggplot2::scale_fill_viridis_c(
       name = legendTitle, # Set legend title.
-      option = colorMap # Apply specified color map.
+      option = colorMap, # Apply specified color map.
+      guide = ggplot2::guide_colorbar(
+        barheight     = ggplot2::unit(10, "lines"),
+        barwidth      = ggplot2::unit(2, "lines"),
+        title.position = "right",
+        title.hjust   = 0.5,
+        title.theme   = ggplot2::element_text(angle = -90)
+      )
     ) +
     # Set coordinate limits based on the bounding box of the dataframe.
     ggplot2::coord_sf(xlim = sf::st_bbox(df)$xlim, ylim = sf::st_bbox(df)$ylim) +
@@ -213,7 +220,7 @@ splnr_plot_climKernelDensity_Basic <- function(soln, base_size = 14) {
       axis.line = ggplot2::element_line(colour = "black", linewidth = 1),
       axis.text.y = ggplot2::element_blank(), # Hide y-axis text.
       axis.text.x = ggplot2::element_text(colour = "black"),
-      legend.title = ggplot2::element_text(color = "black", angle = 90, hjust = 0.5), # Rotate legend title.
+      legend.title = ggplot2::element_text(color = "black"),
       legend.position = "bottom",
       legend.text = ggplot2::element_text(colour = "black")
     ) +
@@ -384,7 +391,10 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
       option = colorMap,
       guide = ggplot2::guide_colorbar(
         barheight = ggplot2::unit(10, "lines"),
-        barwidth  = ggplot2::unit(2, "lines")
+        barwidth  = ggplot2::unit(2, "lines"),
+        title.position = "right",
+        title.hjust = 0.5,
+        title.theme = ggplot2::element_text(angle = -90)
       )
     ) +
     # Grey dotted ridge for unselected planning units.
@@ -445,9 +455,7 @@ splnr_plot_climKernelDensity_Fancy <- function(soln,
       axis.text = ggplot2::element_text(color = "black"),
       axis.title.y = ggplot2::element_blank(),
       axis.text.y = ggplot2::element_blank(),
-      legend.text = ggplot2::element_text(color = "black"),
-      legend.title = ggplot2::element_text(color = "black"),
-      legend.title.position = "right"
+      legend.text = ggplot2::element_text(color = "black")
     )
 
   return(ggRidge)

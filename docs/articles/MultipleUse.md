@@ -61,10 +61,12 @@ landmass <- rnaturalearth::ne_countries(
 
 ``` r
 
-PUs <- spatialgridr::get_grid(boundary = Bndry,
-                              crs = cCRS,
-                              output = "sf_hex",
-                              resolution = PU_size)
+PUs <- spatialgridr::get_grid(
+  boundary = Bndry,
+  crs = cCRS,
+  output = "sf_hex",
+  resolution = PU_size
+)
 ```
 
 We can also use a customised `ggplot` theme that can be passed as a list
@@ -97,22 +99,22 @@ area for the following species:
 ``` r
 
 Dict <- tibble::tribble(
-  ~nameCommon, ~nameVariable, ~category, 
-  "Green sea turtle", "Chelonia_mydas", "Reptiles", 
-  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles", 
-  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles", 
-  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles", 
-  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles", 
-  "Humpback whale", "Megaptera_novaeangliae", "Mammals", 
+  ~nameCommon, ~nameVariable, ~category,
+  "Green sea turtle", "Chelonia_mydas", "Reptiles",
+  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles",
+  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles",
+  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles",
+  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles",
+  "Humpback whale", "Megaptera_novaeangliae", "Mammals",
   "Common Minke whale", "Balaenoptera_acutorostrata",
-  "Mammals", 
-  "Dugong", "Dugong_dugon", "Mammals", 
-  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays", 
-  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays", 
+  "Mammals",
+  "Dugong", "Dugong_dugon", "Mammals",
+  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays",
+  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays",
   "Great hammerhead shark", "Sphyrna_mokarran",
-  "Sharks and rays", 
-  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays", 
-  "Reef manta ray", "Mobula_alfredi", "Sharks and rays", 
+  "Sharks and rays",
+  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays",
+  "Reef manta ray", "Mobula_alfredi", "Sharks and rays",
   "Whitetip reef shark", "Triaenodon_obesus", "Sharks and rays",
   "Red-footed booby", "Sula_sula", "Birds"
 )
@@ -171,7 +173,7 @@ s1 <- p1 %>%
   prioritizr::solve.ConservationProblem()
 
 (ggSoln <- splnr_plot_solution(s1) +
-    splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
+  splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
 ```
 
 ![](MultipleUse_files/figure-html/unnamed-chunk-11-1.png)
@@ -524,10 +526,10 @@ s4 <- p4 %>%
   colorVals = c("#c6dbef", "#3182bd", "black"),
   legendLabels = c("Not selected", "Zone 1", "Zone 2")
 ) +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](MultipleUse_files/figure-html/unnamed-chunk-25-1.png)
@@ -571,10 +573,10 @@ s5 <- p5 %>%
   colorVals = c("#c6dbef", "#3182bd", "black"),
   legendLabels = c("Not selected", "Zone 1", "Zone 2")
 ) +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](MultipleUse_files/figure-html/unnamed-chunk-27-1.png)
@@ -594,7 +596,7 @@ specific format, so we first prepare the MPA data.
 mpas <- MPAsCoralSea %>%
   dplyr::mutate(zone = "zone 1") %>%
   dplyr::rename(status = wdpa) %>%
-  tibble::rowid_to_column("pu") %>% 
+  tibble::rowid_to_column("pu") %>%
   sf::st_drop_geometry() %>%
   tibble::tibble() %>%
   dplyr::filter(status == 1)
@@ -694,10 +696,10 @@ s7 <- p7 %>%
   colorVals = c("#c6dbef", "#3182bd", "black"),
   legendLabels = c("Not selected", "Zone 1", "Zone 2")
 ) +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](MultipleUse_files/figure-html/unnamed-chunk-32-1.png)
@@ -743,7 +745,7 @@ p8 <- prioritizr::problem(
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_relative_targets(target8) %>%
   prioritizr::add_linear_constraints(sum(costRandom$CostR) * 0.1,
-                                     sense = "<=", costRandom$CostR
+    sense = "<=", costRandom$CostR
   ) %>%
   prioritizr::add_binary_decisions() %>%
   prioritizr::add_default_solver(verbose = FALSE)
@@ -765,7 +767,7 @@ We can visualise the solution again:
 ``` r
 
 (gg_s8 <- splnr_plot_solution(s8) +
-   splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
+  splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
 ```
 
 ![](MultipleUse_files/figure-html/unnamed-chunk-35-1.png)
@@ -843,8 +845,8 @@ layer for `zone2` being three times as costly as for `zone1`.
 ``` r
 
 p10 <- prioritizr::problem(out_sf,
-                           z10,
-                           cost_column = c("Cost1", "Cost2")
+  z10,
+  cost_column = c("Cost1", "Cost2")
 ) %>%
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_manual_targets(targetAcross) %>%
@@ -892,9 +894,9 @@ costly.
 ``` r
 
 (gg_s10 <- splnr_plot_solution(s10,
-                               zones = TRUE,
-                               colorVals = c("#c6dbef", "#3182bd", "black"),
-                               legendLabels = c("Not selected", "Zone 1", "Zone 2")
+  zones = TRUE,
+  colorVals = c("#c6dbef", "#3182bd", "black"),
+  legendLabels = c("Not selected", "Zone 1", "Zone 2")
 ) +
   splnr_gg_add(
     PUs = PUs, Bndry = Bndry, overlay = landmass,
@@ -937,12 +939,12 @@ We then define the conservation problem and add a linear constraint for
 ``` r
 
 p11 <- prioritizr::problem(out_sf,
-                           z10,
-                           cost_column = c("Cost1", "Cost2")
+  z10,
+  cost_column = c("Cost1", "Cost2")
 ) %>%
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_linear_constraints(sum(CostArea[, 1]) * 0.3,
-                                     sense = "<=", CostArea
+    sense = "<=", CostArea
   ) %>%
   prioritizr::add_manual_targets(targetAcross) %>%
   prioritizr::add_binary_decisions() %>%
@@ -1083,8 +1085,8 @@ out_sf <- datSpecZone1 %>%
 ``` r
 
 p12 <- prioritizr::problem(out_sf,
-                           z12,
-                           cost_column = c("Cost1", "Cost2", "Cost3")
+  z12,
+  cost_column = c("Cost1", "Cost2", "Cost3")
 ) %>%
   prioritizr::add_min_set_objective() %>%
   prioritizr::add_manual_targets(targetAcrossSome) %>%

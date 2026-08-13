@@ -68,10 +68,12 @@ landmass <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>
 
 ``` r
 
-PUs <- spatialgridr::get_grid(boundary = Bndry,
-                              crs = cCRS,
-                              output = "sf_hex",
-                              resolution = PU_size)
+PUs <- spatialgridr::get_grid(
+  boundary = Bndry,
+  crs = cCRS,
+  output = "sf_hex",
+  resolution = PU_size
+)
 ```
 
 ### Get the features
@@ -84,21 +86,21 @@ area for the following species:
 ``` r
 
 Dict <- tibble::tribble(
-  ~nameCommon, ~nameVariable, ~category, 
-  "Green sea turtle", "Chelonia_mydas", "Reptiles", 
-  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles", 
-  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles", 
-  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles", 
-  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles", 
-  "Humpback whale", "Megaptera_novaeangliae", "Mammals", 
-  "Common Minke whale", "Balaenoptera_acutorostrata", "Mammals", 
-  "Dugong", "Dugong_dugon", "Mammals", 
-  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays", 
-  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays", 
+  ~nameCommon, ~nameVariable, ~category,
+  "Green sea turtle", "Chelonia_mydas", "Reptiles",
+  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles",
+  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles",
+  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles",
+  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles",
+  "Humpback whale", "Megaptera_novaeangliae", "Mammals",
+  "Common Minke whale", "Balaenoptera_acutorostrata", "Mammals",
+  "Dugong", "Dugong_dugon", "Mammals",
+  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays",
+  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays",
   "Great hammerhead shark", "Sphyrna_mokarran",
-  "Sharks and rays", 
-  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays", 
-  "Reef manta ray", "Mobula_alfredi", "Sharks and rays", 
+  "Sharks and rays",
+  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays",
+  "Reef manta ray", "Mobula_alfredi", "Sharks and rays",
   "Whitetip reef shark", "Triaenodon_obesus", "Sharks and rays",
   "Red-footed booby", "Sula_sula", "Birds"
 )
@@ -157,10 +159,10 @@ function.
 ``` r
 
 (ggclim <- splnr_plot_climData(metric, "metric") +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](ClimateSmart_files/figure-html/unnamed-chunk-10-1.png)
@@ -184,10 +186,10 @@ metric <- CoralSeaVelocity %>%
   )
 
 (ggclim <- splnr_plot_climData(metric, "metric") +
-    splnr_gg_add(
-      Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](ClimateSmart_files/figure-html/unnamed-chunk-11-1.png)
@@ -222,9 +224,9 @@ targets <- datEx_species_bin %>%
 
 CPA_Approach <- splnr_climate_priorityAreaApproach(
   features = datEx_species_bin,
-  metric = metric, 
-  targets = targets, 
-  direction = -1, 
+  metric = metric,
+  targets = targets,
+  direction = -1,
   refugiaTarget = 1
 )
 
@@ -234,7 +236,8 @@ out_sf <- CPA_Approach$Features %>%
       dplyr::select(
         tidyselect::starts_with("Cost_")
       ),
-    join = sf::st_equals) %>%
+    join = sf::st_equals
+  ) %>%
   sf::st_join(metric, join = sf::st_equals)
 
 targets <- CPA_Approach$Targets
@@ -278,10 +281,10 @@ We can look at the resulting plan using
 ``` r
 
 (ggSoln <- splnr_plot_solution(dat_solnClim) +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](ClimateSmart_files/figure-html/unnamed-chunk-15-1.png)
@@ -293,8 +296,7 @@ density plot.
 ``` r
 
 (ggClimDens <- splnr_plot_climKernelDensity(
-  soln = list(dat_solnClim),
-  # names = c("Input 1"), 
+  soln = dat_solnClim,
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"
@@ -318,9 +320,9 @@ targets <- datEx_species_bin %>%
 
 Percentile_Approach <- splnr_climate_percentileApproach(
   features = datEx_species_bin,
-  metric = metric, 
-  targets = targets, 
-  direction = -1, 
+  metric = metric,
+  targets = targets,
+  direction = -1,
   percentile = 35
 )
 
@@ -360,7 +362,7 @@ p2 <- prioritizr::problem(out_sf, usedFeatures, "Cost_None") %>%
   prioritizr::add_default_solver(verbose = FALSE)
 
 dat_solnClimPercentile <- prioritizr::solve.ConservationProblem(p2,
-                                                                force = TRUE
+  force = TRUE
 )
 ```
 
@@ -370,10 +372,10 @@ We can look at the resulting plan using
 ``` r
 
 (ggSoln <- splnr_plot_solution(dat_solnClimPercentile) +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](ClimateSmart_files/figure-html/unnamed-chunk-19-1.png)
@@ -385,8 +387,8 @@ density plot
 ``` r
 
 (ggClimDens <- splnr_plot_climKernelDensity(
-  soln = list(dat_solnClimPercentile),
-  # names = c("Input 1"), 
+  soln = dat_solnClimPercentile,
+  # names = c("Input 1"),
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"
@@ -408,8 +410,8 @@ targets <- datEx_species_bin %>%
 
 Feature_Approach <- splnr_climate_featureApproach(
   features = datEx_species_bin,
-  metric = metric, 
-  targets = targets, 
+  metric = metric,
+  targets = targets,
   direction = 1
 )
 
@@ -419,7 +421,8 @@ out_sf <- Feature_Approach$Features %>%
       dplyr::select(
         tidyselect::starts_with("Cost_")
       ),
-    join = sf::st_equals) %>%
+    join = sf::st_equals
+  ) %>%
   sf::st_join(metric, join = sf::st_equals)
 
 targets <- Feature_Approach$Targets
@@ -453,10 +456,10 @@ dat_solnClimFeature <- prioritizr::solve.ConservationProblem(p3)
 ``` r
 
 (ggSoln <- splnr_plot_solution(dat_solnClimFeature) +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](ClimateSmart_files/figure-html/unnamed-chunk-23-1.png)
@@ -468,8 +471,8 @@ density plot
 ``` r
 
 (ggClimDens <- splnr_plot_climKernelDensity(
-  soln = list(dat_solnClimFeature),
-  # names = c("Input 1"), 
+  soln = dat_solnClimFeature,
+  # names = c("Input 1"),
   type = "Normal",
   legendTitle = "Climate velocity (add unit)",
   xAxisLab = "Climate velocity"

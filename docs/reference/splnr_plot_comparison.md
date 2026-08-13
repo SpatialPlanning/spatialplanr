@@ -11,7 +11,8 @@ between two scenarios.
 splnr_plot_comparison(
   soln1,
   soln2,
-  legendTitle = "Scenario 2 compared to Scenario 1:"
+  legendTitle = "Scenario 2 compared to Scenario 1:",
+  base_size = 14
 )
 ```
 
@@ -32,6 +33,13 @@ splnr_plot_comparison(
 
   A character string for the title of the legend. Defaults to
   `"Scenario 2 compared to Scenario 1:"`.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
 
 ## Value
 
