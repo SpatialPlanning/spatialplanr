@@ -11,7 +11,7 @@ displaying how different categories of features meet certain targets in a radial
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.2</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,8 @@ displaying how different categories of features meet certain targets in a radial
 <span>  indicateTargets <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  impTarget <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  repTarget <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  colTarget <span class="op">=</span> <span class="st">"red"</span></span>
+<span>  colTarget <span class="op">=</span> <span class="st">"red"</span>,</span>
+<span>  base_size <span class="op">=</span> <span class="fl">14</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -102,6 +103,12 @@ percentage for 'representative' features. Required if <code>indicateTargets</cod
 <dt id="arg-coltarget">colTarget<a class="anchor" aria-label="anchor" href="#arg-coltarget"></a></dt>
 <dd><p>A <a href="https://rdrr.io/r/base/character.html" class="external-link">character</a> string specifying the color
 for the target indicator lines.</p></dd>
+
+
+<dt id="arg-base-size">base_size<a class="anchor" aria-label="anchor" href="#arg-base-size"></a></dt>
+<dd><p>A numeric value for the base font size (in points) passed to
+<code><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">ggplot2::theme_minimal()</a></code>. All text elements scale proportionally from this value.
+Defaults to <code>14</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -179,7 +186,7 @@ for the target indicator lines.</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

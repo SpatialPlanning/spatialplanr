@@ -648,7 +648,7 @@ splnr_plot_featureRep <- function(df,
       legend.title = ggplot2::element_blank(),
       legend.position = "top",
       legend.direction = "horizontal",
-      legend.background = ggplot2::element_rect(fill = "NA"),
+      legend.background = ggplot2::element_rect(fill = "transparent", colour = NA),
       ...
     )
 

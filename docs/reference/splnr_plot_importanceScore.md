@@ -15,7 +15,8 @@ splnr_plot_importanceScore(
   plotTitle = "",
   colorMap = "A",
   decimals = 4,
-  legendTitle = "Importance Score"
+  legendTitle = "Importance Score",
+  base_size = 14
 )
 ```
 
@@ -57,6 +58,13 @@ splnr_plot_importanceScore(
 
   A character string for the title of the legend. Defaults to
   `"Importance Score"`.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
 
 ## Value
 

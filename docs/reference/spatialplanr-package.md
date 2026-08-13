@@ -9,7 +9,7 @@ using their approach and data sets.
 
 Useful links:
 
-- <https://github.com/SpatialPlanning/spatialplanr>
+- <https://mathmarecol.github.io/spatialplanr>
 
 - Report bugs at
   <https://github.com/SpatialPlanning/spatialplanr/issues>

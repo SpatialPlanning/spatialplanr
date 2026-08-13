@@ -20,7 +20,8 @@ splnr_plot(
   colourVals = c("#c6dbef", "#3182bd"),
   plotTitle = "",
   legendTitle = NULL,
-  legendLabels = NULL
+  legendLabels = NULL,
+  base_size = 14
 )
 
 splnr_plot(
@@ -30,7 +31,8 @@ splnr_plot(
   colourVals = c("#c6dbef", "#3182bd"),
   plotTitle = "",
   legendTitle = NULL,
-  legendLabels = NULL
+  legendLabels = NULL,
+  base_size = 14
 )
 ```
 
@@ -78,6 +80,13 @@ splnr_plot(
   particularly useful for binary or logical data (e.g.,
   `c("Absent", "Present")`). If `NULL`, default labels are used for
   binary/logical plots.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
 
 ## Value
 

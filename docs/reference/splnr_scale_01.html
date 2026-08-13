@@ -11,7 +11,7 @@ normalizing data like probabilities or costs."><meta property="og:image" content
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.2</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,20 +84,6 @@ already within the desired range.</p></li>
 hardcoding a fixed division factor.</p>
     </div>
 
-    <div class="section level2">
-    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># Scale the 'Spp1' column.</span></span></span>
-<span class="r-in"><span><span class="va">df_scaled_spp1</span> <span class="op">&lt;-</span> <span class="fu">splnr_scale_01</span><span class="op">(</span>dat <span class="op">=</span> <span class="va">dat_species_prob</span>, col_name <span class="op">=</span> <span class="st">"Spp1"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_scaled_spp1</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example where max is already &lt;= 1</span></span></span>
-<span class="r-in"><span><span class="va">df_already_scaled</span> <span class="op">&lt;-</span> <span class="va">dat_species_prob</span> <span class="op"><a href="pipe.html">%&gt;%</a></span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>Spp1 <span class="op">=</span> <span class="va">Spp1</span> <span class="op">/</span> <span class="fl">100</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">df_no_change</span> <span class="op">&lt;-</span> <span class="fu">splnr_scale_01</span><span class="op">(</span>dat <span class="op">=</span> <span class="va">df_already_scaled</span>, col_name <span class="op">=</span> <span class="st">"Spp1"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">df_no_change</span><span class="op">)</span> <span class="co"># Spp1 values should remain unchanged</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
-</code></pre></div>
-    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
@@ -107,7 +93,7 @@ hardcoding a fixed division factor.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

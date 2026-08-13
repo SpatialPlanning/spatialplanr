@@ -37,6 +37,7 @@ splnr_gg_add(
   colorLockOut = "black",
   legendLockOut = "",
   labelLockOut = "",
+  base_size = 14,
   ggtheme = "Default"
 )
 ```
@@ -144,8 +145,13 @@ splnr_gg_add(
 
 - labelLockIn:
 
-  A character string for the legend label of the `lockIn` areas (e.g.,
-  "MPAs"). Defaults to `"MPAs"`.
+  A character string or named character vector for the legend label(s)
+  of the `lockIn` areas. When a named vector is supplied, names must
+  match the values in `nameLockIn` and values are used as the displayed
+  legend labels (e.g.
+  `c(MPA_Zone = "MPA Zone", Reserve = "Marine Reserve")`). When a single
+  string is supplied it is used as the label for all areas. Defaults to
+  `"MPAs"`.
 
 - lockOut:
 
@@ -182,8 +188,19 @@ splnr_gg_add(
 
 - labelLockOut:
 
-  A character string for the legend label of the `lockOut` areas (e.g.,
-  "Shipping Lanes"). Defaults to `""`.
+  A character string or named character vector for the legend label(s)
+  of the `lockOut` areas. When a named vector is supplied, names must
+  match the values in `nameLockOut` and values are used as the displayed
+  legend labels (e.g. `c(Shipping_Lane = "Shipping Lane")`). When a
+  single string is supplied it is used as the label for all areas.
+  Defaults to `""`.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html)
+  when `ggtheme = "Default"`. All text elements scale proportionally
+  from this value. Defaults to `14`.
 
 - ggtheme:
 

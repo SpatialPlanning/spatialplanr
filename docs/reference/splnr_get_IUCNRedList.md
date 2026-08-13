@@ -79,9 +79,11 @@ if (FALSE) { # \dontrun{
 # For example: Sys.setenv(IUCN_REDLIST_KEY = "YOUR_API_KEY_HERE")
 
 # Example: Create a dataframe with species names and retrieve their IUCN Red List categories.
-df_species_redlist <- data.frame(Species = c("Diomedea exulans",
-                                              "Hippocampus kuda",
-                                              "Squatina squatina")) %>%
+df_species_redlist <- data.frame(Species = c(
+  "Diomedea exulans",
+  "Hippocampus kuda",
+  "Squatina squatina"
+)) %>%
   splnr_get_IUCNRedList()
 print(df_species_redlist)
 

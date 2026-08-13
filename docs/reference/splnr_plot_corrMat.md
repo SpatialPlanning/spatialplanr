@@ -13,7 +13,8 @@ splnr_plot_corrMat(
   colourGradient = c("#BB4444", "#FFFFFF", "#4477AA"),
   legendTitle = "Correlation \ncoefficient",
   AxisLabels = NULL,
-  plotTitle = ""
+  plotTitle = "",
+  base_size = 14
 )
 ```
 
@@ -50,6 +51,13 @@ splnr_plot_corrMat(
 - plotTitle:
 
   A character string for the title of the plot. Defaults to `""`.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
 
 ## Value
 

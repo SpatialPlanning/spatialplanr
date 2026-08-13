@@ -266,9 +266,15 @@ splnr_plot <- function(df,
       ggplot2::scale_fill_viridis_c(name = legendTitle, aesthetics = c("colour", "fill")) +
       # Configure guides to show color bar for fill and hide color legend for outline.
       ggplot2::guides(
-        fill = ggplot2::guide_colourbar(order = 1),
+        fill = ggplot2::guide_colourbar(
+          order = 1,
+          title.position = "right",
+          title.hjust = 0.5,
+          title.theme = ggplot2::element_text(angle = -90)
+        ),
         colour = "none"
       )
+    
   } else if (is.null(colNames)) { # If no column to plot by (only planning unit outlines).
 
     # Add geom_sf to display planning unit outlines without fill.

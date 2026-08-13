@@ -227,7 +227,8 @@ splnr_plot <- function(df,
         barwidth  = ggplot2::unit(2, "lines"),
         barheight = ggplot2::unit(10, "lines"),
         title.position = "right",
-        title.theme = ggplot2::element_text(angle = 270, vjust = 0.5)
+        title.hjust = 0.5,
+        title.theme = ggplot2::element_text(angle = -90)
       ))
 
     return(gg)
@@ -275,7 +276,8 @@ splnr_plot <- function(df,
           barwidth  = ggplot2::unit(2, "lines"),
           barheight = ggplot2::unit(10, "lines"),
           title.position = "right",
-          title.theme = ggplot2::element_text(angle = 270, vjust = 0.5)
+          title.hjust = 0.5,
+          title.theme = ggplot2::element_text(angle = -90)
         ),
         colour = "none"
       )
@@ -673,7 +675,8 @@ splnr_plot_costOverlay <- function(soln,
         barwidth  = ggplot2::unit(2, "lines"),
         barheight = ggplot2::unit(10, "lines"),
         title.position = "right",
-        title.theme = ggplot2::element_text(angle = 270, vjust = 0.5)
+        title.hjust = 0.5,
+        title.theme = ggplot2::element_text(angle = -90)
       )
     ) +
     # Set coordinate limits based on the bounding box of the cost data.
@@ -1172,7 +1175,8 @@ splnr_plot_importanceScore <- function(soln,
         barwidth  = ggplot2::unit(2, "lines"),
         barheight = ggplot2::unit(10, "lines"),
         title.position = "right",
-        title.theme = ggplot2::element_text(angle = 270, vjust = 0.5)
+        title.hjust = 0.5,
+        title.theme = ggplot2::element_text(angle = -90)
       )
     ) +
     # Set coordinate limits based on the bounding box of the scored solution.
@@ -1339,7 +1343,8 @@ splnr_plot_corrMat <- function(x, colourGradient = c("#BB4444", "#FFFFFF", "#447
         barwidth  = ggplot2::unit(2, "lines"),
         barheight = ggplot2::unit(10, "lines"),
         title.position = "right",
-        title.theme = ggplot2::element_text(angle = 270, vjust = 0.5)
+        title.hjust = 0.5,
+        title.theme = ggplot2::element_text(angle = -90)
       )
     ) +
     # Rotate x-axis labels for better readability.

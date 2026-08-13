@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.2</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +72,7 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SpatialPlanning/spatialplanr" class="external-link">spatialplanr</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mathmarecol.github.io/spatialplanr">spatialplanr</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
@@ -123,10 +123,12 @@ planning units.</p>
 <h3 id="create-planning-units">Create Planning Units<a class="anchor" aria-label="anchor" href="#create-planning-units"></a>
 </h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">PUs</span> <span class="op">&lt;-</span> <span class="fu">spatialgridr</span><span class="fu">::</span><span class="fu"><a href="https://emlab-ucsb.github.io/spatialgridr/reference/get_grid.html" class="external-link">get_grid</a></span><span class="op">(</span>boundary <span class="op">=</span> <span class="va">Bndry</span>,</span>
-<span>                              crs <span class="op">=</span> <span class="va">cCRS</span>,</span>
-<span>                              output <span class="op">=</span> <span class="st">"sf_hex"</span>,</span>
-<span>                              resolution <span class="op">=</span> <span class="va">PU_size</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">PUs</span> <span class="op">&lt;-</span> <span class="fu">spatialgridr</span><span class="fu">::</span><span class="fu"><a href="https://emlab-ucsb.github.io/spatialgridr/reference/get_grid.html" class="external-link">get_grid</a></span><span class="op">(</span></span>
+<span>  boundary <span class="op">=</span> <span class="va">Bndry</span>,</span>
+<span>  crs <span class="op">=</span> <span class="va">cCRS</span>,</span>
+<span>  output <span class="op">=</span> <span class="st">"sf_hex"</span>,</span>
+<span>  resolution <span class="op">=</span> <span class="va">PU_size</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="get-the-features">Get the features<a class="anchor" aria-label="anchor" href="#get-the-features"></a>
@@ -137,21 +139,21 @@ the Aquamaps (Aquamaps.org) species distribution models for our study
 area for the following species:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Dict</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tribble.html" class="external-link">tribble</a></span><span class="op">(</span></span>
-<span>  <span class="op">~</span><span class="va">nameCommon</span>, <span class="op">~</span><span class="va">nameVariable</span>, <span class="op">~</span><span class="va">category</span>, </span>
-<span>  <span class="st">"Green sea turtle"</span>, <span class="st">"Chelonia_mydas"</span>, <span class="st">"Reptiles"</span>, </span>
-<span>  <span class="st">"Loggerhead sea turtle"</span>, <span class="st">"Caretta_caretta"</span>, <span class="st">"Reptiles"</span>, </span>
-<span>  <span class="st">"Hawksbill sea turtle"</span>, <span class="st">"Eretmochelys_imbricata"</span>, <span class="st">"Reptiles"</span>, </span>
-<span>  <span class="st">"Olive ridley sea turtle"</span>, <span class="st">"Lepidochelys_olivacea"</span>, <span class="st">"Reptiles"</span>, </span>
-<span>  <span class="st">"Saltwater crocodile"</span>, <span class="st">"Crocodylus_porosus"</span>, <span class="st">"Reptiles"</span>, </span>
-<span>  <span class="st">"Humpback whale"</span>, <span class="st">"Megaptera_novaeangliae"</span>, <span class="st">"Mammals"</span>, </span>
-<span>  <span class="st">"Common Minke whale"</span>, <span class="st">"Balaenoptera_acutorostrata"</span>, <span class="st">"Mammals"</span>, </span>
-<span>  <span class="st">"Dugong"</span>, <span class="st">"Dugong_dugon"</span>, <span class="st">"Mammals"</span>, </span>
-<span>  <span class="st">"Grey nurse shark"</span>, <span class="st">"Carcharias_taurus"</span>, <span class="st">"Sharks and rays"</span>, </span>
-<span>  <span class="st">"Tiger shark"</span>, <span class="st">"Galeocerdo_cuvier"</span>, <span class="st">"Sharks and rays"</span>, </span>
+<span>  <span class="op">~</span><span class="va">nameCommon</span>, <span class="op">~</span><span class="va">nameVariable</span>, <span class="op">~</span><span class="va">category</span>,</span>
+<span>  <span class="st">"Green sea turtle"</span>, <span class="st">"Chelonia_mydas"</span>, <span class="st">"Reptiles"</span>,</span>
+<span>  <span class="st">"Loggerhead sea turtle"</span>, <span class="st">"Caretta_caretta"</span>, <span class="st">"Reptiles"</span>,</span>
+<span>  <span class="st">"Hawksbill sea turtle"</span>, <span class="st">"Eretmochelys_imbricata"</span>, <span class="st">"Reptiles"</span>,</span>
+<span>  <span class="st">"Olive ridley sea turtle"</span>, <span class="st">"Lepidochelys_olivacea"</span>, <span class="st">"Reptiles"</span>,</span>
+<span>  <span class="st">"Saltwater crocodile"</span>, <span class="st">"Crocodylus_porosus"</span>, <span class="st">"Reptiles"</span>,</span>
+<span>  <span class="st">"Humpback whale"</span>, <span class="st">"Megaptera_novaeangliae"</span>, <span class="st">"Mammals"</span>,</span>
+<span>  <span class="st">"Common Minke whale"</span>, <span class="st">"Balaenoptera_acutorostrata"</span>, <span class="st">"Mammals"</span>,</span>
+<span>  <span class="st">"Dugong"</span>, <span class="st">"Dugong_dugon"</span>, <span class="st">"Mammals"</span>,</span>
+<span>  <span class="st">"Grey nurse shark"</span>, <span class="st">"Carcharias_taurus"</span>, <span class="st">"Sharks and rays"</span>,</span>
+<span>  <span class="st">"Tiger shark"</span>, <span class="st">"Galeocerdo_cuvier"</span>, <span class="st">"Sharks and rays"</span>,</span>
 <span>  <span class="st">"Great hammerhead shark"</span>, <span class="st">"Sphyrna_mokarran"</span>,</span>
-<span>  <span class="st">"Sharks and rays"</span>, </span>
-<span>  <span class="st">"Giant oceanic manta ray"</span>, <span class="st">"Mobula_birostris"</span>, <span class="st">"Sharks and rays"</span>, </span>
-<span>  <span class="st">"Reef manta ray"</span>, <span class="st">"Mobula_alfredi"</span>, <span class="st">"Sharks and rays"</span>, </span>
+<span>  <span class="st">"Sharks and rays"</span>,</span>
+<span>  <span class="st">"Giant oceanic manta ray"</span>, <span class="st">"Mobula_birostris"</span>, <span class="st">"Sharks and rays"</span>,</span>
+<span>  <span class="st">"Reef manta ray"</span>, <span class="st">"Mobula_alfredi"</span>, <span class="st">"Sharks and rays"</span>,</span>
 <span>  <span class="st">"Whitetip reef shark"</span>, <span class="st">"Triaenodon_obesus"</span>, <span class="st">"Sharks and rays"</span>,</span>
 <span>  <span class="st">"Red-footed booby"</span>, <span class="st">"Sula_sula"</span>, <span class="st">"Birds"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -199,10 +201,10 @@ interest (here: the velocity data) <code>metric</code>.</p>
 <code><a href="../reference/splnr_plot_climData.html">splnr_plot_climData()</a></code> function.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggclim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_climData.html">splnr_plot_climData</a></span><span class="op">(</span><span class="va">metric</span>, <span class="st">"metric"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>   <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
-<span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
-<span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
-<span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
+<span>    Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
+<span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ClimateSmart_files/figure-html/unnamed-chunk-10-1.png" class="r-plt" alt="" width="864"></p>
 <p>In our case, there were few areas with low climate velocity, which
 are the areas we define as climate refugia in our example. Usually, we
@@ -222,10 +224,10 @@ DATA).</p>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="op">(</span><span class="va">ggclim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_climData.html">splnr_plot_climData</a></span><span class="op">(</span><span class="va">metric</span>, <span class="st">"metric"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
-<span>      Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
-<span>      cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
-<span>    <span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
+<span>    Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
+<span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ClimateSmart_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="864"></p>
 <p>We then use the climate priority area approach
 <code><a href="../reference/splnr_climate_priorityAreaApproach.html">splnr_climate_priorityAreaApproach()</a></code> detailed in <a href="https://doi.org/10.1002/eap.2852" class="external-link">Buenafe et al (2023)</a> to
@@ -255,9 +257,9 @@ climate-smart areas).</p>
 <span></span>
 <span><span class="va">CPA_Approach</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_climate_priorityAreaApproach.html">splnr_climate_priorityAreaApproach</a></span><span class="op">(</span></span>
 <span>  features <span class="op">=</span> <span class="va">datEx_species_bin</span>,</span>
-<span>  metric <span class="op">=</span> <span class="va">metric</span>, </span>
-<span>  targets <span class="op">=</span> <span class="va">targets</span>, </span>
-<span>  direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>, </span>
+<span>  metric <span class="op">=</span> <span class="va">metric</span>,</span>
+<span>  targets <span class="op">=</span> <span class="va">targets</span>,</span>
+<span>  direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>,</span>
 <span>  refugiaTarget <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -267,7 +269,8 @@ climate-smart areas).</p>
 <span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span></span>
 <span>        <span class="fu">tidyselect</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"Cost_"</span><span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
-<span>    join <span class="op">=</span> <span class="fu">sf</span><span class="fu">::</span><span class="va"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_equals</a></span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span>    join <span class="op">=</span> <span class="fu">sf</span><span class="fu">::</span><span class="va"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_equals</a></span></span>
+<span>  <span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_join.html" class="external-link">st_join</a></span><span class="op">(</span><span class="va">metric</span>, join <span class="op">=</span> <span class="fu">sf</span><span class="fu">::</span><span class="va"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_equals</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">targets</span> <span class="op">&lt;-</span> <span class="va">CPA_Approach</span><span class="op">$</span><span class="va">Targets</span></span></code></pre></div>
@@ -302,18 +305,17 @@ the same as when running a non-climate-smart spatial prioritization.</p>
 <code><a href="../reference/splnr_plot_solution.html">splnr_plot_solution()</a></code>.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggSoln</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_solution.html">splnr_plot_solution</a></span><span class="op">(</span><span class="va">dat_solnClim</span><span class="op">)</span> <span class="op">+</span></span>
-<span>   <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
-<span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
-<span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
-<span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
+<span>    Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
+<span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ClimateSmart_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="864"></p>
 <p>However, we are also interested how climate-smart the selected
 planning units in the solution actually are. For this, we can use a
 kernel density plot.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggClimDens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_climKernelDensity.html">splnr_plot_climKernelDensity</a></span><span class="op">(</span></span>
-<span>  soln <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">dat_solnClim</span><span class="op">)</span>,</span>
-<span>  <span class="co"># names = c("Input 1"), </span></span>
+<span>  soln <span class="op">=</span> <span class="va">dat_solnClim</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
 <span>  legendTitle <span class="op">=</span> <span class="st">"Climate velocity (add unit)"</span>,</span>
 <span>  xAxisLab <span class="op">=</span> <span class="st">"Climate velocity"</span></span>
@@ -337,9 +339,9 @@ kernel density plot.</p>
 <span></span>
 <span><span class="va">Percentile_Approach</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_climate_percentileApproach.html">splnr_climate_percentileApproach</a></span><span class="op">(</span></span>
 <span>  features <span class="op">=</span> <span class="va">datEx_species_bin</span>,</span>
-<span>  metric <span class="op">=</span> <span class="va">metric</span>, </span>
-<span>  targets <span class="op">=</span> <span class="va">targets</span>, </span>
-<span>  direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>, </span>
+<span>  metric <span class="op">=</span> <span class="va">metric</span>,</span>
+<span>  targets <span class="op">=</span> <span class="va">targets</span>,</span>
+<span>  direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>,</span>
 <span>  percentile <span class="op">=</span> <span class="fl">35</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -375,24 +377,24 @@ to then run a prioritization.</p>
 <span>  <span class="fu">prioritizr</span><span class="fu">::</span><span class="fu"><a href="https://prioritizr.net/reference/add_default_solver.html" class="external-link">add_default_solver</a></span><span class="op">(</span>verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">dat_solnClimPercentile</span> <span class="op">&lt;-</span> <span class="fu">prioritizr</span><span class="fu">::</span><span class="fu"><a href="https://prioritizr.net/reference/solve.html" class="external-link">solve.ConservationProblem</a></span><span class="op">(</span><span class="va">p2</span>,</span>
-<span>                                                                force <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  force <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>We can look at the resulting plan using
 <code><a href="../reference/splnr_plot_solution.html">splnr_plot_solution()</a></code>.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggSoln</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_solution.html">splnr_plot_solution</a></span><span class="op">(</span><span class="va">dat_solnClimPercentile</span><span class="op">)</span> <span class="op">+</span></span>
-<span>   <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
-<span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
-<span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
-<span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
+<span>    Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
+<span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ClimateSmart_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" alt="" width="864"></p>
 <p>However, we are also interested how climate-smart the selected
 planning units in the solution actually are. For this, we can use a
 kernel density plot</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggClimDens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_climKernelDensity.html">splnr_plot_climKernelDensity</a></span><span class="op">(</span></span>
-<span>  soln <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">dat_solnClimPercentile</span><span class="op">)</span>,</span>
-<span>  <span class="co"># names = c("Input 1"), </span></span>
+<span>  soln <span class="op">=</span> <span class="va">dat_solnClimPercentile</span>,</span>
+<span>  <span class="co"># names = c("Input 1"),</span></span>
 <span>  type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
 <span>  legendTitle <span class="op">=</span> <span class="st">"Climate velocity (add unit)"</span>,</span>
 <span>  xAxisLab <span class="op">=</span> <span class="st">"Climate velocity"</span></span>
@@ -412,8 +414,8 @@ kernel density plot</p>
 <span></span>
 <span><span class="va">Feature_Approach</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_climate_featureApproach.html">splnr_climate_featureApproach</a></span><span class="op">(</span></span>
 <span>  features <span class="op">=</span> <span class="va">datEx_species_bin</span>,</span>
-<span>  metric <span class="op">=</span> <span class="va">metric</span>, </span>
-<span>  targets <span class="op">=</span> <span class="va">targets</span>, </span>
+<span>  metric <span class="op">=</span> <span class="va">metric</span>,</span>
+<span>  targets <span class="op">=</span> <span class="va">targets</span>,</span>
 <span>  direction <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -423,7 +425,8 @@ kernel density plot</p>
 <span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span></span>
 <span>        <span class="fu">tidyselect</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"Cost_"</span><span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
-<span>    join <span class="op">=</span> <span class="fu">sf</span><span class="fu">::</span><span class="va"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_equals</a></span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span>    join <span class="op">=</span> <span class="fu">sf</span><span class="fu">::</span><span class="va"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_equals</a></span></span>
+<span>  <span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_join.html" class="external-link">st_join</a></span><span class="op">(</span><span class="va">metric</span>, join <span class="op">=</span> <span class="fu">sf</span><span class="fu">::</span><span class="va"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_equals</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">targets</span> <span class="op">&lt;-</span> <span class="va">Feature_Approach</span><span class="op">$</span><span class="va">Targets</span></span></code></pre></div>
@@ -450,18 +453,18 @@ to then run a prioritization.</p>
 <span><span class="va">dat_solnClimFeature</span> <span class="op">&lt;-</span> <span class="fu">prioritizr</span><span class="fu">::</span><span class="fu"><a href="https://prioritizr.net/reference/solve.html" class="external-link">solve.ConservationProblem</a></span><span class="op">(</span><span class="va">p3</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggSoln</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_solution.html">splnr_plot_solution</a></span><span class="op">(</span><span class="va">dat_solnClimFeature</span><span class="op">)</span> <span class="op">+</span></span>
-<span>   <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
-<span>     Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
-<span>     cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
-<span>   <span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/splnr_gg_add.html">splnr_gg_add</a></span><span class="op">(</span></span>
+<span>    Bndry <span class="op">=</span> <span class="va">Bndry</span>, overlay <span class="op">=</span> <span class="va">landmass</span>,</span>
+<span>    cropOverlay <span class="op">=</span> <span class="va">PUs</span>, ggtheme <span class="op">=</span> <span class="va">splnr_theme</span></span>
+<span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="ClimateSmart_files/figure-html/unnamed-chunk-23-1.png" class="r-plt" alt="" width="864"></p>
 <p>However, we are also interested how climate-smart the selected
 planning units in the solution actually are. For this, we can use a
 kernel density plot</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">ggClimDens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/splnr_plot_climKernelDensity.html">splnr_plot_climKernelDensity</a></span><span class="op">(</span></span>
-<span>  soln <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">dat_solnClimFeature</span><span class="op">)</span>,</span>
-<span>  <span class="co"># names = c("Input 1"), </span></span>
+<span>  soln <span class="op">=</span> <span class="va">dat_solnClimFeature</span>,</span>
+<span>  <span class="co"># names = c("Input 1"),</span></span>
 <span>  type <span class="op">=</span> <span class="st">"Normal"</span>,</span>
 <span>  legendTitle <span class="op">=</span> <span class="st">"Climate velocity (add unit)"</span>,</span>
 <span>  xAxisLab <span class="op">=</span> <span class="st">"Climate velocity"</span></span>
@@ -481,7 +484,7 @@ kernel density plot</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

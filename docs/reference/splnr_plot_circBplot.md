@@ -15,7 +15,8 @@ splnr_plot_circBplot(
   indicateTargets = TRUE,
   impTarget = NA,
   repTarget = NA,
-  colTarget = "red"
+  colTarget = "red",
+  base_size = 14
 )
 ```
 
@@ -74,6 +75,13 @@ splnr_plot_circBplot(
 
   A [character](https://rdrr.io/r/base/character.html) string specifying
   the color for the target indicator lines.
+
+- base_size:
+
+  A numeric value for the base font size (in points) passed to
+  [`ggplot2::theme_minimal()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  All text elements scale proportionally from this value. Defaults to
+  `14`.
 
 ## Value
 

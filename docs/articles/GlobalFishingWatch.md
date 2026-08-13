@@ -70,9 +70,11 @@ A region_id is necessary to use the `get_raster` function.
 
 ``` r
 
-region_id <- get_region_id(region = "Australia", 
-                                 region_source = "EEZ",
-                                 key = gfwr::gfw_auth())$id[2]
+region_id <- get_region_id(
+  region = "Australia",
+  region_source = "EEZ",
+  key = gfwr::gfw_auth()
+)$id[2]
 ```
 
 The `get_raster` function gets a raster of fishing effort from the API
@@ -111,12 +113,14 @@ we can get round these problems through `splnr_get_gfw`.
 
 ``` r
 
-data_sf_combined <- splnr_get_gfw(region = "Australia", 
-                                  start_date = "2019-01-01",
-                                  end_date =  "2023-12-31",
-                                  temp_res = "YEARLY",
-                                  spat_res = "LOW",
-                                  compress = FALSE)
+data_sf_combined <- splnr_get_gfw(
+  region = "Australia",
+  start_date = "2019-01-01",
+  end_date = "2023-12-31",
+  temp_res = "YEARLY",
+  spat_res = "LOW",
+  compress = FALSE
+)
 ```
 
 ### Visualization
@@ -129,8 +133,10 @@ object, and we constrain it to the boundaries of the given data.\
 ``` r
 
 # Check and modify if necessary the spatial reference of data_sf_combined
-data_sf_combined <- sf::st_set_crs(data_sf_combined, 
-                                   sf::st_crs(rnaturalearth::ne_coastline(scale = "large")))
+data_sf_combined <- sf::st_set_crs(
+  data_sf_combined,
+  sf::st_crs(rnaturalearth::ne_coastline(scale = "large"))
+)
 
 coast_clipped <- rnaturalearth::ne_coastline(scale = "large") %>%
   sf::st_as_sf() %>%
@@ -165,11 +171,13 @@ necessarily of more intense fishing activity.
 ``` r
 
 # We need to change the temporal range according to our need group by it to display the total fishing hours. <br>
-data_sf_combined <- splnr_get_gfw(region = "Australia", 
-                                  start_date = "2019-01-01", 
-                                  end_date = "2023-12-31", 
-                                  temp_res = "MONTHLY", 
-                                  key = gfwr::gfw_auth()) %>%
+data_sf_combined <- splnr_get_gfw(
+  region = "Australia",
+  start_date = "2019-01-01",
+  end_date = "2023-12-31",
+  temp_res = "MONTHLY",
+  key = gfwr::gfw_auth()
+) %>%
   dplyr::group_by(Year, Month) %>%
   dplyr::summarize(Total_Fishing_Hours = sum(ApparentFishingHrs))
 ```
@@ -183,10 +191,12 @@ the fishing gear type.
 
 ``` r
 
-data_sf_combined <- splnr_get_gfw(region = "Micronesia", 
-                                  start_date = "2019-12-31", 
-                                  end_date = "2021-01-01", 
-                                  temp_res = "MONTHLY")
+data_sf_combined <- splnr_get_gfw(
+  region = "Micronesia",
+  start_date = "2019-12-31",
+  end_date = "2021-01-01",
+  temp_res = "MONTHLY"
+)
 ```
 
 ![](GlobalFishingWatch_files/figure-html/unnamed-chunk-13-1.png)

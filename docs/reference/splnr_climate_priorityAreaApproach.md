@@ -14,7 +14,8 @@ splnr_climate_priorityAreaApproach(
   targets,
   direction,
   percentile = 5,
-  refugiaTarget = 1
+  refugiaTarget = 1,
+  metric_col = "metric"
 )
 ```
 
@@ -44,6 +45,13 @@ splnr_climate_priorityAreaApproach(
 - refugiaTarget:
 
   Numeric (0-1). Defaults to `1`.
+
+- metric_col:
+
+  A single character string giving the name of the column in `metric`
+  that contains the climate metric values. Defaults to `"metric"` for
+  backwards compatibility. Use this argument when your climate data
+  column has a different name (e.g. `"sst_trend"`).
 
 ## Value
 
@@ -81,7 +89,7 @@ CPA_result <- splnr_climate_priorityAreaApproach(
   percentile    = 5,
   refugiaTarget = 1
 )
-out_sf_cpa    <- CPA_result$Features
-targets_cpa   <- CPA_result$Targets
+out_sf_cpa <- CPA_result$Features
+targets_cpa <- CPA_result$Targets
 } # }
 ```

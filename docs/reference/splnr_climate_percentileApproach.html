@@ -11,7 +11,7 @@ climate-resilient areas and adjusting targets accordingly."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.2</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,7 +55,8 @@ climate-resilient areas and adjusting targets accordingly.</p>
 <span>  <span class="va">metric</span>,</span>
 <span>  <span class="va">targets</span>,</span>
 <span>  <span class="va">direction</span>,</span>
-<span>  percentile <span class="op">=</span> <span class="fl">35</span></span>
+<span>  percentile <span class="op">=</span> <span class="fl">35</span>,</span>
+<span>  metric_col <span class="op">=</span> <span class="st">"metric"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -81,6 +82,13 @@ climate-resilient areas and adjusting targets accordingly.</p>
 
 <dt id="arg-percentile">percentile<a class="anchor" aria-label="anchor" href="#arg-percentile"></a></dt>
 <dd><p>Numeric (0-100). Defaults to <code>35</code>.</p></dd>
+
+
+<dt id="arg-metric-col">metric_col<a class="anchor" aria-label="anchor" href="#arg-metric-col"></a></dt>
+<dd><p>A single character string giving the name of the column in
+<code>metric</code> that contains the climate metric values. Defaults to <code>"metric"</code> for
+backwards compatibility. Use this argument when your climate data column has
+a different name (e.g. <code>"sst_trend"</code>).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -111,7 +119,7 @@ climate-resilient areas and adjusting targets accordingly.</p>
 <span class="r-in"><span>  direction  <span class="op">=</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>  percentile <span class="op">=</span> <span class="fl">35</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">out_sf_percentile</span>  <span class="op">&lt;-</span> <span class="va">Percentile_result</span><span class="op">$</span><span class="va">Features</span></span></span>
+<span class="r-in"><span><span class="va">out_sf_percentile</span> <span class="op">&lt;-</span> <span class="va">Percentile_result</span><span class="op">$</span><span class="va">Features</span></span></span>
 <span class="r-in"><span><span class="va">targets_percentile</span> <span class="op">&lt;-</span> <span class="va">Percentile_result</span><span class="op">$</span><span class="va">Targets</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
@@ -125,7 +133,7 @@ climate-resilient areas and adjusting targets accordingly.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

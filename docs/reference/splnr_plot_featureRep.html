@@ -13,7 +13,7 @@ the target levels on the plot."><meta property="og:image" content="https://mathm
 
     <a class="navbar-brand me-2" href="../index.html">spatialplanr</a>
 
-    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.2</small>
+    <small class="nav-text text-info me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,6 +63,7 @@ the target levels on the plot.</p>
 <span>  showTarget <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  plotTitle <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  sort_by <span class="op">=</span> <span class="st">"category"</span>,</span>
+<span>  base_size <span class="op">=</span> <span class="fl">14</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -125,6 +126,12 @@ by which to sort the features on the x-axis. Accepted values include:
 or <code>"difference"</code> (between representation and target).</p></dd>
 
 
+<dt id="arg-base-size">base_size<a class="anchor" aria-label="anchor" href="#arg-base-size"></a></dt>
+<dd><p>A numeric value for the base font size (in points) passed to
+<code><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">ggplot2::theme_bw()</a></code>. All text elements scale proportionally from this value.
+Defaults to <code>14</code>.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Other arguments passed on to <code><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">ggplot2::theme()</a></code> to customize the plot's theme.</p></dd>
 
@@ -157,8 +164,6 @@ or <code>"difference"</code> (between representation and target).</p></dd>
 <span class="r-in"><span>  soln <span class="op">=</span> <span class="va">soln</span>,</span></span>
 <span class="r-in"><span>  pDat <span class="op">=</span> <span class="va">pDat</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> No non-selected features to process.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> No specific climate-smart approach detected or standard approach used. Using targets from 'pDat'.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Basic plot with categories and targets shown</span></span></span>
 <span class="r-in"><span><span class="op">(</span><span class="fu">splnr_plot_featureRep</span><span class="op">(</span><span class="va">df</span>, category <span class="op">=</span> <span class="va">dat_category</span>, showTarget <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -206,7 +211,7 @@ or <code>"difference"</code> (between representation and target).</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

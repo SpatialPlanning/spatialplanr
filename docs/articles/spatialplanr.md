@@ -73,10 +73,12 @@ landmass <- rnaturalearth::ne_countries(
 
 ``` r
 
-PUs <- spatialgridr::get_grid(boundary = Bndry, 
-                              crs = cCRS,
-                              output = "sf_hex", 
-                              resolution = PU_size)
+PUs <- spatialgridr::get_grid(
+  boundary = Bndry,
+  crs = cCRS,
+  output = "sf_hex",
+  resolution = PU_size
+)
 ```
 
 We can check what the PUs look like
@@ -84,7 +86,7 @@ We can check what the PUs look like
 ``` r
 
 (ggPU <- splnr_plot(df = PUs) +
-   ggplot2::theme_bw()) # Plot Planning Units
+  ggplot2::theme_bw()) # Plot Planning Units
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-9-1.png)
@@ -96,10 +98,10 @@ or the boundary, we can use
 ``` r
 
 (ggPU <- splnr_plot(df = PUs) +
-   splnr_gg_add(
-     Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = "Default"
-   ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = "Default"
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-10-1.png)
@@ -124,10 +126,10 @@ splnr_theme <- list(
 )
 
 (ggPU <- splnr_plot(PUs) +
-    splnr_gg_add(
-      Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-11-1.png)
@@ -142,20 +144,20 @@ area for the following species:
 ``` r
 
 Dict <- tibble::tribble(
-  ~nameCommon, ~nameVariable, ~category, 
-  "Green sea turtle", "Chelonia_mydas", "Reptiles", 
-  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles", 
-  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles", 
-  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles", 
-  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles", 
-  "Humpback whale", "Megaptera_novaeangliae", "Mammals", 
-  "Common Minke whale", "Balaenoptera_acutorostrata", "Mammals", 
-  "Dugong", "Dugong_dugon", "Mammals", 
-  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays", 
-  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays", 
-  "Great hammerhead shark", "Sphyrna_mokarran", "Sharks and rays", 
-  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays", 
-  "Reef manta ray", "Mobula_alfredi", "Sharks and rays", 
+  ~nameCommon, ~nameVariable, ~category,
+  "Green sea turtle", "Chelonia_mydas", "Reptiles",
+  "Loggerhead sea turtle", "Caretta_caretta", "Reptiles",
+  "Hawksbill sea turtle", "Eretmochelys_imbricata", "Reptiles",
+  "Olive ridley sea turtle", "Lepidochelys_olivacea", "Reptiles",
+  "Saltwater crocodile", "Crocodylus_porosus", "Reptiles",
+  "Humpback whale", "Megaptera_novaeangliae", "Mammals",
+  "Common Minke whale", "Balaenoptera_acutorostrata", "Mammals",
+  "Dugong", "Dugong_dugon", "Mammals",
+  "Grey nurse shark", "Carcharias_taurus", "Sharks and rays",
+  "Tiger shark", "Galeocerdo_cuvier", "Sharks and rays",
+  "Great hammerhead shark", "Sphyrna_mokarran", "Sharks and rays",
+  "Giant oceanic manta ray", "Mobula_birostris", "Sharks and rays",
+  "Reef manta ray", "Mobula_alfredi", "Sharks and rays",
   "Whitetip reef shark", "Triaenodon_obesus", "Sharks and rays",
   "Red-footed booby", "Sula_sula", "Birds"
 )
@@ -233,15 +235,17 @@ Planning Unit of the study region.
 
 ``` r
 
-(ggFeatNo <- splnr_plot(df = datEx_species_bin, 
-                        colNames =  colnames(datEx_species_bin %>% 
-                                                sf::st_drop_geometry()),
-                        plotTitle = "", 
-                        legendTitle = "Number of features") +
-   splnr_gg_add(
-     PUs = PUs, Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+(ggFeatNo <- splnr_plot(
+  df = datEx_species_bin,
+  colNames = colnames(datEx_species_bin %>%
+    sf::st_drop_geometry()),
+  plotTitle = "",
+  legendTitle = "Number of features"
+) +
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-16-1.png)
@@ -275,12 +279,14 @@ units are assigned an equal cost of 1.
 ``` r
 
 out_sf$Cost_None <- 1
-(ggCost <- splnr_plot(out_sf, colNames = "Cost_None", 
-                      legendTitle = "Cost", legendLabels = "1") +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+(ggCost <- splnr_plot(out_sf,
+  colNames = "Cost_None",
+  legendTitle = "Cost", legendLabels = "1"
+) +
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-19-1.png)
@@ -295,24 +301,26 @@ world, we set here the parameter `compress` as `TRUE` to recover the
 
 ``` r
 
-gfw_data <- splnr_get_gfw(region = 'Australia', 
-                          start_date = "2022-01-01", 
-                          end_date = "2022-12-31", 
-                          temp_res = "yearly", 
-                          cCRS = cCRS, 
-                          compress = TRUE) %>%
+gfw_data <- splnr_get_gfw(
+  region = "Australia",
+  start_date = "2022-01-01",
+  end_date = "2022-12-31",
+  temp_res = "yearly",
+  cCRS = cCRS,
+  compress = TRUE
+) %>%
   sf::st_interpolate_aw(PUs, extensive = TRUE)
 
 out_sf$Apparent.Fishing.Hours <- 0 # Add column to PUs
-out_sf$Apparent.Fishing.Hours[as.numeric(rownames(PUs))] <- 
+out_sf$Apparent.Fishing.Hours[as.numeric(rownames(PUs))] <-
   gfw_data$Apparent.Fishing.Hours # Put corresponding data in PUs
 
 
 (ggCost <- splnr_plot(out_sf, colNames = "Apparent.Fishing.Hours") +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ###### Other features
@@ -369,14 +377,15 @@ importance scores
 
 ``` r
 
-(ggSoln <- splnr_plot(datEx_soln, 
-                      colNames = "solution_1", 
-                      legendTitle = "Solution", 
-                      legendLabels = c("0","1")) +
-   splnr_gg_add(
-     PUs = PUs, Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+(ggSoln <- splnr_plot(datEx_soln,
+  colNames = "solution_1",
+  legendTitle = "Solution",
+  legendLabels = c("0", "1")
+) +
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-26-1.png)
@@ -416,17 +425,17 @@ region.
 ``` r
 
 dfTarget <- splnr_get_featureRep(datEx_soln, datEx_problem,
-                                 climsmart = FALSE, 
-                                 solnCol = "solution_1"
+  climsmart = FALSE,
+  solnCol = "solution_1"
 )
 
 
-(ggTarget <- splnr_plot_featureRep(dfTarget, 
-                                   category = Dict, 
-                                   renameFeatures = TRUE,
-                                   namesToReplace = Dict, 
-                                   categoryFeatureCol = "nameCommon",
-                                   nr = 1, showTarget = TRUE,
+(ggTarget <- splnr_plot_featureRep(dfTarget,
+  category = Dict,
+  renameFeatures = TRUE,
+  namesToReplace = Dict,
+  categoryFeatureCol = "nameCommon",
+  nr = 1, showTarget = TRUE,
 ))
 ```
 
@@ -438,8 +447,8 @@ to be done.
 ``` r
 
 dfTargetCirc <- dfTarget %>%
-dplyr::select("feature", "value", "group") %>%
-na.omit()
+  dplyr::select("feature", "value", "group") %>%
+  na.omit()
 
 colors <- c(
   "important" = "darkgreen",
@@ -521,10 +530,10 @@ LockedIn <- splnr_get_MPAs(PUs, "Australia") %>%
 ``` r
 
 (ggMPA <- splnr_plot(MPAsCoralSea, "wdpa") +
-   splnr_gg_add(
-     PUs = PUs, Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-32-1.png)
@@ -545,7 +554,6 @@ a lower target.
 
 ``` r
 
-
 minTarget <- 0.1
 maxTarget <- 0.2
 
@@ -562,7 +570,6 @@ an increased target of 0.3 for all species with an increased thread
 level on the IUCN Red List(“EX”, “EW”, “CR”, “EN”, “VU”).
 
 ``` r
-
 
 IUCN_IA_Targets <- IA_Targets %>%
   splnr_get_IUCNRedList(species_col = "Species") %>% # Add RL data to the df
@@ -591,10 +598,10 @@ datEx_soln2 <- datEx_problem2 %>%
   prioritizr::solve.ConservationProblem()
 
 (ggSoln2 <- splnr_plot_solution(datEx_soln2) +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-35-1.png)
@@ -608,12 +615,12 @@ function.
 ``` r
 
 (splnr_plot_solution(datEx_soln2) +
-   splnr_gg_add(
-     PUs = PUs, Bndry = Bndry, lockIn = MPAsCoralSea,
-     nameLockIn = "wdpa", typeLockIn = "Full",
-     colorLockIn = "lightgrey", alphaLockIn = 0.2, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, lockIn = MPAsCoralSea,
+    nameLockIn = "wdpa", typeLockIn = "Full",
+    colorLockIn = "lightgrey", alphaLockIn = 0.2, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-36-1.png)
@@ -625,12 +632,12 @@ can set `typeLockIn = "Contours"` in
 ``` r
 
 (splnr_plot_solution(datEx_soln2) +
-   splnr_gg_add(
-     lockIn = MPAsCoralSea,
-     nameLockIn = "wdpa", typeLockIn = "Contours",
-     colorLockIn = "lightgrey", alphaLockIn = 0.2, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    lockIn = MPAsCoralSea,
+    nameLockIn = "wdpa", typeLockIn = "Contours",
+    colorLockIn = "lightgrey", alphaLockIn = 0.2, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-37-1.png)
@@ -640,10 +647,10 @@ can set `typeLockIn = "Contours"` in
 ``` r
 
 (ggComp <- splnr_plot_comparison(datEx_soln, datEx_soln2) +
-   splnr_gg_add(
-     PUs = PUs, Bndry = Bndry, overlay = landmass,
-     cropOverlay = PUs, ggtheme = splnr_theme
-   ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-38-1.png)
@@ -657,11 +664,11 @@ selected in both solutions (grey).
 ``` r
 
 CorrMat <- splnr_get_kappaCorrData(list(datEx_soln, datEx_soln2),
-                                   name_sol = c("soln1", "soln2")
+  name_sol = c("soln1", "soln2")
 )
 
 (ggCorr <- splnr_plot_corrMat(CorrMat,
-                              AxisLabels = c("Solution 1", "Solution 2")
+  AxisLabels = c("Solution 1", "Solution 2")
 ))
 ```
 
@@ -693,10 +700,10 @@ selFreq <- datEx_soln_portfolio %>% # calculate selection frequency
   dplyr::select(selFreq)
 
 (ggselFreq <- splnr_plot_selectionFreq(selFreq) +
-    splnr_gg_add(
-      PUs = PUs, Bndry = Bndry, overlay = landmass,
-      cropOverlay = PUs, ggtheme = splnr_theme
-    ))
+  splnr_gg_add(
+    PUs = PUs, Bndry = Bndry, overlay = landmass,
+    cropOverlay = PUs, ggtheme = splnr_theme
+  ))
 ```
 
 ![](spatialplanr_files/figure-html/unnamed-chunk-40-1.png)
