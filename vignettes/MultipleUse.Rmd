@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-  
+
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -25,22 +25,25 @@ set.seed(100)
 
 # Overview
 
-This code has been written to simplify the process for running a _prioritizr_ analysis on a given region. It is still a work in progress so feel free to submit pull requests with new features and code improvements.
+This code has been written to simplify the process for running a *prioritizr* analysis on a given region. It is still a work in progress so feel free to submit pull requests with new features and code improvements.
 
 The workflow shown here was based on the [`prioritizr` introduction to zones](https://prioritizr.net/articles/management_zones_tutorial.html).
 
-## Set user parameters 
+## Set user parameters
+
 ```{r}
 Region <- "Coral Sea" # "Australia"
 Type <- "Oceans" # "EEZ"
 ```
 
 Set the diameter of the planning units. This will be in the same units as the CRS (usually metres or degrees).
+
 ```{r}
 PU_size <- 107460 # m
 ```
 
 Choose CRS for analysis. Here we use Mollweide
+
 ```{r}
 cCRS <- "ESRI:54009"
 ```
@@ -50,6 +53,7 @@ cCRS <- "ESRI:54009"
 Start your analysis by defining your region and setting up the planning units.
 
 Get the boundary for your chosen region.
+
 ```{r}
 Bndry <- splnr_get_boundary(Limits = Region, Type = Type, cCRS = cCRS)
 
@@ -60,7 +64,8 @@ landmass <- rnaturalearth::ne_countries(
   sf::st_transform(cCRS)
 ```
 
-## Create Planning Units 
+## Create Planning Units
+
 ```{r}
 PUs <- spatialgridr::get_grid(
   boundary = Bndry,
@@ -86,9 +91,10 @@ splnr_theme <- list(
 )
 ```
 
-## Get the features 
+## Get the features
 
-For our example, we will use a small subset of charismatic megafauna species of the Coral Sea to inform the conservation plan. We filtered the Aquamaps (Aquamaps.org) species distribution models for our study area for the following species: 
+For our example, we will use a small subset of charismatic megafauna species of the Coral Sea to inform the conservation plan. We filtered the Aquamaps (Aquamaps.org) species distribution models for our study area for the following species:
+
 ```{r}
 Dict <- tibble::tribble(
   ~nameCommon, ~nameVariable, ~category,
@@ -112,7 +118,7 @@ Dict <- tibble::tribble(
 )
 ```
 
-These species were not chosen based on their importance for this region and only represent an example for visualization purposes. 
+These species were not chosen based on their importance for this region and only represent an example for visualization purposes.
 
 **Note:** The structure of the `tribble`above is required for some of the downstream plotting. *Common* denotes the common name of a species, *Scientific* the scientific name in the format used by Aquamaps, *Category* is the category that a species belongs to and *Class* represents the importance of the species for the conservation plan.
 
@@ -171,7 +177,7 @@ We will now look how this spatial plan needs to be extended to include multiple 
 
 ### Different cost layers
 
-We first assume that we have to zones of interest that have the same set of features, but separate cost layers. For this, we need to set targets for both zones, in our case 20% for all features in the first zone and 5% of all features in the second zone. 
+We first assume that we have two zones of interest that have the same set of features, but separate cost layers. For this, we need to set targets for both zones, in our case 20% for all features in the first zone and 5% of all features in the second zone.
 
 ```{r}
 target2 <- matrix(NA, ncol = 2, nrow = nrow(Dict))
@@ -270,14 +276,14 @@ r2b <- s2b %>%
 print(r2b, n = 45)
 ```
 
-We can see that each of the 15 features is listed (as a number) for an overall summary, summary for zone 1 and summary for zone 2. When looking at the `relative_held` column in the `tibble`, we observe that in the summary of zone 1 (from row 16 onwards), some features have >30% targets met, whereas others (such as feature 6 and 7) have a very low percentage of suitable habitat within selected planning units. We can extract the common names of those two features:
+We can see that each of the 15 features is listed (as a number) for an overall summary, summary for zone 1 and summary for zone 2. When looking at the `relative_held` column in the `tibble`, we observe that in the summary of zone 1 (from row 16 onwards), some features have \>30% targets met, whereas others (such as feature 6 and 7) have a very low percentage of suitable habitat within selected planning units. We can extract the common names of those two features:
 
 ```{r}
 Dict[[1]][6]
 Dict[[1]][7]
 ```
 
-They are both marine mammals and thus had a target of 0% in zone 1 that was the reptile-specific zone. The percentage of selected suitable habitat is not 0% despite the target of 0 because a proportion of suitable habitat of mammals was selected incidentally when selecting planning units in this zone by meeting the targets for reptiles. The same applies for zone 2. We can also plot the final solution again: 
+They are both marine mammals and thus had a target of 0% in zone 1 that was the reptile-specific zone. The percentage of selected suitable habitat is not 0% despite the target of 0 because a proportion of suitable habitat of mammals was selected incidentally when selecting planning units in this zone by meeting the targets for reptiles. The same applies for zone 2. We can also plot the final solution again:
 
 ```{r, fig.width = 9}
 (gg_s2b <- splnr_plot_solution(
@@ -292,10 +298,9 @@ They are both marine mammals and thus had a target of 0% in zone 1 that was the 
   ))
 ```
 
-
 ### Boundary penalty
 
-Similar to "normal" priritisations, zones also allows including a boundary penalty. There are several options how this can be done within zones or between zones. 
+Similar to "normal" priritisations, zones also allows including a boundary penalty. There are several options how this can be done within zones or between zones.
 
 #### Within the same zone
 
@@ -472,7 +477,7 @@ The results can the be visualized again:
 
 ### Objective functions
 
-So far we have only used the minimum set objective function to meet all conservation targets whilst minimizing the cost. However, this is not the only objective function available in `prioritizr`. For example when maximising mangrove ecosystem services, we employed a minimum shortfall objective function instead [(Dabalà et al 2022)](https://www.researchgate.net/publication/363818810_Priority_areas_to_protect_mangroves_and_maximise_ecosystem_services). For this objective function, we allocate a budget that cannot be exceeded (for example area >30%) whilst still trying to minimise the cost and meeting the targets - but not all targets might be met (shortfall).
+So far we have only used the minimum set objective function to meet all conservation targets whilst minimizing the cost. However, this is not the only objective function available in `prioritizr`. For example when maximising mangrove ecosystem services, we employed a minimum shortfall objective function instead [(Dabalà et al 2022)](https://www.researchgate.net/publication/363818810_Priority_areas_to_protect_mangroves_and_maximise_ecosystem_services). For this objective function, we allocate a budget that cannot be exceeded (for example area \>30%) whilst still trying to minimise the cost and meeting the targets - but not all targets might be met (shortfall).
 
 Zones also works with objective functions other than the minimum set objective function.
 
@@ -514,7 +519,7 @@ s7 <- p7 %>%
 
 Sometimes a spatial plan might be needed that requires minimising several costs at once, but a binary output (inside the protected area/outside the protected area) is sufficient. In this case, using linear constraints instead of zones might be a simpler and more time-efficient way forward.
 
-Linear constraints make sure that all planning units in the selected area meet the criteria given in the constraint. For example, when using an area-based cost (lowest number of planning units to meet the target), we might also simultaneously want to minimise the cost to fisheries and keep it below a certain threshold. Inversely, we might want to minimise the cost to fisheries but also not select more than 30% of the area. 
+Linear constraints make sure that all planning units in the selected area meet the criteria given in the constraint. For example, when using an area-based cost (lowest number of planning units to meet the target), we might also simultaneously want to minimise the cost to fisheries and keep it below a certain threshold. Inversely, we might want to minimise the cost to fisheries but also not select more than 30% of the area.
 
 In our example, we fill first define our targets and a random cost layer with values ranging from 0 to 1.
 
@@ -548,7 +553,7 @@ s8 <- p8 %>%
   prioritizr::solve.ConservationProblem()
 ```
 
-Based on the problem definition, we want to meet the targets for our biodiversity features whilst selecting the lowest number of planning units possible. However, the solution also depends on the threshold of the linear constraint specified with `add_linear_constraints()`in the problem. Specifically, the planning units selected in the solution can not exceed 10% of the total cost of all planning units in `costRandom$CostR`. 
+Based on the problem definition, we want to meet the targets for our biodiversity features whilst selecting the lowest number of planning units possible. However, the solution also depends on the threshold of the linear constraint specified with `add_linear_constraints()`in the problem. Specifically, the planning units selected in the solution can not exceed 10% of the total cost of all planning units in `costRandom$CostR`.
 
 We can visualise the solution again:
 
@@ -557,8 +562,7 @@ We can visualise the solution again:
   splnr_gg_add(PUs = PUs, Bndry = Bndry, overlay = landmass, cropOverlay = PUs, ggtheme = splnr_theme))
 ```
 
-
-**NOTE:** We can also use multiple linear constraints in the same plan, however, this might require a normalization of the input data to have the constraints in comparable units, and a careful tuning of the thresholds, so `prioritizr` is still able to solve the problem.  
+**NOTE:** We can also use multiple linear constraints in the same plan, however, this might require a normalization of the input data to have the constraints in comparable units, and a careful tuning of the thresholds, so `prioritizr` is still able to solve the problem.
 
 ### Common targets across zones
 
@@ -609,7 +613,7 @@ out_sf <- datSpecZone1 %>%
   )
 ```
 
-We can see here that we defined to (random) cost layers with the cost layer for `zone2` being three times as costly as for `zone1`. 
+We can see here that we defined to (random) cost layers with the cost layer for `zone2` being three times as costly as for `zone1`.
 
 ```{r}
 p10 <- prioritizr::problem(out_sf,
@@ -625,7 +629,7 @@ s10 <- p10 %>%
   prioritizr::solve.ConservationProblem()
 ```
 
-After setting up and solving the conservation problem, we can have a look at the resulting solution and how well the targets are met. 
+After setting up and solving the conservation problem, we can have a look at the resulting solution and how well the targets are met.
 
 ```{r}
 s10F <- s10 %>%
@@ -655,8 +659,7 @@ The plot also reflects the observation above that PUs were more frequently selec
 
 ### Targets across zones with linear constraints
 
-We can include linear constraints for `zone1` above, so that its area does not exceed 30% of the whole area. For this we need to create a matrix that contains the data for the constraint that we want to include. Although we only want to put the linear constraint on `zone1`, `prioritizr` still requires the matrix to have as many columns as there are zones. Thus, we set the area cost to `1` for 
-`zone1` where we want to have the constraint and to all `0` in `zone2` where we do not want to introduce a linear constraint. 
+We can include linear constraints for `zone1` above, so that its area does not exceed 30% of the whole area. For this we need to create a matrix that contains the data for the constraint that we want to include. Although we only want to put the linear constraint on `zone1`, `prioritizr` still requires the matrix to have as many columns as there are zones. Thus, we set the area cost to `1` for `zone1` where we want to have the constraint and to all `0` in `zone2` where we do not want to introduce a linear constraint.
 
 ```{r}
 CostArea <- out_sf %>%
@@ -826,23 +829,23 @@ print(r12)
   ))
 ```
 
-
 ### Next steps
 
 #### Short-term
-* Test for run time of zones compared to a normal prioritization
-* Communicate zones outcomes effectively (e.g. targets, cost overlay etc.)
+
+-   Test for run time of zones compared to a normal prioritization
+-   Communicate zones outcomes effectively (e.g. targets, cost overlay etc.)
 
 #### Longer-term
-* How to deal with overlapping zones (at the moment `prioritizr` allocates a PU to a single zone)
-* How to connect climate-smart workflow to zones
-* How to handle inputs that would benefit from using different objective functions (e.g. ecosystem services vs biodiversity features)
-* Look into some commonly used data sets for multiple use approaches and think about zone-specific costs, constraints, targets etc.
-* Define our (and Waitt's) understanding of what multiple-use is and how we want to implement it (can differ now and in the future)
-+ [EU Horizon 2020 MUSES-project](https://muses-project.com/): multiple use/multi-use is “the joint use of resources in close geographic proximity by either a single user or multiple users. It is an umbrella term that covers a multitude of use combinations in the marine realm and represents a radical change from the concept of exclusive resource rights to the inclusive sharing of resources and space by one or more users.”
-+ [Bonnevie et al. 2019](https://doi.org/10.1016/j.marpol.2019.103533): "multi-use is a specific co-location/coexistence where resources
-are being shared."
-+ [Schupp et al. 2019](https://doi.org/10.3389/fmars.2019.00165): distinguishes between for different types of multi-uses (one of which is co-location)
+
+-   How to deal with overlapping zones (at the moment `prioritizr` allocates a PU to a single zone)
+-   How to connect climate-smart workflow to zones
+-   How to handle inputs that would benefit from using different objective functions (e.g. ecosystem services vs biodiversity features)
+-   Look into some commonly used data sets for multiple use approaches and think about zone-specific costs, constraints, targets etc.
+-   Define our (and Waitt's) understanding of what multiple-use is and how we want to implement it (can differ now and in the future)
+-   [EU Horizon 2020 MUSES-project](https://muses-project.com/): multiple use/multi-use is “the joint use of resources in close geographic proximity by either a single user or multiple users. It is an umbrella term that covers a multitude of use combinations in the marine realm and represents a radical change from the concept of exclusive resource rights to the inclusive sharing of resources and space by one or more users.”
+-   [Bonnevie et al. 2019](https://doi.org/10.1016/j.marpol.2019.103533): "multi-use is a specific co-location/coexistence where resources are being shared."
+-   [Schupp et al. 2019](https://doi.org/10.3389/fmars.2019.00165): distinguishes between for different types of multi-uses (one of which is co-location)
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE, out.width='90%', fig.cap = "Types of multiple use in MSP according to [Schupp et al. 2019](https://doi.org/10.3389/fmars.2019.00165)"}
 knitr::include_graphics(file.path("Schupp2019TypesMultipleUse.png"))
