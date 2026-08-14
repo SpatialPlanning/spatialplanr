@@ -906,7 +906,7 @@ splnr_plot_circBplot <- function(df, legend_color, legend_list,
       y = c(25, 50, 75, 100),
       label = c(25, 50, 75, 100),
       color = "grey50",
-      size = 4,
+      size = base_size * 0.8 / ggplot2::.pt,
       angle = 0, # -5
       fontface = "bold",
       hjust = 0.5
@@ -921,7 +921,7 @@ splnr_plot_circBplot <- function(df, legend_color, legend_list,
         x = .data$id, y = .data$value + 10, label = .data$feature,
         hjust = .data$hjust
       ), color = "black",
-      fontface = "bold", alpha = 0.6, size = 2.5, angle = label_data$angle,
+      fontface = "bold", alpha = 0.6, size = base_size * 0.5 / ggplot2::.pt, angle = label_data$angle,
       inherit.aes = FALSE
     ) +
     ggplot2::theme(
