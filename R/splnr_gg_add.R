@@ -345,6 +345,32 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
 
   # Lock-in (Full) — fill legend, force nrow = 2, do NOT couple to colour
   if (inherits(lockIn, "sf")) {
+    # Pre-compute a named lookup vector (nameVariable -> display label) using
+    # scalar-safe logic BEFORE entering the pipe. This avoids the vctrs size
+    # recycling error that case_when throws when labelLockIn has length > 1
+    # (e.g. two lock-in areas selected): nchar(labelLockIn) > 0 would return a
+    # length-2 logical, making one case_when condition length 2 and another
+    # length n_rows, which vctrs refuses to recycle.
+    .li_label_map <- if (length(labelLockIn) > 1) {
+      # Named vector supplied (nameVariable -> nameCommon): subset to the
+      # variables actually selected, preserving names for the lookup.
+      labelLockIn[nameLockIn]
+    } else if (nchar(labelLockIn) > 0) {
+      # Single non-empty string: apply the same label to every variable.
+      stats::setNames(rep(labelLockIn, length(nameLockIn)), nameLockIn)
+    } else {
+      # Fallback: title-case the variable name, preserving "MPAs" as a
+      # special case (str_to_title would produce "Mpas").
+      stats::setNames(
+        dplyr::if_else(
+          stringr::str_to_title(nameLockIn) == "Mpas",
+          "MPAs",
+          stringr::str_to_title(nameLockIn)
+        ),
+        nameLockIn
+      )
+    }
+
     li <- lockIn %>%
       dplyr::select(tidyselect::all_of(c(nameLockIn, "geometry"))) %>%
       tidyr::pivot_longer(
@@ -353,17 +379,9 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
       ) %>%
       dplyr::mutate(
         lockedIn = as.logical(.data$LockedIn),
-        LI_Area = dplyr::case_when(
-          # Named vector supplied: look up nameVariable -> nameCommon
-          length(labelLockIn) > 1 & .data$LI_Area %in% names(labelLockIn) ~
-            labelLockIn[.data$LI_Area],
-          # Single non-empty string supplied: use it directly
-          length(labelLockIn) == 1 & nchar(labelLockIn) > 0 ~
-            labelLockIn,
-          # Fallback: title-case the variable name, preserving "MPAs" special case
-          stringr::str_to_title(.data$LI_Area) == "Mpas" ~ "MPAs",
-          TRUE ~ stringr::str_to_title(.data$LI_Area)
-        )
+        # Named-vector lookup: vectorised, size-safe, and avoids case_when
+        # recycling issues when multiple lock-in columns are present.
+        LI_Area = .li_label_map[.data$LI_Area]
       ) %>%
       dplyr::filter(.data$lockedIn)
 
@@ -427,6 +445,23 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
 
   # Lock-out (Full) — fill legend, force nrow = 2, do NOT couple to colour
   if (inherits(lockOut, "sf")) {
+    # Same fix as lock-in above: pre-compute the label lookup outside the pipe
+    # to avoid case_when size recycling errors with multiple lock-out areas.
+    .lo_label_map <- if (length(labelLockOut) > 1) {
+      labelLockOut[nameLockOut]
+    } else if (nchar(labelLockOut) > 0) {
+      stats::setNames(rep(labelLockOut, length(nameLockOut)), nameLockOut)
+    } else {
+      stats::setNames(
+        dplyr::if_else(
+          stringr::str_to_title(nameLockOut) == "Mpas",
+          "MPAs",
+          stringr::str_to_title(nameLockOut)
+        ),
+        nameLockOut
+      )
+    }
+
     lo <- lockOut %>%
       dplyr::select(tidyselect::all_of(c(nameLockOut, "geometry"))) %>%
       tidyr::pivot_longer(
@@ -435,17 +470,7 @@ splnr_gg_add <- function(PUs = NULL, colorPUs = "grey80",
       ) %>%
       dplyr::mutate(
         lockedOut = as.logical(.data$LockedOut),
-        LI_Area = dplyr::case_when(
-          # Named vector supplied: look up nameVariable -> nameCommon
-          length(labelLockOut) > 1 & .data$LI_Area %in% names(labelLockOut) ~
-            labelLockOut[.data$LI_Area],
-          # Single non-empty string supplied: use it directly
-          length(labelLockOut) == 1 & nchar(labelLockOut) > 0 ~
-            labelLockOut,
-          # Fallback: title-case the variable name, preserving "MPAs" special case
-          stringr::str_to_title(.data$LI_Area) == "Mpas" ~ "MPAs",
-          TRUE ~ stringr::str_to_title(.data$LI_Area)
-        )
+        LI_Area = .lo_label_map[.data$LI_Area]
       ) %>%
       dplyr::filter(.data$lockedOut)
 
