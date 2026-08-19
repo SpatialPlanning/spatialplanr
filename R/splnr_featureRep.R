@@ -386,10 +386,12 @@ splnr_get_featureRep <- function(soln, pDat, targets = NA,
 
   # Add the 'incidental' flag for primary features:
   # TRUE when target == 0 (feature was in the problem but with no target set).
+  # A feature with target > 0 that achieved zero representation is a *missed*
+  # target, not incidental protection — incidental = FALSE in that case.
   df <- df %>%
     dplyr::mutate(
       incidental = dplyr::if_else(
-        .data$target > 0 & .data$absolute_held > 0,
+        .data$target > 0,
         FALSE,
         TRUE,
         missing = TRUE
