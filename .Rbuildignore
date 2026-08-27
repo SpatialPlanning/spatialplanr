@@ -11,3 +11,9 @@
 ^data-raw$
 ^codecov\.yml$
 pkgdown/
+^draft_vignettes$
+^vignettes/figs$
+^vignettes/data$
+^.*_tmp\.tif$
+^_build/WCMC_008_coral_reefs$
+^vignettes/_build/WCMC_008_coral_reefs$

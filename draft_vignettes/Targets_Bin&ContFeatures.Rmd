@@ -1,0 +1,154 @@
+---
+title: "Targets with Mixed Binary + Continuous Features in prioritizr"
+author: "Kris Esturas"
+date: "2026-03-04"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+
+library(sf)
+library(terra)
+library(dplyr)
+library(magrittr)
+library(prioritizr)
+library(exactextractr)
+library(spatialplanr) 
+
+set.seed(1)
+
+# Cache downloads here
+build_dir <- file.path(getwd(), "_build")
+dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+## 1. Introduction
+
+In spatial conservation planning, we often represent features as binary layers (present/absent) by applying thresholds to continuous data. This is simple, but it can remove nuance — especially when the underlying data contain information about degree of coverage, likelihood of occurrence, or condition/health.
+
+So the practical question is: **how do we include binary and continuous information** in the same prioritisation problem, and set targets accordingly?
+
+This vignette builds the logic through three common questions:
+
+1.   Previously we have considered % coverage of a PU by a feature, but is 2 PUs of 0.25 coverage the same value/importance as 1 PU of 0.5 coverage?
+
+2.   For species/habitat distribution models, it is a probability of occurrence? Do 4 PUs of 20% chance of occurrence equal 1 PU of 80% occurrence?
+
+3.   In the Kosrae work, there is a layer of reef health and we want to prioritise areas of higher reef health. Is this best done with a binary layer and a penalty?
+
+**Key idea used throughout:** targets in *prioritizr* operate on **amounts** that can be summed across PUs. So the practical question becomes:
+
+> How do we turn coverage, probabilities, and condition scores into PU-level amounts that are meaningful to add up — so we can set targets (or objectives) without losing interpretation?
+
+## 2.1 Philippines EEZ as the planning region
+
+We start by using `get_boundary()` from `oceandatr` to obtain the **Philippines EEZ**. This defines our marine planning domain.
+
+```{r planning-domain, echo=TRUE, fig.height=12, fig.width=8, message=FALSE, warning=FALSE, out.width="100%"}
+Philippines_eez <- get_boundary(name = "Philippines")
+
+# plot to check we have Philippines' EEZ
+p_eez <- splnr_plot(df = Philippines_eez, plotTitle = "EEZ (Philippines)") +
+  splnr_gg_add(overlay = Philippines_eez,
+               colorOverlay = "black",
+               ggtheme = "Default") +
+  ggplot2::geom_sf(data = Philippines_eez, fill = "lightgreen", colour = NA)
+p_eez
+```
+
+## 2.2 Choose and equal-area projection
+
+We reproject the planning region into an equal-area projection to ensure that area- and distance-based calculations are meaningful. For the Philippines, a good default is a *Lambert azimuthal equal-area (LAEA)* projection centred near the country.
+
+```{r projection, echo=TRUE}
+# Equal-area projection (meters) centred on the Philippines
+projection_Philippines <- "+proj=laea +lon_0=122 +lat_0=12 +datum=WGS84 +units=m +no_defs"
+```
+
+## 2.3 Create a planning-unit grid
+
+We now create a grid over the EEZ. To keep runtime moderate, we use a fairly coarse resolution. Our units will be in meters.
+
+```{r PH-grid, echo=TRUE, fig.height=12, fig.width=8, message=FALSE, warning=FALSE, out.width="100%"}
+# Grid the planning area
+Philippines_grid <- get_grid(
+  boundary   = Philippines_eez,
+  resolution = 20000, # 30,000 just to test the code but a finer resolution can be opted with a more powerful PC    
+  crs        = projection_Philippines,
+  output = "sf_hex")
+
+
+# Plot grid
+grid_Philippines <- splnr_plot(df = Philippines_grid, 
+                       plotTitle = "Planning grid (Philippines)") +
+    splnr_gg_add(Bndry = Philippines_grid,
+                 colorBndry = "black",
+                 ggtheme = "Default")
+grid_Philippines
+```
+
+```{r fig.height=12, fig.width=8, message=FALSE, warning=FALSE, out.width="100%"}
+reef_zip_url <- "https://wcmc.io/WCMC_008"
+reef_zip <- file.path("_build", "WCMC_008_coral_reefs.zip")
+reef_dir <- file.path("_build", "WCMC_008_coral_reefs")
+
+# Download
+if (!file.exists(reef_zip)) {
+  download.file(reef_zip_url, reef_zip, mode = "wb", quiet = TRUE)
+}
+
+# Unzip
+if (!dir.exists(reef_dir)) {
+  dir.create(reef_dir, showWarnings = FALSE)
+  unzip(reef_zip, exdir = reef_dir)
+}
+
+# Find shapefiles and choose the largest (usually the real reef layer)
+shp_files <- list.files(reef_dir, pattern = "\\.shp$", full.names = TRUE, recursive = TRUE)
+stopifnot(length(shp_files) >= 1)
+
+reef_shp <- shp_files[which.max(file.info(shp_files)$size)]
+cat("Using shapefile:\n", reef_shp, "\n")
+
+reefs_all <- st_read(reef_shp, quiet = TRUE) %>%
+  st_make_valid()
+```
+
+```{r}
+# Ensure EEZ is valid + same CRS as reefs (use EEZ CRS as the reference)
+eez <- Philippines_eez %>%
+  st_make_valid()
+
+reefs_all <- reefs_all %>%
+  st_transform(st_crs(eez))
+
+# 1) Crop by bbox (fast)
+reefs_crop <- reefs_all %>%
+  st_crop(st_bbox(eez))
+
+# 2) Filter by intersects (keeps features; doesn't cut them yet)
+reefs_hit <- reefs_crop %>%
+  st_filter(eez, .predicate = st_intersects)
+
+cat("Reefs after crop:", nrow(reefs_crop), "\n")
+cat("Reefs intersecting EEZ:", nrow(reefs_hit), "\n")
+
+# 3) Optional: actually cut them to the EEZ boundary
+reef_sf <- reefs_hit %>%
+  st_intersection(eez)
+
+cat("Reefs after intersection (cut):", nrow(reef_sf), "\n")
+```
+
+```{r}
+plot(st_geometry(eez), border = "black", lwd = 2)
+
+plot(
+  st_geometry(reefs_hit),
+  add = TRUE,
+  col = grDevices::adjustcolor("yellow", alpha.f = 0.6),
+  border = grDevices::adjustcolor("orange", alpha.f = 0.8),
+  lwd = 0.4
+)
+```
