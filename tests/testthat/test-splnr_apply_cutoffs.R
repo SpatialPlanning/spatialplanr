@@ -42,7 +42,10 @@ testthat::test_that("single numeric cutoff produces only 0/1 values", {
 
 testthat::test_that("single numeric cutoff: values >= threshold become 1", {
   # Cutoff of 0 means every non-NA value (>= 0) becomes 1.
-  result <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0)
+  # dat_species_prob's columns bottom out just above 0, so this also
+  # exercises (and is expected to trigger) the "at or below the minimum"
+  # safety-net warning.
+  result <- suppressWarnings(splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0))
   num_cols <- get_numeric_cols(result)
   vals <- unlist(sf::st_drop_geometry(result)[num_cols])
   expect_true(all(vals == 1))
@@ -50,7 +53,9 @@ testthat::test_that("single numeric cutoff: values >= threshold become 1", {
 
 testthat::test_that("single numeric cutoff: values < threshold become 0", {
   # Cutoff of 1 means only values exactly equal to 1 become 1; all others become 0.
-  result <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 1)
+  # dat_species_prob's columns max out just under 1, so this also exercises
+  # (and is expected to trigger) the "above the maximum" safety-net warning.
+  result <- suppressWarnings(splnr_apply_cutoffs(dat_species_prob, Cutoffs = 1))
   num_cols <- get_numeric_cols(result)
   vals <- unlist(sf::st_drop_geometry(result)[num_cols])
   expect_true(all(vals %in% c(0, 1)))
@@ -167,24 +172,60 @@ testthat::test_that("non-sf input raises an error", {
   )
 })
 
-testthat::test_that("cutoff outside [0,1] raises an error", {
+testthat::test_that("cutoff outside [0,1] no longer raises an error (arbitrary-scale data supported)", {
+  # splnr_apply_cutoffs() previously assumed probability data in [0, 1]. It now
+  # supports numeric data on any scale, so a cutoff of 1.5 on Spp1 (range
+  # ~0-1) is legal — it simply binarises everything to 0, with a warning (see
+  # the out-of-range warning tests below).
+  result <- suppressWarnings(splnr_apply_cutoffs(dat_species_prob, Cutoffs = 1.5))
+  expect_s3_class(result, "sf")
+})
+
+testthat::test_that("function returning a non-finite value raises an error", {
   expect_error(
-    splnr_apply_cutoffs(dat_species_prob, Cutoffs = 1.5),
-    "outside the required \\[0, 1\\] range"
+    splnr_apply_cutoffs(dat_species_prob, Cutoffs = \(x) Inf),
+    "must be a single finite numeric"
   )
 })
 
-testthat::test_that("function returning value outside [0,1] raises an error", {
-  expect_error(
-    splnr_apply_cutoffs(dat_species_prob, Cutoffs = \(x) 2.0),
-    "outside the required \\[0, 1\\] range"
+testthat::test_that("cutoff on raw (non-probability) scale data is correctly binarised", {
+  # This mirrors the motivating use case: data on a 0-1000 scale, with a
+  # cutoff of 40 (not a probability). Values >= 40 should become 1.
+  raw_dat <- dat_species_prob %>%
+    dplyr::mutate(Spp1 = Spp1 * 1000) # rescale Spp1 to roughly 0-1000
+
+  result <- splnr_apply_cutoffs(raw_dat, Cutoffs = c("Spp1" = 40))
+  vals <- sf::st_drop_geometry(result)[["Spp1"]]
+  orig_vals <- sf::st_drop_geometry(raw_dat)[["Spp1"]]
+
+  expect_true(all(vals %in% c(0, 1)))
+  expect_equal(vals, as.numeric(ifelse(is.na(orig_vals), 0, orig_vals >= 40)))
+})
+
+testthat::test_that("cutoff at or below column minimum triggers an out-of-range warning", {
+  expect_warning(
+    splnr_apply_cutoffs(dat_species_prob, Cutoffs = c("Spp1" = -1)),
+    "at or below the minimum"
+  )
+})
+
+testthat::test_that("cutoff above column maximum triggers an out-of-range warning", {
+  expect_warning(
+    splnr_apply_cutoffs(dat_species_prob, Cutoffs = c("Spp1" = 1.5)),
+    "above the maximum"
+  )
+})
+
+testthat::test_that("cutoff within the observed data range produces no warning", {
+  expect_no_warning(
+    splnr_apply_cutoffs(dat_species_prob, Cutoffs = c("Spp1" = 0.5))
   )
 })
 
 testthat::test_that("function returning non-scalar raises an error", {
   expect_error(
     splnr_apply_cutoffs(dat_species_prob, Cutoffs = \(x) c(0.3, 0.5)),
-    "must return a single finite numeric"
+    "must be a single finite numeric"
   )
 })
 
