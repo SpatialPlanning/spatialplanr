@@ -12,10 +12,11 @@ at least one numeric column to which cutoffs will be applied.}
 
 \item{Cutoffs}{One of:
 \itemize{
-\item A single unnamed numeric value in \verb{[0, 1]} — applied to all
-numeric columns.
+\item A single unnamed finite numeric value (e.g., \code{0.5} or \code{40}) —
+applied to all numeric columns, on whatever scale that data is
+measured.
 \item A single unnamed function that accepts a numeric vector and returns
-a single numeric in \verb{[0, 1]} — called independently per column
+a single finite numeric value — called independently per column
 with the non-\code{NA} values of that column.
 \item A named numeric vector — names must match numeric column names in
 \code{features}; each value is applied to its named column only.
@@ -40,16 +41,18 @@ It provides flexibility to either keep values above a cutoff as 1 (default)
 or invert this logic to keep values below a cutoff as 1.
 }
 \details{
-This function is crucial for standardizing feature data, such as species
-probability distributions or habitat suitability scores, into a binary format
-often required for conservation planning and spatial analysis (e.g., in
-\code{prioritizr}).
+This function is crucial for standardizing feature data into a binary
+format often required for conservation planning and spatial analysis
+(e.g., in \code{prioritizr}). It works on \strong{any numeric data}, whatever
+its scale — for example species probability distributions or habitat
+suitability scores in \verb{[0, 1]}, or raw environmental measurements such as
+bathymetry or depth in metres.
 
 The function operates in four modes based on the \code{Cutoffs} parameter:
 \itemize{
-\item \strong{Single numeric scalar:} A single unnamed numeric value (e.g., \code{0.5})
-is applied uniformly to \strong{all numeric columns} in \code{features},
-excluding the \code{geometry} column.
+\item \strong{Single numeric scalar:} A single unnamed numeric value (e.g., \code{0.5}
+or \code{40}) is applied uniformly to \strong{all numeric columns} in
+\code{features}, excluding the \code{geometry} column.
 \item \strong{Single function:} A single unnamed function (e.g.,
 \verb{\\(x) quantile(x, 0.99)}) is called independently for each numeric
 column, with \code{x} being the non-\code{NA} values of that column. The
@@ -63,7 +66,7 @@ to its corresponding named column only.
 (e.g., \verb{list("feature1" = 0.5, "feature2" = \\(x) quantile(x, 0.99))})
 applies each entry to its corresponding named column. Numeric entries
 are used directly; function entries are called with the non-\code{NA}
-values of that column and must return a single numeric in \verb{[0, 1]}.
+values of that column and must return a single finite numeric value.
 }
 
 For all modes, the binarisation rules are:
@@ -81,8 +84,17 @@ become \code{1}.
 }
 
 All resolved threshold values (whether supplied directly or returned by a
-function) must lie in \verb{[0, 1]}. \code{NA} values are stripped from the column
-vector before it is passed to a function-based cutoff.
+function) must be finite numeric values — they are \strong{not} restricted
+to \verb{[0, 1]}, so the function can be used on data of any scale. \code{NA} values
+are stripped from the column vector before it is passed to a
+function-based cutoff.
+
+As a safety net, a \strong{warning} (not an error) is issued if a resolved
+threshold falls at or below the minimum, or above the maximum, of a
+column's non-\code{NA} values. In both cases every value in that column would be
+binarised to the same result (all \code{1}s or all \code{0}s), which usually
+indicates the cutoff was specified on the wrong scale for that column
+(e.g. supplying a \verb{[0, 1]}-style cutoff to a column of raw counts).
 }
 \examples{
 
@@ -119,4 +131,10 @@ print(df_mixed_cutoffs)
 # Example 5: Single numeric cutoff with inverse logic
 df_inverse_cutoff <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = TRUE)
 print(df_inverse_cutoff)
+
+# Example 6: Cutoffs are not restricted to [0, 1] — this works for data on
+# any scale, e.g. bathymetry measured in metres. Depths at or above -40 m
+# become 1 (shallower than -40 m); the rest become 0.
+df_bathy_cutoff <- splnr_apply_cutoffs(dat_bathy, Cutoffs = -40)
+print(df_bathy_cutoff)
 }

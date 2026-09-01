@@ -7,16 +7,18 @@
 #' or invert this logic to keep values below a cutoff as 1.
 #'
 #' @details
-#' This function is crucial for standardizing feature data, such as species
-#' probability distributions or habitat suitability scores, into a binary format
-#' often required for conservation planning and spatial analysis (e.g., in
-#' `prioritizr`).
+#' This function is crucial for standardizing feature data into a binary
+#' format often required for conservation planning and spatial analysis
+#' (e.g., in `prioritizr`). It works on \strong{any numeric data}, whatever
+#' its scale — for example species probability distributions or habitat
+#' suitability scores in `[0, 1]`, or raw environmental measurements such as
+#' bathymetry or depth in metres.
 #'
 #' The function operates in four modes based on the `Cutoffs` parameter:
 #' \itemize{
-#'   \item \strong{Single numeric scalar:} A single unnamed numeric value (e.g., `0.5`)
-#'         is applied uniformly to \strong{all numeric columns} in `features`,
-#'         excluding the `geometry` column.
+#'   \item \strong{Single numeric scalar:} A single unnamed numeric value (e.g., `0.5`
+#'         or `40`) is applied uniformly to \strong{all numeric columns} in
+#'         `features`, excluding the `geometry` column.
 #'   \item \strong{Single function:} A single unnamed function (e.g.,
 #'         `\(x) quantile(x, 0.99)`) is called independently for each numeric
 #'         column, with `x` being the non-`NA` values of that column. The
@@ -30,7 +32,7 @@
 #'         (e.g., `list("feature1" = 0.5, "feature2" = \(x) quantile(x, 0.99))`)
 #'         applies each entry to its corresponding named column. Numeric entries
 #'         are used directly; function entries are called with the non-`NA`
-#'         values of that column and must return a single numeric in `[0, 1]`.
+#'         values of that column and must return a single finite numeric value.
 #' }
 #'
 #' For all modes, the binarisation rules are:
@@ -48,17 +50,27 @@
 #' }
 #'
 #' All resolved threshold values (whether supplied directly or returned by a
-#' function) must lie in `[0, 1]`. `NA` values are stripped from the column
-#' vector before it is passed to a function-based cutoff.
+#' function) must be finite numeric values — they are \strong{not} restricted
+#' to `[0, 1]`, so the function can be used on data of any scale. `NA` values
+#' are stripped from the column vector before it is passed to a
+#' function-based cutoff.
+#'
+#' As a safety net, a \strong{warning} (not an error) is issued if a resolved
+#' threshold falls at or below the minimum, or above the maximum, of a
+#' column's non-`NA` values. In both cases every value in that column would be
+#' binarised to the same result (all `1`s or all `0`s), which usually
+#' indicates the cutoff was specified on the wrong scale for that column
+#' (e.g. supplying a `[0, 1]`-style cutoff to a column of raw counts).
 #'
 #' @param features An `sf` dataframe. It must contain a `geometry` column and
 #'   at least one numeric column to which cutoffs will be applied.
 #' @param Cutoffs One of:
 #'   \itemize{
-#'     \item A single unnamed numeric value in `[0, 1]` — applied to all
-#'           numeric columns.
+#'     \item A single unnamed finite numeric value (e.g., `0.5` or `40`) —
+#'           applied to all numeric columns, on whatever scale that data is
+#'           measured.
 #'     \item A single unnamed function that accepts a numeric vector and returns
-#'           a single numeric in `[0, 1]` — called independently per column
+#'           a single finite numeric value — called independently per column
 #'           with the non-`NA` values of that column.
 #'     \item A named numeric vector — names must match numeric column names in
 #'           `features`; each value is applied to its named column only.
@@ -117,6 +129,12 @@
 #' # Example 5: Single numeric cutoff with inverse logic
 #' df_inverse_cutoff <- splnr_apply_cutoffs(dat_species_prob, Cutoffs = 0.5, inverse = TRUE)
 #' print(df_inverse_cutoff)
+#'
+#' # Example 6: Cutoffs are not restricted to [0, 1] — this works for data on
+#' # any scale, e.g. bathymetry measured in metres. Depths at or above -40 m
+#' # become 1 (shallower than -40 m); the rest become 0.
+#' df_bathy_cutoff <- splnr_apply_cutoffs(dat_bathy, Cutoffs = -40)
+#' print(df_bathy_cutoff)
 splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
   # --- Input Assertions ---
 
@@ -185,6 +203,10 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
   # col_name:   used only for error messages.
 
   resolve_cutoff <- function(entry, col_values, col_name) {
+    # Non-NA values are needed both for function-based cutoffs (passed as `x`)
+    # and for the out-of-range warning below, so compute them once up front.
+    clean_values <- col_values[!is.na(col_values)]
+
     if (is.numeric(entry)) {
       assertthat::assert_that(
         length(entry) == 1,
@@ -198,8 +220,6 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
       # Strip NAs before passing to the user's function so that common
       # aggregation functions (quantile, mean, etc.) work without the user
       # needing to remember na.rm = TRUE.
-      clean_values <- col_values[!is.na(col_values)]
-
       threshold <- tryCatch(
         entry(clean_values),
         error = function(e) {
@@ -210,15 +230,6 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
           )
         }
       )
-
-      assertthat::assert_that(
-        is.numeric(threshold) && length(threshold) == 1 && is.finite(threshold),
-        msg = paste0(
-          "Function-based cutoff for column '", col_name,
-          "' must return a single finite numeric value. ",
-          "Got: ", deparse(threshold)
-        )
-      )
     } else {
       stop(
         "Each entry in 'Cutoffs' must be a numeric scalar or a function. ",
@@ -228,14 +239,49 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
       )
     }
 
-    # Enforce [0, 1] on the resolved threshold regardless of source.
+    # The threshold must be a single finite numeric value. Unlike earlier
+    # versions of this function, it is *not* restricted to [0, 1] — thresholds
+    # are valid on whatever scale the underlying data is measured (e.g. raw
+    # counts, depths in metres, percentages, etc.), not just probabilities.
     assertthat::assert_that(
-      threshold >= 0 && threshold <= 1,
+      is.numeric(threshold) && length(threshold) == 1 && is.finite(threshold),
       msg = paste0(
-        "Resolved cutoff for column '", col_name, "' is ", threshold,
-        ", which is outside the required [0, 1] range."
+        "Resolved cutoff for column '", col_name,
+        "' must be a single finite numeric value. Got: ", deparse(threshold)
       )
     )
+
+    # --- Safety-net warning: threshold outside the observed data range -----
+    #
+    # A threshold at/below the minimum or above the maximum non-NA value
+    # binarises the *entire* column to a single value (all 1s or all 0s
+    # before `inverse` is applied). This is rarely intentional and usually
+    # indicates the cutoff was specified on the wrong scale for this column
+    # (e.g. a [0, 1]-style cutoff applied to raw counts, or vice versa). We
+    # warn rather than error because collapsing a column to a single value
+    # can occasionally be the desired behaviour.
+    if (length(clean_values) > 0) {
+      col_min <- min(clean_values)
+      col_max <- max(clean_values)
+
+      if (threshold <= col_min) {
+        warning(
+          "Resolved cutoff for column '", col_name, "' is ", threshold,
+          ", which is at or below the minimum non-NA value (", col_min,
+          ") in this column. Every non-NA value will be binarised to 1. ",
+          "Check that the cutoff is on the same scale as this column's data.",
+          call. = FALSE
+        )
+      } else if (threshold > col_max) {
+        warning(
+          "Resolved cutoff for column '", col_name, "' is ", threshold,
+          ", which is above the maximum non-NA value (", col_max,
+          ") in this column. Every non-NA value will be binarised to 0. ",
+          "Check that the cutoff is on the same scale as this column's data.",
+          call. = FALSE
+        )
+      }
+    }
 
     threshold
   }
@@ -248,6 +294,13 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
   #
   # purrr::map_dbl() is used in preference to vapply() for consistency with
   # the tidyverse style used throughout this package.
+  #
+  # Note: every branch below resolves (and validates, including the
+  # out-of-range warning) the threshold *per column*, even in the "single
+  # numeric scalar" case. This is deliberate: the same scalar cutoff can be
+  # in-range for one column and out-of-range for another (e.g. columns on
+  # different scales), so validation cannot be short-circuited after checking
+  # only the first column.
 
   if (is.function(Cutoffs)) {
     # Single function: apply independently to every numeric column.
@@ -262,11 +315,13 @@ splnr_apply_cutoffs <- function(features, Cutoffs, inverse = FALSE) {
     )
   } else if (is.numeric(Cutoffs) && is.null(names(Cutoffs)) && length(Cutoffs) == 1) {
     # Single numeric scalar: same threshold for every numeric column.
-    # Validate once against the first column (value check only; column data
-    # is irrelevant for a numeric entry but resolve_cutoff requires it).
     message("Applying single cutoff of ", Cutoffs, " to all numeric feature columns.")
-    resolve_cutoff(Cutoffs, features_plain[[numeric_cols[1]]], numeric_cols[1])
-    thresholds <- stats::setNames(rep(Cutoffs, length(numeric_cols)), numeric_cols)
+    thresholds <- purrr::map_dbl(
+      stats::setNames(numeric_cols, numeric_cols),
+      function(col) {
+        resolve_cutoff(Cutoffs, features_plain[[col]], col)
+      }
+    )
   } else {
     # Named numeric vector or named list: per-column thresholds.
     # Convert a named numeric vector to a list so resolve_cutoff handles both
