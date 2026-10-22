@@ -244,21 +244,28 @@ splnr_plot <- function(df,
       ggplot2::geom_sf(data = df, ggplot2::aes(fill = factor(.data[[colNames]])), colour = "grey80", size = 0.1)
 
     # Apply manual fill scale for binary (0/1) data.
+    # Named labels are required here: when all planning units have value 1
+    # (100% presence) the factor has only one level ("1"), and positional
+    # labels would map "Absence" (index 1) to that level — showing the wrong
+    # label. Named labels bind each label to its level explicitly, so only
+    # the levels that actually exist in the data appear in the legend, each
+    # with the correct label.
     if (isTRUE(is_binary)) {
       gg <- gg +
         ggplot2::scale_fill_manual(
           values = c("0" = colourVals[1], "1" = colourVals[2]),
-          labels = legendLabels,
+          labels = c("0" = legendLabels[1], "1" = legendLabels[2]),
           name = legendTitle
         )
     }
 
     # Apply manual fill scale for logical (FALSE/TRUE) data.
+    # Same named-labels fix as the binary branch above.
     if (isTRUE(is_logi)) {
       gg <- gg +
         ggplot2::scale_fill_manual(
           values = c("FALSE" = colourVals[1], "TRUE" = colourVals[2]),
-          labels = legendLabels,
+          labels = c("FALSE" = legendLabels[1], "TRUE" = legendLabels[2]),
           name = legendTitle
         )
     }
