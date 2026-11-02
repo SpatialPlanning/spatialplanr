@@ -10,7 +10,12 @@ splnr_plot_costOverlay(
   costName = "Cost",
   legendTitle = "Cost",
   plotTitle = "Solution overlaid with cost",
-  base_size = 14
+  base_size = 14,
+  costAlpha = 0.1,
+  costLowColour = "#fff5eb",
+  costHighColour = "#d94801",
+  costLowerPercentile = 0.05,
+  costUpperPercentile = 0.95
 )
 }
 \arguments{
@@ -34,6 +39,25 @@ Defaults to \code{"Solution overlaid with cost"}.}
 \item{base_size}{A numeric value for the base font size (in points) passed to
 \code{ggplot2::theme_bw()}. All text elements scale proportionally from this value.
 Defaults to \code{14}.}
+
+\item{costAlpha}{A numeric value (0-1) for the transparency (opacity) of the
+cost fill layer. Lower values are more transparent. Defaults to \code{0.1}.}
+
+\item{costLowColour}{A character string (hex or named colour) for the low
+end of the cost colour gradient. Defaults to \code{"#fff5eb"} (pale orange).}
+
+\item{costHighColour}{A character string (hex or named colour) for the high
+end of the cost colour gradient. Defaults to \code{"#d94801"} (dark orange).}
+
+\item{costLowerPercentile}{A numeric value (0-1) specifying the lower
+percentile of the cost distribution (across all Planning Units) used as
+the lower limit of the colour scale. Values below this percentile are
+squished to the low colour. Defaults to \code{0.05}.}
+
+\item{costUpperPercentile}{A numeric value (0-1) specifying the upper
+percentile of the cost distribution (across all Planning Units) used as
+the upper limit of the colour scale. Values above this percentile are
+squished to the high colour. Defaults to \code{0.95}.}
 }
 \value{
 A \code{ggplot} object representing the solution with cost overlay.

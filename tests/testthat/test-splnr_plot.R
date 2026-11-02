@@ -1,6 +1,5 @@
 # Continuous plot of bathymetry
 
-
 Region <- "Coral Sea" # "Australia"
 Type <- "Oceans" # "EEZ"
 PU_size <- 107460 # m2 (10,000 km2)
@@ -88,11 +87,13 @@ testthat::test_that("Correct function output", {
   expect_s3_class(
     splnr_plot(
       df = dat_species_bin,
-      colNames = colnames(dat_species_bin %>%
-        sf::st_drop_geometry() %>%
-        dplyr::select(
-          tidyselect::starts_with("Spp")
-        )),
+      colNames = colnames(
+        dat_species_bin %>%
+          sf::st_drop_geometry() %>%
+          dplyr::select(
+            tidyselect::starts_with("Spp")
+          )
+      ),
       legendTitle = "Number of features"
     ),
     "gg"
@@ -104,8 +105,10 @@ testthat::test_that("Correct function output", {
   expect_s3_class(
     ggPU <- splnr_plot(PUs) +
       splnr_gg_add(
-        Bndry = Bndry, overlay = landmass,
-        cropOverlay = PUs, ggtheme = splnr_theme
+        Bndry = Bndry,
+        overlay = landmass,
+        cropOverlay = PUs,
+        ggtheme = splnr_theme
       ),
     "gg"
   )
@@ -116,8 +119,10 @@ testthat::test_that("Correct function output", {
   expect_s3_class(
     ggPU <- splnr_plot(df = PUs) +
       splnr_gg_add(
-        Bndry = Bndry, overlay = landmass,
-        cropOverlay = PUs, ggtheme = "Default"
+        Bndry = Bndry,
+        overlay = landmass,
+        cropOverlay = PUs,
+        ggtheme = "Default"
       ),
     "gg"
   )
@@ -131,11 +136,15 @@ testthat::test_that("Correct function output", {
         overlay = landmass,
         overlay2 = landmass,
         overlay3 = landmass,
-        cropOverlay = PUs, ggtheme = "Default",
-        lockIn = dat_mpas, nameLockIn = "wdpa",
+        cropOverlay = PUs,
+        ggtheme = "Default",
+        lockIn = dat_mpas,
+        nameLockIn = "wdpa",
         typeLockIn = "Contours",
-        alphaLockIn = 0.5, colorLockIn = "red",
-        legendLockIn = "", labelLockIn = "MPAs"
+        alphaLockIn = 0.5,
+        colorLockIn = "red",
+        legendLockIn = "",
+        labelLockIn = "MPAs"
       ),
     "gg"
   )
@@ -153,7 +162,6 @@ testthat::test_that("Correct function output", {
 #   )
 # )
 # })
-
 
 # ---------------------------------------------------------------------------
 # splnr_gg_add() lock-in / lock-out legend label tests
@@ -249,7 +257,7 @@ dat_soln_with_cost <- dat_species_bin %>%
 
 pDat_local <- prioritizr::problem(
   dat_soln_with_cost,
-  features    = c("Spp1", "Spp2", "Spp3"),
+  features = c("Spp1", "Spp2", "Spp3"),
   cost_column = "Cost"
 ) %>%
   prioritizr::add_min_set_objective() %>%
@@ -273,13 +281,10 @@ testthat::test_that("splnr_gg_add() contours path produces a gg object", {
   contours_sf <- dat_mpas %>%
     dplyr::mutate(Category = dplyr::if_else(.data$wdpa == 1L, "MPA", "Other"))
 
-  gg <- splnr_plot(dat_species_bin,
-    colNames = "Spp1",
-    legendTitle = "Spp1", legendLabels = c("Absent", "Present")
-  ) +
+  gg <- splnr_plot(dat_species_bin, colNames = "Spp1", legendTitle = "Spp1", legendLabels = c("Absent", "Present")) +
     splnr_gg_add(
       contours = contours_sf,
-      ggtheme  = FALSE
+      ggtheme = FALSE
     )
 
   expect_s3_class(gg, "gg")
@@ -306,10 +311,7 @@ testthat::test_that("splnr_gg_add() list ggtheme path appends theme elements", {
     ggplot2::theme(legend.position = "right")
   )
 
-  gg <- splnr_plot(dat_species_bin,
-    colNames = "Spp1",
-    legendTitle = "Spp1", legendLabels = c("Absent", "Present")
-  ) +
+  gg <- splnr_plot(dat_species_bin, colNames = "Spp1", legendTitle = "Spp1", legendLabels = c("Absent", "Present")) +
     splnr_gg_add(ggtheme = list_theme)
 
   expect_s3_class(gg, "gg")
@@ -325,7 +327,7 @@ testthat::test_that("splnr_gg_add() list ggtheme path appends theme elements", {
 testthat::test_that("splnr_plot_costOverlay() errors when costName is absent from soln", {
   expect_error(
     splnr_plot_costOverlay(
-      soln     = soln_local,
+      soln = soln_local,
       costName = "NonExistentCostColumn"
     ),
     "not found in the solution data frame"
@@ -345,8 +347,8 @@ testthat::test_that("splnr_plot_costOverlay() errors when cost is not an sf obje
   plain_df <- sf::st_drop_geometry(soln_local)
   expect_error(
     splnr_plot_costOverlay(
-      soln     = soln_local,
-      cost     = plain_df,
+      soln = soln_local,
+      cost = plain_df,
       costName = "Cost"
     ),
     "'cost' must be an 'sf' object"
@@ -358,8 +360,8 @@ testthat::test_that("splnr_plot_costOverlay() errors when cost sf lacks the cost
   cost_sf_no_col <- soln_local %>% dplyr::select("solution_1") # no "MyCost" column
   expect_error(
     splnr_plot_costOverlay(
-      soln     = soln_local,
-      cost     = cost_sf_no_col,
+      soln = soln_local,
+      cost = cost_sf_no_col,
       costName = "MyCost"
     ),
     "does not contain the specified cost column"
@@ -370,10 +372,73 @@ testthat::test_that("splnr_plot_costOverlay() works when a valid external cost s
   # Pass soln_local itself as the external cost object (it contains "Cost").
   expect_s3_class(
     splnr_plot_costOverlay(
-      soln     = soln_local,
-      cost     = soln_local,
+      soln = soln_local,
+      cost = soln_local,
       costName = "Cost"
     ),
     "gg"
   )
+})
+
+
+# ---------------------------------------------------------------------------
+# splnr_plot_costOverlay() configurable styling parameters
+# ---------------------------------------------------------------------------
+# costAlpha, costLowColour, costHighColour, costLowerPercentile and
+# costUpperPercentile should all default to the historical hard-coded values
+# (alpha = 0.1, "#fff5eb" -> "#d94801", limits = 0 to 99th percentile is now
+# 5th to 95th percentile by default) and should be overridable.
+
+testthat::test_that("splnr_plot_costOverlay() uses default styling parameters", {
+  gg <- splnr_plot_costOverlay(soln = soln_local, costName = "Cost")
+
+  expect_s3_class(gg, "gg")
+
+  # Locate the geom_sf layer that draws the cost fill (has an alpha aesthetic
+  # parameter set rather than mapped) and check it matches the documented default.
+  cost_layer <- gg$layers[[2]]
+  expect_equal(cost_layer$aes_params$alpha, 0.1)
+
+  # The built fill colours should span from the default low to the default
+  # high colour (at the lowest/highest mapped values).
+  built <- ggplot2::ggplot_build(gg)
+  fills <- built$data[[2]]$fill
+  expect_true(toupper("#fff5eb") %in% toupper(fills))
+  expect_true(toupper("#d94801") %in% toupper(fills))
+})
+
+testthat::test_that("splnr_plot_costOverlay() accepts custom alpha, colours and percentile limits", {
+  gg <- splnr_plot_costOverlay(
+    soln = soln_local,
+    costName = "Cost",
+    costAlpha = 0.2,
+    costLowColour = "#fee5d9",
+    costHighColour = "#a50f15",
+    costLowerPercentile = 0.10,
+    costUpperPercentile = 0.90
+  )
+
+  expect_s3_class(gg, "gg")
+
+  cost_layer <- gg$layers[[2]]
+  expect_equal(cost_layer$aes_params$alpha, 0.2)
+})
+
+testthat::test_that("splnr_plot_costOverlay() percentile limits change the colour scale range", {
+  # Narrower percentile range (e.g. 0.10-0.90) should produce a tighter
+  # (or equal) limits range than the wider default (0.05-0.95).
+  cost_vals <- dplyr::pull(soln_local, "Cost")
+
+  narrow_limits <- stats::quantile(cost_vals, c(0.10, 0.90), na.rm = TRUE)
+  default_limits <- stats::quantile(cost_vals, c(0.05, 0.95), na.rm = TRUE)
+
+  expect_true(diff(narrow_limits) <= diff(default_limits))
+
+  gg_narrow <- splnr_plot_costOverlay(
+    soln = soln_local,
+    costName = "Cost",
+    costLowerPercentile = 0.10,
+    costUpperPercentile = 0.90
+  )
+  expect_s3_class(gg_narrow, "gg")
 })
